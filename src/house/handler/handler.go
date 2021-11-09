@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	helper "helper/service"
@@ -10,27 +11,41 @@ import (
 	"net/http"
 )
 
-func AddHouseHandler() http.HandlerFunc {
+type houseHandlerObject struct {
+	houseService service.HouseService
+}
+
+func NewHouseHandler(houseService service.HouseService) HouseHandler {
+	return &houseHandlerObject{houseService}
+}
+
+type HouseHandler interface {
+	AddHouseHandler() http.HandlerFunc
+	FindAllHousesHandler() http.HandlerFunc
+	FindHouseByIdHandler() http.HandlerFunc
+}
+
+func (h *houseHandlerObject) AddHouseHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := model.CreateHouseRequest{}
 
 		if err := helper.PerformRequest(&requestEntity, writer, request); err == nil {
-			house := houseAddRequestToEntity(&requestEntity)
+			if err, response := h.houseService.AddHouse(requestEntity); err != nil {
+				helper.HandleBadRequestWithError(writer, err)
+			} else {
+				writer.WriteHeader(http.StatusCreated)
 
-			service.AddHouse(house)
-
-			writer.WriteHeader(http.StatusCreated)
-
-			json.NewEncoder(writer).Encode(model.CreateHouseResponse{Id: house.Id})
+				json.NewEncoder(writer).Encode(response)
+			}
 		} else {
-			http.Error(writer, err.Error(), http.StatusBadRequest)
+			helper.HandleBadRequestWithError(writer, err)
 		}
 	}
 }
 
-func FindAllHousesHandler() http.HandlerFunc {
+func (h *houseHandlerObject) FindAllHousesHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		houses := service.FindAllHouses()
+		houses := h.houseService.FindAllHouses()
 
 		err := json.NewEncoder(writer).Encode(houses)
 
@@ -40,52 +55,31 @@ func FindAllHousesHandler() http.HandlerFunc {
 	}
 }
 
-func FindHouseByIdHandler() http.HandlerFunc {
+func (h *houseHandlerObject) FindHouseByIdHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		parameter, _ := helper.GetRequestParameter(request, "id")
 
 		id, err := uuid.Parse(parameter)
 
 		if err != nil {
-			message := fmt.Sprintf("The id is not valid %s", parameter)
-			http.Error(writer, message, http.StatusBadRequest)
-			writer.Write([]byte(message))
+			helper.HandleBadRequestWithError(writer, errors.New(fmt.Sprintf("the id is not valid %s", parameter)))
 
 			return
 		}
 
-		if err, house := service.FindById(id); err != nil {
-			message := err.Error()
-			http.Error(writer, message, http.StatusNotFound)
-			writer.Write([]byte(message))
+		if err, house := h.houseService.FindById(id); err != nil {
+			helper.HandleErrorResponseWithError(writer, http.StatusNotFound, err)
 		} else {
 			content, err := json.Marshal(house)
 
 			if err != nil {
-				message := err.Error()
-				writer.Write([]byte(message))
-				http.Error(writer, message, http.StatusBadRequest)
+				helper.HandleBadRequestWithError(writer, err)
 
 				return
 			}
 
 			writer.Write(content)
-			writer.Header().Set("Content-Type", "application/json")
-			writer.WriteHeader(http.StatusOK)
 		}
 
-	}
-}
-
-func houseAddRequestToEntity(request *model.CreateHouseRequest) model.House {
-	newUUID, _ := uuid.NewUUID()
-	return model.House{
-		Id:          newUUID,
-		Name:        request.Name,
-		Country:     request.Country,
-		City:        request.City,
-		StreetLine1: request.StreetLine1,
-		StreetLine2: request.StreetLine2,
-		Deleted:     true,
 	}
 }

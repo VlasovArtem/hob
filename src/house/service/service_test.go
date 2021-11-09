@@ -5,28 +5,21 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"helper"
+	"helper/testhelper"
 	"house/model"
-	"reflect"
 	"testing"
 )
 
-func generateHouse(id uuid.UUID) model.House {
-	return model.House{
-		Id:          id,
-		Name:        "Test House",
-		Country:     "Country",
-		City:        "City",
-		StreetLine1: "StreetLine1",
-		StreetLine2: "StreetLine2",
-		Deleted:     false,
-	}
-}
+var countriesService = testhelper.InitCountryService()
+
+func serviceGenerator() HouseService { return NewHouseService(countriesService) }
 
 func TestAddHouse(t *testing.T) {
-	t.Cleanup(func() { deleteAll() })
+	houseService := serviceGenerator()
 
 	type args struct {
-		house model.House
+		house model.CreateHouseRequest
 	}
 	tests := []struct {
 		name string
@@ -34,68 +27,62 @@ func TestAddHouse(t *testing.T) {
 	}{
 		{
 			name: "with new house",
-			args: args{house: generateHouse(uuid.New())},
+			args: args{house: helper.GenerateCreateHouseRequest()},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			AddHouse(tt.args.house)
+			err2, response := houseService.AddHouse(tt.args.house)
 
-			err, house := FindById(tt.args.house.Id)
+			assert.Nil(t, err2)
+
+			err, house := houseService.FindById(response.Id)
 			assert.Nil(t, err)
-			assert.Equal(t, tt.args.house, house, "Houses should be the same")
+			assert.Equal(t, helper.GenerateHouseResponse(house.Id, house.Name), house, "Houses should be the same")
 		})
 	}
 }
 
 func TestFindAllHouses(t *testing.T) {
-	t.Cleanup(func() { deleteAll() })
+	houseService := serviceGenerator()
 
-	house := generateHouse(uuid.New())
+	request := helper.GenerateCreateHouseRequest()
+	err, response := houseService.AddHouse(request)
+
+	assert.Nil(t, err)
 
 	tests := []struct {
-		name       string
-		wantResult []model.House
-		prepare    func()
+		name            string
+		wantResult      []model.HouseResponse
+		serviceProvider func() HouseService
 	}{
 		{
-			name:       "houses",
-			wantResult: []model.House{house},
-			prepare: func() {
-				AddHouse(house)
-			},
+			name:            "houses",
+			wantResult:      []model.HouseResponse{response},
+			serviceProvider: func() HouseService { return houseService },
 		},
 		{
-			name:       "empty",
-			wantResult: []model.House{},
-			prepare: func() {
-				deleteAll()
-			},
+			name:            "empty",
+			wantResult:      []model.HouseResponse{},
+			serviceProvider: serviceGenerator,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.prepare != nil {
-				tt.prepare()
-			}
+			actual := tt.serviceProvider().FindAllHouses()
 
-			allHouses := FindAllHouses()
-
-			if len(tt.wantResult) == 0 && len(allHouses) != 0 {
-				t.Errorf("FindAllHouses() should be empty")
-			} else if len(tt.wantResult) != 0 {
-				if !reflect.DeepEqual(allHouses, tt.wantResult) {
-					t.Errorf("FindAllHouses() = %v, want %v", allHouses, tt.wantResult)
-				}
-			}
+			assert.Equal(t, tt.wantResult, actual)
 		})
 	}
 }
 
 func TestFindById(t *testing.T) {
-	t.Cleanup(func() { deleteAll() })
-	house := generateHouse(uuid.New())
-	AddHouse(house)
+	houseService := serviceGenerator()
+
+	request := helper.GenerateCreateHouseRequest()
+	err, response := houseService.AddHouse(request)
+
+	assert.Nil(t, err)
 
 	notExistingId := uuid.New()
 
@@ -106,27 +93,27 @@ func TestFindById(t *testing.T) {
 		name      string
 		args      args
 		wantError error
-		wantModel model.House
+		wantModel model.HouseResponse
 	}{
 		{
 			name: "with existing",
 			args: args{
-				id: house.Id,
+				id: response.Id,
 			},
-			wantModel: house,
+			wantModel: response,
 			wantError: nil,
 		}, {
 			name: "with not existing",
 			args: args{
 				id: notExistingId,
 			},
-			wantModel: model.DEFAULT,
+			wantModel: model.HouseResponse{},
 			wantError: errors.New(fmt.Sprintf("House with id - %s not exists", notExistingId)),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err, house := FindById(tt.args.id)
+			err, house := houseService.FindById(tt.args.id)
 			assert.Equalf(t, tt.wantError, err, "FindById(%v)", tt.args.id)
 			assert.Equalf(t, tt.wantModel, house, "FindById(%v)", tt.args.id)
 		})

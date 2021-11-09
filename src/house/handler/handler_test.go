@@ -1,122 +1,88 @@
 package handler
 
 import (
-	"bytes"
 	"encoding/json"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"helper"
+	"helper/testhelper"
 	"house/model"
 	"house/service"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
-func generateCreateHouseRequest() model.CreateHouseRequest {
-	return model.CreateHouseRequest{
-		Name:        "Test House",
-		Country:     "Country",
-		City:        "City",
-		StreetLine1: "StreetLine1",
-		StreetLine2: "StreetLine2",
-	}
-}
+var countryService = testhelper.InitCountryService()
 
-func generateHouse(id uuid.UUID) model.House {
-	return model.House{
-		Id:          id,
-		Name:        "Test House",
-		Country:     "Country",
-		City:        "City",
-		StreetLine1: "StreetLine1",
-		StreetLine2: "StreetLine2",
-		Deleted:     false,
-	}
-}
+var houseService, handler = func() (service.HouseService, HouseHandler) {
+	houseService := service.NewHouseService(countryService)
+
+	return houseService, NewHouseHandler(houseService)
+}()
 
 func TestAddHouseHandlerWithNotValidRequest(t *testing.T) {
-	handler := AddHouseHandler()
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/house").
+		WithMethod("POST").
+		WithHandler(handler.AddHouseHandler())
 
-	request := httptest.NewRequest("POST", "https://test.com/api/v1/house", nil)
-	recorder := httptest.NewRecorder()
-
-	handler(recorder, request)
-
-	response := recorder.Result()
-
-	assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+	testRequest.VerifyWithStatus(t, http.StatusBadRequest)
 }
 
 func TestAddHouseHandler(t *testing.T) {
-	oldHousesMap := make(map[uuid.UUID]model.House)
+	createRequest := helper.GenerateCreateHouseRequest()
 
-	for _, house := range service.FindAllHouses() {
-		oldHousesMap[house.Id] = house
-	}
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/house").
+		WithMethod("POST").
+		WithBody(createRequest).
+		WithHandler(handler.AddHouseHandler())
 
-	house := generateCreateHouseRequest()
+	body := testRequest.VerifyWithStatus(t, http.StatusCreated)
 
-	houseJson, _ := json.Marshal(house)
+	responseBody := model.HouseResponse{}
 
-	buffer := bytes.Buffer{}
+	json.Unmarshal(body, &responseBody)
 
-	buffer.Write(houseJson)
+	expectedResponse := helper.GenerateHouseResponse(responseBody.Id, responseBody.Name)
 
-	handler := AddHouseHandler()
-
-	request := httptest.NewRequest("POST", "https://test.com/api/v1/house", &buffer)
-
-	responseByteArray := verifyWithResponse(t, request, handler, http.StatusCreated)
-
-	responseBody := model.CreateHouseResponse{}
-
-	json.Unmarshal(responseByteArray, &responseBody)
-
-	for _, house := range service.FindAllHouses() {
-		if _, found := oldHousesMap[house.Id]; !found {
-			assert.Equal(t, model.CreateHouseResponse{Id: house.Id}, responseBody)
-
-			return
-		}
-	}
+	assert.Equal(t, expectedResponse, responseBody)
 }
 
 func TestFindAllHousesHandler(t *testing.T) {
-	houses := service.FindAllHouses()
+	houses := houseService.FindAllHouses()
 
-	handler := FindAllHousesHandler()
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/house").
+		WithMethod("GET").
+		WithHandler(handler.FindAllHousesHandler())
 
-	request := httptest.NewRequest("GET", "https://test.com/api/v1/house", nil)
+	body := testRequest.VerifyWithStatus(t, http.StatusOK)
 
-	response := verifyWithResponse(t, request, handler, 200)
+	var responses []model.HouseResponse
+	json.Unmarshal(body, &responses)
 
-	var responseContent []model.House
-
-	json.Unmarshal(response, &responseContent)
-
-	assert.Equal(t, houses, responseContent)
+	assert.Equal(t, houses, responses)
 }
 
 func TestFindHouseByIdHandler(t *testing.T) {
-	house := generateHouse(uuid.New())
-	service.AddHouse(house)
+	houseRequest := helper.GenerateCreateHouseRequest()
+	err, houseResponse := houseService.AddHouse(houseRequest)
 
-	handlerFunc := FindHouseByIdHandler()
+	assert.Nil(t, err)
 
-	request := httptest.NewRequest("GET", "https://test.com/api/v1/house/{id}", nil)
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/house/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindHouseByIdHandler()).
+		WithVar("id", houseResponse.Id.String())
 
-	request = mux.SetURLVars(request, map[string]string{
-		"id": house.Id.String(),
-	})
+	body := testRequest.VerifyWithStatus(t, http.StatusOK)
 
-	response := verifyWithResponse(t, request, handlerFunc, 200)
+	var responses model.HouseResponse
+	json.Unmarshal(body, &responses)
 
-	var responseObject model.House
-
-	json.Unmarshal(response, &responseObject)
-
-	assert.Equal(t, house, responseObject)
+	assert.Equal(t, houseResponse, responses)
 }
 
 func TestFindHouseByIdHandlerWithError(t *testing.T) {
@@ -147,41 +113,13 @@ func TestFindHouseByIdHandlerWithError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handlerFunc := FindHouseByIdHandler()
+			testRequest := testhelper.NewTestRequest().
+				WithURL("https://test.com/api/v1/house/{id}").
+				WithMethod("GET").
+				WithHandler(handler.FindHouseByIdHandler()).
+				WithVar("id", tt.args.id)
 
-			request := httptest.NewRequest("GET", "https://test.com/api/v1/house/{id}", nil)
-
-			request = mux.SetURLVars(request, map[string]string{
-				"id": tt.args.id,
-			})
-
-			recorder := httptest.NewRecorder()
-
-			handlerFunc(recorder, request)
-
-			response := recorder.Result()
-
-			assert.Equal(t, tt.args.code, response.StatusCode, "Status code should be the same")
+			testRequest.VerifyWithStatus(t, tt.args.code)
 		})
 	}
-}
-
-func verifyWithResponse(t *testing.T, request *http.Request, handler http.HandlerFunc, expectedStatus int) []byte {
-	recorder := httptest.NewRecorder()
-
-	handler(recorder, request)
-
-	response := recorder.Result()
-
-	assert.Equal(t, expectedStatus, response.StatusCode)
-
-	return readBytes(response)
-}
-
-func readBytes(response *http.Response) []byte {
-	buffer := bytes.Buffer{}
-
-	buffer.ReadFrom(response.Body)
-
-	return buffer.Bytes()
 }

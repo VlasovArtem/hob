@@ -34,6 +34,22 @@ func GetRequestParameter(request *http.Request, name string) (string, error) {
 	return "", errors.New("parameter not found")
 }
 
+func HandleErrorResponse(writer http.ResponseWriter, statusCode int, message string) {
+	http.Error(writer, message, statusCode)
+	writer.Write([]byte(message))
+}
+
+func HandleErrorResponseWithError(writer http.ResponseWriter, statusCode int, err error) {
+	message := err.Error()
+
+	http.Error(writer, message, statusCode)
+	writer.Write([]byte(message))
+}
+
+func HandleBadRequestWithError(writer http.ResponseWriter, err error) {
+	HandleErrorResponseWithError(writer, http.StatusBadRequest, err)
+}
+
 func HandleError(err error, message string) bool {
 	if err != nil {
 		log.Println(fmt.Sprint(err, message))
