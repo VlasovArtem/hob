@@ -3,7 +3,7 @@ package handler
 import (
 	"country/service"
 	"encoding/json"
-	helper "helper/service"
+	"helper/rest"
 	"net/http"
 )
 
@@ -28,11 +28,11 @@ func (c *countryHandlerObject) FindAllCountries() http.HandlerFunc {
 
 func (c *countryHandlerObject) FindCountryByCode() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		if parameter, err := helper.GetRequestParameter(request, "code"); err != nil {
-			helper.HandleBadRequestWithError(writer, err)
+		if parameter, err := rest.GetRequestParameter(request, "code"); err != nil {
+			rest.HandleBadRequestWithError(writer, err)
 		} else {
 			if err, country := c.countryService.FindCountryByCode(parameter); err != nil {
-				helper.HandleErrorResponseWithError(writer, http.StatusNotFound, err)
+				rest.HandleErrorResponseWithError(writer, http.StatusNotFound, err)
 			} else {
 				json.NewEncoder(writer).Encode(country)
 			}

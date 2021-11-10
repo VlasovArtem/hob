@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	helperModel "helper/model"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -104,20 +105,7 @@ func (t *TestRequest) execute() {
 	t.Handler(t.Recorder, t.Request)
 }
 
-func (t *TestRequest) Verify(test *testing.T, expectedStatusCode int, expectedBody []byte) {
-	if !t.build {
-		t.Build()
-	}
-
-	t.execute()
-
-	response := t.Recorder.Result()
-
-	assert.Equal(test, expectedStatusCode, response.StatusCode, fmt.Sprintf("Response status code should be %d but was %d", expectedStatusCode, response.StatusCode))
-	assert.Equal(test, expectedBody, ReadBytes(response))
-}
-
-func (t *TestRequest) VerifyWithStatus(test *testing.T, expectedStatusCode int) []byte {
+func (t *TestRequest) Verify(test *testing.T, expectedStatusCode int) []byte {
 	if !t.build {
 		t.Build()
 	}
@@ -129,6 +117,16 @@ func (t *TestRequest) VerifyWithStatus(test *testing.T, expectedStatusCode int) 
 	assert.Equal(test, expectedStatusCode, response.StatusCode, fmt.Sprintf("Response status code should be %d but was %d", expectedStatusCode, response.StatusCode))
 
 	return ReadBytes(response)
+}
+
+func ReadErrorResponse(content []byte) (response helperModel.ErrorResponse) {
+	errorResponse := helperModel.ErrorResponse{}
+
+	if err := json.Unmarshal(content, &errorResponse); err != nil {
+		log.Fatal("Could not parse ErrorResponse")
+	}
+
+	return errorResponse
 }
 
 func ReadBytes(response *http.Response) []byte {

@@ -22,7 +22,7 @@ func TestFindAllCountries(t *testing.T) {
 		WithURL("https://test.com/api/v1/country").
 		WithMethod("GET")
 
-	body := testRequest.VerifyWithStatus(t, http.StatusOK)
+	body := testRequest.Verify(t, http.StatusOK)
 
 	var responses []model.Country
 	json.Unmarshal(body, &responses)
@@ -39,7 +39,7 @@ func TestFindCountryByCode(t *testing.T) {
 		WithURL("https://test.com/api/v1/country/{code}").
 		WithMethod("GET")
 
-	body := testRequest.VerifyWithStatus(t, http.StatusOK)
+	body := testRequest.Verify(t, http.StatusOK)
 
 	var response model.Country
 	json.Unmarshal(body, &response)

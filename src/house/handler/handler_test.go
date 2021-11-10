@@ -26,7 +26,7 @@ func TestAddHouseHandlerWithNotValidRequest(t *testing.T) {
 		WithMethod("POST").
 		WithHandler(handler.AddHouseHandler())
 
-	testRequest.VerifyWithStatus(t, http.StatusBadRequest)
+	testRequest.Verify(t, http.StatusBadRequest)
 }
 
 func TestAddHouseHandler(t *testing.T) {
@@ -38,7 +38,7 @@ func TestAddHouseHandler(t *testing.T) {
 		WithBody(createRequest).
 		WithHandler(handler.AddHouseHandler())
 
-	body := testRequest.VerifyWithStatus(t, http.StatusCreated)
+	body := testRequest.Verify(t, http.StatusCreated)
 
 	responseBody := model.HouseResponse{}
 
@@ -57,7 +57,7 @@ func TestFindAllHousesHandler(t *testing.T) {
 		WithMethod("GET").
 		WithHandler(handler.FindAllHousesHandler())
 
-	body := testRequest.VerifyWithStatus(t, http.StatusOK)
+	body := testRequest.Verify(t, http.StatusOK)
 
 	var responses []model.HouseResponse
 	json.Unmarshal(body, &responses)
@@ -77,7 +77,7 @@ func TestFindHouseByIdHandler(t *testing.T) {
 		WithHandler(handler.FindHouseByIdHandler()).
 		WithVar("id", houseResponse.Id.String())
 
-	body := testRequest.VerifyWithStatus(t, http.StatusOK)
+	body := testRequest.Verify(t, http.StatusOK)
 
 	var responses model.HouseResponse
 	json.Unmarshal(body, &responses)
@@ -119,7 +119,7 @@ func TestFindHouseByIdHandlerWithError(t *testing.T) {
 				WithHandler(handler.FindHouseByIdHandler()).
 				WithVar("id", tt.args.id)
 
-			testRequest.VerifyWithStatus(t, tt.args.code)
+			testRequest.Verify(t, tt.args.code)
 		})
 	}
 }

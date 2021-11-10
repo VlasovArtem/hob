@@ -4,7 +4,8 @@ import (
 	country "country/model"
 	"fmt"
 	"github.com/google/uuid"
-	"house/model"
+	housemodel "house/model"
+	usermodel "user/model"
 )
 
 var CountryObject = &country.Country{
@@ -24,8 +25,8 @@ var CountryObject = &country.Country{
 	Flag: "https://restcountries.eu/data/ukr.svg",
 }
 
-func GenerateCreateHouseRequest() model.CreateHouseRequest {
-	return model.CreateHouseRequest{
+func GenerateCreateHouseRequest() housemodel.CreateHouseRequest {
+	return housemodel.CreateHouseRequest{
 		Name:        fmt.Sprintf("Test House %s", uuid.New()),
 		Country:     "UA",
 		City:        "City",
@@ -34,13 +35,39 @@ func GenerateCreateHouseRequest() model.CreateHouseRequest {
 	}
 }
 
-func GenerateHouseResponse(id uuid.UUID, name string) model.HouseResponse {
-	return model.HouseResponse{
+func GenerateHouseResponse(id uuid.UUID, name string) housemodel.HouseResponse {
+	return housemodel.HouseResponse{
 		Id:          id,
 		Name:        name,
 		Country:     CountryObject.Name,
 		City:        "City",
 		StreetLine1: "StreetLine1",
 		StreetLine2: "StreetLine2",
+	}
+}
+
+func GetUserResponse(id uuid.UUID, email string) usermodel.UserResponse {
+	return usermodel.UserResponse{
+		Id:        id,
+		FirstName: "First name",
+		LastName:  "Last name",
+		Email:     email,
+	}
+}
+
+func GetUser(id uuid.UUID) usermodel.User {
+	user := GetCreateUserRequest().ToEntity()
+
+	user.Id = id
+
+	return user
+}
+
+func GetCreateUserRequest() usermodel.CreateUserRequest {
+	return usermodel.CreateUserRequest{
+		FirstName: "First name",
+		LastName:  "Last name",
+		Email:     fmt.Sprintf("mail%s@mail.com", uuid.New()),
+		Password:  []byte("password"),
 	}
 }
