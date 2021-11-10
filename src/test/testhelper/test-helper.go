@@ -2,13 +2,13 @@ package testhelper
 
 import (
 	"bytes"
+	helperModel "common/model"
 	"country/model"
 	countries "country/service"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
-	helperModel "helper/model"
 	"io/ioutil"
 	"log"
 	"net/http"

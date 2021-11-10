@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"helper"
-	"helper/testhelper"
 	"house/model"
 	"house/service"
 	"net/http"
+	"test"
+	"test/testhelper"
 	"testing"
 )
 
@@ -30,7 +30,7 @@ func TestAddHouseHandlerWithNotValidRequest(t *testing.T) {
 }
 
 func TestAddHouseHandler(t *testing.T) {
-	createRequest := helper.GenerateCreateHouseRequest()
+	createRequest := test.GenerateCreateHouseRequest()
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
@@ -44,7 +44,7 @@ func TestAddHouseHandler(t *testing.T) {
 
 	json.Unmarshal(body, &responseBody)
 
-	expectedResponse := helper.GenerateHouseResponse(responseBody.Id, responseBody.Name)
+	expectedResponse := test.GenerateHouseResponse(responseBody.Id, responseBody.Name)
 
 	assert.Equal(t, expectedResponse, responseBody)
 }
@@ -66,7 +66,7 @@ func TestFindAllHousesHandler(t *testing.T) {
 }
 
 func TestFindHouseByIdHandler(t *testing.T) {
-	houseRequest := helper.GenerateCreateHouseRequest()
+	houseRequest := test.GenerateCreateHouseRequest()
 	err, houseResponse := houseService.AddHouse(houseRequest)
 
 	assert.Nil(t, err)

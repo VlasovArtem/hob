@@ -1,14 +1,14 @@
 package handler
 
 import (
+	helperModel "common/model"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"helper"
-	helperModel "helper/model"
-	"helper/testhelper"
 	"net/http"
+	"test"
+	"test/testhelper"
 	"testing"
 	"user/model"
 	"user/service"
@@ -21,7 +21,7 @@ var userService, handler = func() (service.UserService, UserHandler) {
 }()
 
 func Test_AddUser(t *testing.T) {
-	request := helper.GetCreateUserRequest()
+	request := test.GetCreateUserRequest()
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
@@ -35,7 +35,7 @@ func Test_AddUser(t *testing.T) {
 
 	json.Unmarshal(content, &actualResponse)
 
-	assert.Equal(t, helper.GetUserResponse(actualResponse.Id, actualResponse.Email), actualResponse)
+	assert.Equal(t, test.GetUserResponse(actualResponse.Id, actualResponse.Email), actualResponse)
 }
 
 func Test_AddUserWithInvalidRequest(t *testing.T) {
@@ -48,7 +48,7 @@ func Test_AddUserWithInvalidRequest(t *testing.T) {
 }
 
 func Test_AddUserWithMissingDetails(t *testing.T) {
-	request := helper.GetCreateUserRequest()
+	request := test.GetCreateUserRequest()
 
 	request.Email = ""
 	request.Password = []byte{}
@@ -71,7 +71,7 @@ func Test_AddUserWithMissingDetails(t *testing.T) {
 }
 
 func Test_AddUserWithExistingEmail(t *testing.T) {
-	request := helper.GetCreateUserRequest()
+	request := test.GetCreateUserRequest()
 
 	request.Email = "newemail@mail.com"
 
@@ -93,7 +93,7 @@ func Test_AddUserWithExistingEmail(t *testing.T) {
 }
 
 func Test_FindById(t *testing.T) {
-	request := helper.GetCreateUserRequest()
+	request := test.GetCreateUserRequest()
 
 	user, err := userService.AddUser(request)
 

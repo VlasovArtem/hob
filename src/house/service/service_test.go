@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"helper"
-	"helper/testhelper"
 	"house/model"
+	"test"
+	"test/testhelper"
 	"testing"
 )
 
@@ -27,7 +27,7 @@ func TestAddHouse(t *testing.T) {
 	}{
 		{
 			name: "with new house",
-			args: args{house: helper.GenerateCreateHouseRequest()},
+			args: args{house: test.GenerateCreateHouseRequest()},
 		},
 	}
 	for _, tt := range tests {
@@ -38,7 +38,7 @@ func TestAddHouse(t *testing.T) {
 
 			err, house := houseService.FindById(response.Id)
 			assert.Nil(t, err)
-			assert.Equal(t, helper.GenerateHouseResponse(house.Id, house.Name), house, "Houses should be the same")
+			assert.Equal(t, test.GenerateHouseResponse(house.Id, house.Name), house, "Houses should be the same")
 		})
 	}
 }
@@ -46,7 +46,7 @@ func TestAddHouse(t *testing.T) {
 func TestFindAllHouses(t *testing.T) {
 	houseService := serviceGenerator()
 
-	request := helper.GenerateCreateHouseRequest()
+	request := test.GenerateCreateHouseRequest()
 	err, response := houseService.AddHouse(request)
 
 	assert.Nil(t, err)
@@ -79,7 +79,7 @@ func TestFindAllHouses(t *testing.T) {
 func TestFindById(t *testing.T) {
 	houseService := serviceGenerator()
 
-	request := helper.GenerateCreateHouseRequest()
+	request := test.GenerateCreateHouseRequest()
 	err, response := houseService.AddHouse(request)
 
 	assert.Nil(t, err)

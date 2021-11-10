@@ -4,9 +4,9 @@ import (
 	"country/model"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	testHelperService "helper"
-	"helper/testhelper"
 	"net/http"
+	testHelperService "test"
+	"test/testhelper"
 	"testing"
 )
 
