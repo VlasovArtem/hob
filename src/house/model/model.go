@@ -5,8 +5,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var DEFAULT = House{}
-
 type House struct {
 	Id          uuid.UUID
 	Name        string
