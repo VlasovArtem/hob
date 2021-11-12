@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	houseHandler "house/handler"
-	"house/service"
+	houses "house/service"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	userHandler "user/handler"
+	users "user/service"
 )
 
 type application struct {
@@ -22,8 +24,12 @@ type application struct {
 		countryHandler countryHandler.CountryHandler
 	}
 	house struct {
-		houseService service.HouseService
+		houseService houses.HouseService
 		houseHandler houseHandler.HouseHandler
+	}
+	user struct {
+		userService users.UserService
+		userHandler userHandler.UserHandler
 	}
 }
 
@@ -42,6 +48,7 @@ func initRouter(app *application) *mux.Router {
 
 	initCountryHandler(router, app)
 	initHouseHandler(router, app)
+	initUserHandler(router, app)
 
 	return router
 }
@@ -61,10 +68,17 @@ func initHouseHandler(router *mux.Router, handler *application) {
 	houseRouter.Path("/{id}").HandlerFunc(handler.house.houseHandler.FindHouseByIdHandler()).Methods("GET")
 }
 
+func initUserHandler(router *mux.Router, handler *application) {
+	houseRouter := router.PathPrefix("/api/v1/user").Subrouter()
+
+	houseRouter.Path("/").HandlerFunc(handler.user.userHandler.AddUser()).Methods("POST")
+	houseRouter.Path("/{id}").HandlerFunc(handler.user.userHandler.FindUserById()).Methods("GET")
+}
+
 func initApplication() *application {
 	countriesService := initCountriesService()
-
-	houseService := service.NewHouseService(countriesService)
+	houseService := houses.NewHouseService(countriesService)
+	userService := users.NewUserService()
 
 	return &application{
 		country: struct {
@@ -75,11 +89,18 @@ func initApplication() *application {
 			countryHandler: countryHandler.NewCountryHandler(countriesService),
 		},
 		house: struct {
-			houseService service.HouseService
+			houseService houses.HouseService
 			houseHandler houseHandler.HouseHandler
 		}{
 			houseService: houseService,
 			houseHandler: houseHandler.NewHouseHandler(houseService),
+		},
+		user: struct {
+			userService users.UserService
+			userHandler userHandler.UserHandler
+		}{
+			userService: userService,
+			userHandler: userHandler.NewUserHandler(userService),
 		},
 	}
 }
@@ -93,7 +114,9 @@ func initCountriesService() countries.CountryService {
 
 	var countriesContent []model.Country
 
-	json.Unmarshal(file, &countriesContent)
+	if err = json.Unmarshal(file, &countriesContent); err != nil {
+		log.Fatal(err)
+	}
 
 	if len(countriesContent) == 0 {
 		log.Fatal("countries content is empty")

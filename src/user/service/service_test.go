@@ -84,7 +84,7 @@ func Test_user_AddUser(t *testing.T) {
 				users: tt.fields.users,
 			}
 
-			newUser, err := u.AddUser(tt.args.request)
+			newUser, err := u.Add(tt.args.request)
 
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.response(newUser.Id), newUser)
@@ -144,6 +144,59 @@ func Test_user_FindById(t *testing.T) {
 			}
 			got, got1 := u.FindById(tt.args.id)
 			assert.Equalf(t, tt.err, got1, "FindById(%v)", tt.args.id)
+			assert.Equalf(t, tt.response, got, "FindById(%v)", tt.args.id)
+		})
+	}
+}
+
+func Test_user_ExistsById(t *testing.T) {
+	type fields struct {
+		users map[uuid.UUID]model.User
+	}
+	type args struct {
+		id uuid.UUID
+	}
+
+	f := fields{
+		users: make(map[uuid.UUID]model.User),
+	}
+
+	u := model.User{
+		Id:        uuid.New(),
+		FirstName: "First name",
+		LastName:  "Last name",
+		Email:     "mail@mail.com",
+	}
+
+	f.users[u.Id] = u
+
+	notExistingId := uuid.New()
+
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		response bool
+	}{
+		{
+			name:     "with existing user",
+			fields:   f,
+			args:     args{u.Id},
+			response: true,
+		},
+		{
+			name:     "with not existing user",
+			fields:   f,
+			args:     args{notExistingId},
+			response: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u := &userServiceObject{
+				users: tt.fields.users,
+			}
+			got := u.ExistsById(tt.args.id)
 			assert.Equalf(t, tt.response, got, "FindById(%v)", tt.args.id)
 		})
 	}

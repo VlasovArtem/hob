@@ -75,7 +75,7 @@ func Test_AddUserWithExistingEmail(t *testing.T) {
 
 	request.Email = "newemail@mail.com"
 
-	_, err := userService.AddUser(request)
+	_, err := userService.Add(request)
 
 	assert.Nil(t, err)
 
@@ -95,14 +95,14 @@ func Test_AddUserWithExistingEmail(t *testing.T) {
 func Test_FindById(t *testing.T) {
 	request := test.GetCreateUserRequest()
 
-	user, err := userService.AddUser(request)
+	user, err := userService.Add(request)
 
 	assert.Nil(t, err)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(handler.FindUserById()).
 		WithVar("id", user.Id.String())
 
 	content := testRequest.Verify(t, http.StatusOK)
@@ -120,7 +120,7 @@ func Test_FindByIdWithMissingParameter(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById())
+		WithHandler(handler.FindUserById())
 
 	content := testRequest.Verify(t, http.StatusBadRequest)
 
@@ -158,7 +158,7 @@ func Test_FindByIdInvalid(t *testing.T) {
 			testRequest := testhelper.NewTestRequest().
 				WithURL("https://test.com/api/v1/user/{id}").
 				WithMethod("GET").
-				WithHandler(handler.FindById()).
+				WithHandler(handler.FindUserById()).
 				WithVar("id", tt.args.id)
 
 			testRequest.Verify(t, tt.args.code)

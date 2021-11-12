@@ -7,6 +7,7 @@ import (
 	countries "country/service"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -135,4 +136,12 @@ func ReadBytes(response *http.Response) []byte {
 	buffer.ReadFrom(response.Body)
 
 	return buffer.Bytes()
+}
+
+func ParseUUID(id string) uuid.UUID {
+	parse, err := uuid.Parse(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return parse
 }

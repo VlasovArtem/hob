@@ -9,15 +9,16 @@ import (
 	"log"
 )
 
-type house struct {
+type houseServiceObject struct {
 	houses           map[uuid.UUID]model.House
 	countriesService countries.CountryService
 }
 
 type HouseService interface {
-	AddHouse(house model.CreateHouseRequest) (error, model.HouseResponse)
-	FindAllHouses() []model.HouseResponse
-	FindById(id uuid.UUID) (error, model.HouseResponse)
+	Add(house model.CreateHouseRequest) (model.HouseResponse, error)
+	FindAll() []model.HouseResponse
+	FindById(id uuid.UUID) (model.HouseResponse, error)
+	ExistsById(id uuid.UUID) bool
 }
 
 func NewHouseService(countriesService countries.CountryService) HouseService {
@@ -25,25 +26,25 @@ func NewHouseService(countriesService countries.CountryService) HouseService {
 		log.Fatal("Country service is required")
 	}
 
-	return &house{
+	return &houseServiceObject{
 		houses:           make(map[uuid.UUID]model.House),
 		countriesService: countriesService,
 	}
 }
 
-func (h *house) AddHouse(house model.CreateHouseRequest) (error, model.HouseResponse) {
+func (h *houseServiceObject) Add(house model.CreateHouseRequest) (model.HouseResponse, error) {
 	if err, country := h.countriesService.FindCountryByCode(house.Country); err != nil {
-		return err, model.HouseResponse{}
+		return model.HouseResponse{}, err
 	} else {
 		house := house.ToEntity(&country)
 		h.houses[house.Id] = house
 
-		return nil, house.ToResponse()
+		return house.ToResponse(), nil
 	}
 }
 
-func (h *house) FindAllHouses() []model.HouseResponse {
-	result := []model.HouseResponse{}
+func (h *houseServiceObject) FindAll() []model.HouseResponse {
+	result := make([]model.HouseResponse, 0)
 
 	for _, house := range h.houses {
 		result = append(result, house.ToResponse())
@@ -52,10 +53,16 @@ func (h *house) FindAllHouses() []model.HouseResponse {
 	return result
 }
 
-func (h *house) FindById(id uuid.UUID) (error, model.HouseResponse) {
+func (h *houseServiceObject) FindById(id uuid.UUID) (model.HouseResponse, error) {
 	if house, ok := h.houses[id]; ok {
-		return nil, house.ToResponse()
+		return house.ToResponse(), nil
 	}
 
-	return errors.New(fmt.Sprintf("House with id - %s not exists", id)), model.HouseResponse{}
+	return model.HouseResponse{}, errors.New(fmt.Sprintf("House with id - %s not exists", id))
+}
+
+func (h *houseServiceObject) ExistsById(id uuid.UUID) bool {
+	_, ok := h.houses[id]
+
+	return ok
 }

@@ -32,11 +32,11 @@ func TestAddHouse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err2, response := houseService.AddHouse(tt.args.house)
+			response, err2 := houseService.Add(tt.args.house)
 
 			assert.Nil(t, err2)
 
-			err, house := houseService.FindById(response.Id)
+			house, err := houseService.FindById(response.Id)
 			assert.Nil(t, err)
 			assert.Equal(t, test.GenerateHouseResponse(house.Id, house.Name), house, "Houses should be the same")
 		})
@@ -47,7 +47,7 @@ func TestFindAllHouses(t *testing.T) {
 	houseService := serviceGenerator()
 
 	request := test.GenerateCreateHouseRequest()
-	err, response := houseService.AddHouse(request)
+	response, err := houseService.Add(request)
 
 	assert.Nil(t, err)
 
@@ -69,7 +69,7 @@ func TestFindAllHouses(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.serviceProvider().FindAllHouses()
+			actual := tt.serviceProvider().FindAll()
 
 			assert.Equal(t, tt.wantResult, actual)
 		})
@@ -80,7 +80,7 @@ func TestFindById(t *testing.T) {
 	houseService := serviceGenerator()
 
 	request := test.GenerateCreateHouseRequest()
-	err, response := houseService.AddHouse(request)
+	response, err := houseService.Add(request)
 
 	assert.Nil(t, err)
 
@@ -113,9 +113,49 @@ func TestFindById(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err, house := houseService.FindById(tt.args.id)
+			house, err := houseService.FindById(tt.args.id)
 			assert.Equalf(t, tt.wantError, err, "FindById(%v)", tt.args.id)
 			assert.Equalf(t, tt.wantModel, house, "FindById(%v)", tt.args.id)
+		})
+	}
+}
+
+func Test_ExistsById(t *testing.T) {
+	houseService := serviceGenerator()
+
+	request := test.GenerateCreateHouseRequest()
+	response, err := houseService.Add(request)
+
+	assert.Nil(t, err)
+
+	notExistingId := uuid.New()
+
+	type args struct {
+		id uuid.UUID
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "with existing",
+			args: args{
+				id: response.Id,
+			},
+			want: true,
+		}, {
+			name: "with not existing",
+			args: args{
+				id: notExistingId,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exists := houseService.ExistsById(tt.args.id)
+			assert.Equalf(t, tt.want, exists, "FindById(%v)", tt.args.id)
 		})
 	}
 }

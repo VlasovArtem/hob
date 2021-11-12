@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +18,10 @@ func PerformRequest(target interface{}, w http.ResponseWriter, r *http.Request) 
 	service.HandleError(err, "")
 
 	err = json.Unmarshal(reqBody, &target)
+
+	if target == nil {
+		err = errors.New("request not parsed")
+	}
 
 	if service.HandleError(err, "") {
 		w.WriteHeader(400)
@@ -33,6 +38,31 @@ func GetRequestParameter(request *http.Request, name string) (string, error) {
 		return result, nil
 	}
 	return "", errors.New(fmt.Sprintf("parameter '%s' not found", name))
+}
+
+func GetIdRequestParameter(request *http.Request) (uuid.UUID, error) {
+	if parameter, err := GetRequestParameter(request, "id"); err != nil {
+		return [16]byte{}, err
+	} else {
+
+		id, err := uuid.Parse(parameter)
+
+		if err != nil {
+			return [16]byte{}, errors.New(fmt.Sprintf("the id is not valid %s", parameter))
+		}
+
+		return id, nil
+	}
+}
+
+func PerformResponse(writer http.ResponseWriter, response interface{}, err error) {
+	if err != nil {
+		HandleBadRequestWithError(writer, err)
+	} else {
+		if err = json.NewEncoder(writer).Encode(response); err != nil {
+			HandleErrorResponseWithError(writer, http.StatusInternalServerError, err)
+		}
+	}
 }
 
 func HandleErrorResponseWithError(writer http.ResponseWriter, statusCode int, err error) {

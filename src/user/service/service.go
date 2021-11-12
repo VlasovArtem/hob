@@ -18,13 +18,14 @@ func NewUserService() UserService {
 }
 
 type UserService interface {
-	AddUser(request model.CreateUserRequest) (model.UserResponse, error)
+	Add(request model.CreateUserRequest) (model.UserResponse, error)
 	FindById(id uuid.UUID) (model.UserResponse, error)
-	existsByEmail(email string) bool
+	ExistsById(id uuid.UUID) bool
+	ExistsByEmail(email string) bool
 }
 
-func (u *userServiceObject) AddUser(request model.CreateUserRequest) (model.UserResponse, error) {
-	if u.existsByEmail(request.Email) {
+func (u *userServiceObject) Add(request model.CreateUserRequest) (model.UserResponse, error) {
+	if u.ExistsByEmail(request.Email) {
 		return model.UserResponse{}, errors.New(fmt.Sprintf("user with '%s' already exists", request.Email))
 	}
 
@@ -42,7 +43,12 @@ func (u *userServiceObject) FindById(id uuid.UUID) (model.UserResponse, error) {
 	return model.UserResponse{}, errors.New(fmt.Sprintf("user with %s is not found", id))
 }
 
-func (u *userServiceObject) existsByEmail(email string) bool {
+func (u *userServiceObject) ExistsById(id uuid.UUID) bool {
+	_, ok := u.users[id]
+	return ok
+}
+
+func (u *userServiceObject) ExistsByEmail(email string) bool {
 	for _, user := range u.users {
 		if user.Email == email {
 			return true

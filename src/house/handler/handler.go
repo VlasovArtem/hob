@@ -31,7 +31,7 @@ func (h *houseHandlerObject) AddHouseHandler() http.HandlerFunc {
 		requestEntity := model.CreateHouseRequest{}
 
 		if err := rest.PerformRequest(&requestEntity, writer, request); err == nil {
-			if err, response := h.houseService.AddHouse(requestEntity); err != nil {
+			if response, err := h.houseService.Add(requestEntity); err != nil {
 				rest.HandleBadRequestWithError(writer, err)
 			} else {
 				writer.WriteHeader(http.StatusCreated)
@@ -46,7 +46,7 @@ func (h *houseHandlerObject) AddHouseHandler() http.HandlerFunc {
 
 func (h *houseHandlerObject) FindAllHousesHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		houses := h.houseService.FindAllHouses()
+		houses := h.houseService.FindAll()
 
 		err := json.NewEncoder(writer).Encode(houses)
 
@@ -68,7 +68,7 @@ func (h *houseHandlerObject) FindHouseByIdHandler() http.HandlerFunc {
 			return
 		}
 
-		if err, house := h.houseService.FindById(id); err != nil {
+		if house, err := h.houseService.FindById(id); err != nil {
 			rest.HandleErrorResponseWithError(writer, http.StatusNotFound, err)
 		} else {
 			content, err := json.Marshal(house)

@@ -50,7 +50,7 @@ func TestAddHouseHandler(t *testing.T) {
 }
 
 func TestFindAllHousesHandler(t *testing.T) {
-	houses := houseService.FindAllHouses()
+	houses := houseService.FindAll()
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
@@ -67,7 +67,7 @@ func TestFindAllHousesHandler(t *testing.T) {
 
 func TestFindHouseByIdHandler(t *testing.T) {
 	houseRequest := test.GenerateCreateHouseRequest()
-	err, houseResponse := houseService.AddHouse(houseRequest)
+	houseResponse, err := houseService.Add(houseRequest)
 
 	assert.Nil(t, err)
 
