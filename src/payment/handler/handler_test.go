@@ -161,7 +161,7 @@ func Test_FindPaymentByHouseId(t *testing.T) {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindPaymentByHouseId()).
 		WithVar("id", id.String())
@@ -186,7 +186,7 @@ func Test_FindPaymentByHouseId_WithEmptyResponse(t *testing.T) {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindPaymentByHouseId()).
 		WithVar("id", id.String())
@@ -204,7 +204,7 @@ func Test_FindPaymentByHouseId_WithInvalidParameter(t *testing.T) {
 	handler := handlerGenerator()
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindPaymentByHouseId()).
 		WithVar("id", "id")
@@ -225,7 +225,7 @@ func Test_FindPaymentByUserId(t *testing.T) {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindPaymentByUserId()).
 		WithVar("id", id.String())
@@ -250,7 +250,7 @@ func Test_FindPaymentByUserId_WithEmptyResponse(t *testing.T) {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindPaymentByUserId()).
 		WithVar("id", id.String())
@@ -268,7 +268,7 @@ func Test_FindPaymentByUserId_WithInvalidParameter(t *testing.T) {
 	handler := handlerGenerator()
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindPaymentByUserId()).
 		WithVar("id", "id")

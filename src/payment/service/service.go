@@ -32,13 +32,14 @@ type PaymentService interface {
 	FindPaymentById(id uuid.UUID) (model.PaymentResponse, error)
 	FindPaymentByHouseId(houseId uuid.UUID) []model.PaymentResponse
 	FindPaymentByUserId(userId uuid.UUID) []model.PaymentResponse
+	ExistsById(id uuid.UUID) bool
 }
 
 func (p *paymentServiceObject) AddPayment(request model.CreatePaymentRequest) (response model.PaymentResponse, err error) {
-	if userNotExists := !p.userService.ExistsById(request.UserId); userNotExists {
+	if !p.userService.ExistsById(request.UserId) {
 		return response, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId))
 	}
-	if houseNotExists := !p.houseService.ExistsById(request.HouseId); houseNotExists {
+	if !p.houseService.ExistsById(request.HouseId) {
 		return response, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId))
 	}
 
@@ -64,6 +65,12 @@ func (p *paymentServiceObject) FindPaymentByHouseId(houseId uuid.UUID) []model.P
 
 func (p *paymentServiceObject) FindPaymentByUserId(userId uuid.UUID) []model.PaymentResponse {
 	return convert(p.userPayments[userId])
+}
+
+func (p *paymentServiceObject) ExistsById(id uuid.UUID) bool {
+	_, ok := p.payments[id]
+
+	return ok
 }
 
 func convert(payments []model.Payment) []model.PaymentResponse {

@@ -12,6 +12,8 @@ import (
 	houses "house/service"
 	"io/ioutil"
 	"log"
+	meterHandler "meter/handler"
+	meters "meter/service"
 	"net/http"
 	"os"
 	paymentHandler "payment/handler"
@@ -37,6 +39,10 @@ type application struct {
 		paymentService payments.PaymentService
 		paymentHandler paymentHandler.PaymentHandler
 	}
+	meter struct {
+		meterService meters.MeterService
+		meterHandler meterHandler.MeterHandler
+	}
 }
 
 func main() {
@@ -56,6 +62,7 @@ func initRouter(app *application) *mux.Router {
 	initHouseHandler(router, app)
 	initUserHandler(router, app)
 	initPaymentHandler(router, app)
+	initMeterHandler(router, app)
 
 	return router
 }
@@ -91,11 +98,20 @@ func initPaymentHandler(router *mux.Router, handler *application) {
 	houseRouter.Path("/user/{id}").HandlerFunc(handler.payment.paymentHandler.FindPaymentByUserId()).Methods("GET")
 }
 
+func initMeterHandler(router *mux.Router, handler *application) {
+	houseRouter := router.PathPrefix("/api/v1/meter").Subrouter()
+
+	houseRouter.Path("/").HandlerFunc(handler.meter.meterHandler.AddMeter()).Methods("POST")
+	houseRouter.Path("/{id}").HandlerFunc(handler.meter.meterHandler.FindById()).Methods("GET")
+	houseRouter.Path("/payment/{id}").HandlerFunc(handler.meter.meterHandler.FindByPaymentId()).Methods("GET")
+}
+
 func initApplication() *application {
 	countriesService := initCountriesService()
 	houseService := houses.NewHouseService(countriesService)
 	userService := users.NewUserService()
 	paymentService := payments.NewPaymentService(userService, houseService)
+	meterService := meters.NewMeterService(paymentService)
 
 	return &application{
 		country: struct {
@@ -125,6 +141,13 @@ func initApplication() *application {
 		}{
 			paymentService: paymentService,
 			paymentHandler: paymentHandler.NewPaymentHandler(paymentService),
+		},
+		meter: struct {
+			meterService meters.MeterService
+			meterHandler meterHandler.MeterHandler
+		}{
+			meterService: meterService,
+			meterHandler: meterHandler.NewMeterHandler(meterService),
 		},
 	}
 }

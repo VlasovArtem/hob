@@ -65,6 +65,18 @@ func PerformResponse(writer http.ResponseWriter, response interface{}, err error
 	}
 }
 
+func PerformResponseWithCode(writer http.ResponseWriter, response interface{}, statusCode int, err error) {
+	if err != nil {
+		HandleBadRequestWithError(writer, err)
+	} else {
+		writer.WriteHeader(statusCode)
+
+		if err = json.NewEncoder(writer).Encode(response); err != nil {
+			HandleErrorResponseWithError(writer, http.StatusInternalServerError, err)
+		}
+	}
+}
+
 func HandleErrorResponseWithError(writer http.ResponseWriter, statusCode int, err error) {
 	message := err.Error()
 

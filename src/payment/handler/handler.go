@@ -59,7 +59,7 @@ func (p *paymentHandlerObject) FindPaymentByHouseId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			json.NewEncoder(writer).Encode(p.paymentService.FindPaymentByHouseId(id))
+			rest.PerformResponse(writer, p.paymentService.FindPaymentByHouseId(id), nil)
 		}
 	}
 }
@@ -69,7 +69,7 @@ func (p *paymentHandlerObject) FindPaymentByUserId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			json.NewEncoder(writer).Encode(p.paymentService.FindPaymentByUserId(id))
+			rest.PerformResponse(writer, p.paymentService.FindPaymentByUserId(id), nil)
 		}
 	}
 }

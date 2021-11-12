@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	hm "house/model"
+	m "meter/model"
 	pm "payment/model"
 	um "user/model"
 )
@@ -90,4 +91,32 @@ func (p *PaymentServiceMock) FindPaymentByUserId(userId uuid.UUID) []pm.PaymentR
 	args := p.Called(userId)
 
 	return args.Get(0).([]pm.PaymentResponse)
+}
+
+func (p *PaymentServiceMock) ExistsById(id uuid.UUID) bool {
+	args := p.Called(id)
+
+	return args.Bool(0)
+}
+
+type MeterServiceMock struct {
+	mock.Mock
+}
+
+func (ms *MeterServiceMock) AddMeter(request m.CreateMeterRequest) (m.MeterResponse, error) {
+	args := ms.Called(request)
+
+	return args.Get(0).(m.MeterResponse), args.Error(1)
+}
+
+func (ms *MeterServiceMock) FindById(id uuid.UUID) (m.MeterResponse, error) {
+	args := ms.Called(id)
+
+	return args.Get(0).(m.MeterResponse), args.Error(1)
+}
+
+func (ms *MeterServiceMock) FindByPaymentId(id uuid.UUID) (m.MeterResponse, error) {
+	args := ms.Called(id)
+
+	return args.Get(0).(m.MeterResponse), args.Error(1)
 }

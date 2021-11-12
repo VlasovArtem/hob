@@ -150,6 +150,24 @@ func Test_FindPaymentByUserId_WithNotExistingRecords(t *testing.T) {
 	assert.Equal(t, []model.PaymentResponse{}, payments)
 }
 
+func Test_ExistsById(t *testing.T) {
+	paymentService := serviceGenerator()
+
+	id := uuid.New()
+
+	paymentService.(*paymentServiceObject).payments[id] = model.Payment{}
+
+	assert.True(t, paymentService.ExistsById(id))
+}
+
+func Test_ExistsById_WithNotExists(t *testing.T) {
+	paymentService := serviceGenerator()
+
+	id := uuid.New()
+
+	assert.False(t, paymentService.ExistsById(id))
+}
+
 func generateCreatePaymentRequest() model.CreatePaymentRequest {
 	return model.CreatePaymentRequest{
 		Name:        "Test Payment",
