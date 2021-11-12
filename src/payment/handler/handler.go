@@ -19,13 +19,13 @@ func NewPaymentHandler(paymentService ps.PaymentService) PaymentHandler {
 }
 
 type PaymentHandler interface {
-	AddPayment() http.HandlerFunc
-	FindPaymentById() http.HandlerFunc
-	FindPaymentByHouseId() http.HandlerFunc
-	FindPaymentByUserId() http.HandlerFunc
+	Add() http.HandlerFunc
+	FindById() http.HandlerFunc
+	FindByHouseId() http.HandlerFunc
+	FindByUserId() http.HandlerFunc
 }
 
-func (p *paymentHandlerObject) AddPayment() http.HandlerFunc {
+func (p *paymentHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		paymentRequest := model.CreatePaymentRequest{}
 
@@ -42,7 +42,7 @@ func (p *paymentHandlerObject) AddPayment() http.HandlerFunc {
 	}
 }
 
-func (p *paymentHandlerObject) FindPaymentById() http.HandlerFunc {
+func (p *paymentHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -54,7 +54,7 @@ func (p *paymentHandlerObject) FindPaymentById() http.HandlerFunc {
 	}
 }
 
-func (p *paymentHandlerObject) FindPaymentByHouseId() http.HandlerFunc {
+func (p *paymentHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -64,7 +64,7 @@ func (p *paymentHandlerObject) FindPaymentByHouseId() http.HandlerFunc {
 	}
 }
 
-func (p *paymentHandlerObject) FindPaymentByUserId() http.HandlerFunc {
+func (p *paymentHandlerObject) FindByUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)

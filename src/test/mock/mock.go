@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	hm "house/model"
+	i "income/model"
 	m "meter/model"
 	pm "payment/model"
 	um "user/model"
@@ -119,4 +120,26 @@ func (ms *MeterServiceMock) FindByPaymentId(id uuid.UUID) (m.MeterResponse, erro
 	args := ms.Called(id)
 
 	return args.Get(0).(m.MeterResponse), args.Error(1)
+}
+
+type IncomeServiceMock struct {
+	mock.Mock
+}
+
+func (is *IncomeServiceMock) AddIncome(request i.CreateIncomeRequest) (i.IncomeResponse, error) {
+	args := is.Called(request)
+
+	return args.Get(0).(i.IncomeResponse), args.Error(1)
+}
+
+func (is *IncomeServiceMock) FindById(id uuid.UUID) (i.IncomeResponse, error) {
+	args := is.Called(id)
+
+	return args.Get(0).(i.IncomeResponse), args.Error(1)
+}
+
+func (is *IncomeServiceMock) FindByHouseId(id uuid.UUID) (i.IncomeResponse, error) {
+	args := is.Called(id)
+
+	return args.Get(0).(i.IncomeResponse), args.Error(1)
 }

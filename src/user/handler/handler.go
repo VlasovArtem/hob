@@ -19,11 +19,11 @@ func NewUserHandler(userService service.UserService) UserHandler {
 }
 
 type UserHandler interface {
-	AddUser() http.HandlerFunc
-	FindUserById() http.HandlerFunc
+	Add() http.HandlerFunc
+	FindById() http.HandlerFunc
 }
 
-func (u *userHandlerObject) AddUser() http.HandlerFunc {
+func (u *userHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := model.CreateUserRequest{}
 
@@ -46,7 +46,7 @@ func (u *userHandlerObject) AddUser() http.HandlerFunc {
 	}
 }
 
-func (u *userHandlerObject) FindUserById() http.HandlerFunc {
+func (u *userHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if parameter, err := rest.GetRequestParameter(request, "id"); err != nil {
 			rest.HandleBadRequestWithError(writer, err)

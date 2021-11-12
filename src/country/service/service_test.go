@@ -72,15 +72,15 @@ func TestFindCountryByCode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := countriesService.FindCountryByCode(tt.args.code)
 			if !reflect.DeepEqual(got, tt.err) {
-				t.Errorf("FindCountryByCode() got = %v, want %v", got, tt.err)
+				t.Errorf("FindByCode() got = %v, want %v", got, tt.err)
 			}
 			if !reflect.DeepEqual(got1, tt.country) {
-				t.Errorf("FindCountryByCode() got1 = %v, want %v", got1, tt.country)
+				t.Errorf("FindByCode() got1 = %v, want %v", got1, tt.country)
 			}
 		})
 	}
 }
 
 func TestFindAllCountries(t *testing.T) {
-	assert.Equal(t, 249, len(countriesService.FindAllCountries()), "FindAllCountries() should have 249 countries")
+	assert.Equal(t, 249, len(countriesService.FindAllCountries()), "FindAll() should have 249 countries")
 }

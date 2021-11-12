@@ -16,17 +16,17 @@ func NewCountryHandler(countryService service.CountryService) CountryHandler {
 }
 
 type CountryHandler interface {
-	FindAllCountries() http.HandlerFunc
-	FindCountryByCode() http.HandlerFunc
+	FindAll() http.HandlerFunc
+	FindByCode() http.HandlerFunc
 }
 
-func (c *countryHandlerObject) FindAllCountries() http.HandlerFunc {
+func (c *countryHandlerObject) FindAll() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		json.NewEncoder(writer).Encode(c.countryService.FindAllCountries())
 	}
 }
 
-func (c *countryHandlerObject) FindCountryByCode() http.HandlerFunc {
+func (c *countryHandlerObject) FindByCode() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if parameter, err := rest.GetRequestParameter(request, "code"); err != nil {
 			rest.HandleBadRequestWithError(writer, err)

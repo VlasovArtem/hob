@@ -24,7 +24,7 @@ func TestAddHouseHandlerWithNotValidRequest(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
 		WithMethod("POST").
-		WithHandler(handler.AddHouseHandler())
+		WithHandler(handler.Add())
 
 	testRequest.Verify(t, http.StatusBadRequest)
 }
@@ -36,7 +36,7 @@ func TestAddHouseHandler(t *testing.T) {
 		WithURL("https://test.com/api/v1/house").
 		WithMethod("POST").
 		WithBody(createRequest).
-		WithHandler(handler.AddHouseHandler())
+		WithHandler(handler.Add())
 
 	body := testRequest.Verify(t, http.StatusCreated)
 
@@ -55,7 +55,7 @@ func TestFindAllHousesHandler(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
 		WithMethod("GET").
-		WithHandler(handler.FindAllHousesHandler())
+		WithHandler(handler.FindAll())
 
 	body := testRequest.Verify(t, http.StatusOK)
 
@@ -74,7 +74,7 @@ func TestFindHouseByIdHandler(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindHouseByIdHandler()).
+		WithHandler(handler.FindById()).
 		WithVar("id", houseResponse.Id.String())
 
 	body := testRequest.Verify(t, http.StatusOK)
@@ -116,7 +116,7 @@ func TestFindHouseByIdHandlerWithError(t *testing.T) {
 			testRequest := testhelper.NewTestRequest().
 				WithURL("https://test.com/api/v1/house/{id}").
 				WithMethod("GET").
-				WithHandler(handler.FindHouseByIdHandler()).
+				WithHandler(handler.FindById()).
 				WithVar("id", tt.args.id)
 
 			testRequest.Verify(t, tt.args.code)

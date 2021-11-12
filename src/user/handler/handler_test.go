@@ -26,7 +26,7 @@ func Test_AddUser(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
-		WithHandler(handler.AddUser()).
+		WithHandler(handler.Add()).
 		WithBody(request)
 
 	content := testRequest.Verify(t, http.StatusCreated)
@@ -42,7 +42,7 @@ func Test_AddUserWithInvalidRequest(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
-		WithHandler(handler.AddUser())
+		WithHandler(handler.Add())
 
 	testRequest.Verify(t, http.StatusBadRequest)
 }
@@ -56,7 +56,7 @@ func Test_AddUserWithMissingDetails(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
-		WithHandler(handler.AddUser()).
+		WithHandler(handler.Add()).
 		WithBody(request)
 
 	response := testRequest.Verify(t, http.StatusBadRequest)
@@ -82,7 +82,7 @@ func Test_AddUserWithExistingEmail(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
-		WithHandler(handler.AddUser()).
+		WithHandler(handler.Add()).
 		WithBody(request)
 
 	response := testRequest.Verify(t, http.StatusBadRequest)
@@ -102,7 +102,7 @@ func Test_FindById(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindUserById()).
+		WithHandler(handler.FindById()).
 		WithVar("id", user.Id.String())
 
 	content := testRequest.Verify(t, http.StatusOK)
@@ -120,7 +120,7 @@ func Test_FindByIdWithMissingParameter(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindUserById())
+		WithHandler(handler.FindById())
 
 	content := testRequest.Verify(t, http.StatusBadRequest)
 
@@ -158,7 +158,7 @@ func Test_FindByIdInvalid(t *testing.T) {
 			testRequest := testhelper.NewTestRequest().
 				WithURL("https://test.com/api/v1/user/{id}").
 				WithMethod("GET").
-				WithHandler(handler.FindUserById()).
+				WithHandler(handler.FindById()).
 				WithVar("id", tt.args.id)
 
 			testRequest.Verify(t, tt.args.code)

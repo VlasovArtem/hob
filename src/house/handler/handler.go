@@ -21,12 +21,12 @@ func NewHouseHandler(houseService service.HouseService) HouseHandler {
 }
 
 type HouseHandler interface {
-	AddHouseHandler() http.HandlerFunc
-	FindAllHousesHandler() http.HandlerFunc
-	FindHouseByIdHandler() http.HandlerFunc
+	Add() http.HandlerFunc
+	FindAll() http.HandlerFunc
+	FindById() http.HandlerFunc
 }
 
-func (h *houseHandlerObject) AddHouseHandler() http.HandlerFunc {
+func (h *houseHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := model.CreateHouseRequest{}
 
@@ -44,7 +44,7 @@ func (h *houseHandlerObject) AddHouseHandler() http.HandlerFunc {
 	}
 }
 
-func (h *houseHandlerObject) FindAllHousesHandler() http.HandlerFunc {
+func (h *houseHandlerObject) FindAll() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		houses := h.houseService.FindAll()
 
@@ -56,7 +56,7 @@ func (h *houseHandlerObject) FindAllHousesHandler() http.HandlerFunc {
 	}
 }
 
-func (h *houseHandlerObject) FindHouseByIdHandler() http.HandlerFunc {
+func (h *houseHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		parameter, _ := rest.GetRequestParameter(request, "id")
 

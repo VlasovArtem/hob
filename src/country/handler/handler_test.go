@@ -18,7 +18,7 @@ func TestFindAllCountries(t *testing.T) {
 	countries := countryService.FindAllCountries()
 
 	testRequest := testhelper.NewTestRequest().
-		WithHandler(handler.FindAllCountries()).
+		WithHandler(handler.FindAll()).
 		WithURL("https://test.com/api/v1/country").
 		WithMethod("GET")
 
@@ -34,7 +34,7 @@ func TestFindCountryByCode(t *testing.T) {
 	expectedCountry := testHelperService.CountryObject
 
 	testRequest := testhelper.NewTestRequest().
-		WithHandler(handler.FindCountryByCode()).
+		WithHandler(handler.FindByCode()).
 		WithVar("code", "UA").
 		WithURL("https://test.com/api/v1/country/{code}").
 		WithMethod("GET")

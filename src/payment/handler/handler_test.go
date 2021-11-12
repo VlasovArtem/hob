@@ -32,12 +32,12 @@ func Test_AddPayment(t *testing.T) {
 
 	request := generateCreatePaymentRequest()
 
-	payments.On("AddPayment", request).Return(request.ToEntity().ToResponse(), nil)
+	payments.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").
 		WithMethod("POST").
-		WithHandler(handler.AddPayment()).
+		WithHandler(handler.Add()).
 		WithBody(request)
 
 	responseByteArray := testRequest.Verify(t, http.StatusCreated)
@@ -65,7 +65,7 @@ func Test_AddPayment_WithInvalidRequest(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").
 		WithMethod("POST").
-		WithHandler(handler.AddPayment())
+		WithHandler(handler.Add())
 
 	testRequest.Verify(t, http.StatusBadRequest)
 }
@@ -77,12 +77,12 @@ func Test_AddPayment_WithErrorFromService(t *testing.T) {
 
 	expected := errors.New("error")
 
-	payments.On("AddPayment", request).Return(model.PaymentResponse{}, expected)
+	payments.On("Add", request).Return(model.PaymentResponse{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").
 		WithMethod("POST").
-		WithHandler(handler.AddPayment()).
+		WithHandler(handler.Add()).
 		WithBody(request)
 
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
@@ -97,13 +97,13 @@ func Test_FindPaymentById(t *testing.T) {
 
 	paymentResponse := generatePaymentResponse(id)
 
-	payments.On("FindPaymentById", id).
+	payments.On("FindById", id).
 		Return(paymentResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentById()).
+		WithHandler(handler.FindById()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
@@ -122,13 +122,13 @@ func Test_FindPaymentById_WithError(t *testing.T) {
 
 	expected := errors.New("error")
 
-	payments.On("FindPaymentById", id).
+	payments.On("FindById", id).
 		Return(model.PaymentResponse{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentById()).
+		WithHandler(handler.FindById()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
@@ -142,7 +142,7 @@ func Test_FindPaymentById_WithInvalidParameter(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentById()).
+		WithHandler(handler.FindById()).
 		WithVar("id", "id")
 
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
@@ -157,13 +157,13 @@ func Test_FindPaymentByHouseId(t *testing.T) {
 
 	paymentResponses := []model.PaymentResponse{generatePaymentResponse(id)}
 
-	payments.On("FindPaymentByHouseId", id).
+	payments.On("FindByHouseId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentByHouseId()).
+		WithHandler(handler.FindByHouseId()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
@@ -182,13 +182,13 @@ func Test_FindPaymentByHouseId_WithEmptyResponse(t *testing.T) {
 
 	paymentResponses := []model.PaymentResponse{}
 
-	payments.On("FindPaymentByHouseId", id).
+	payments.On("FindByHouseId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentByHouseId()).
+		WithHandler(handler.FindByHouseId()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
@@ -206,7 +206,7 @@ func Test_FindPaymentByHouseId_WithInvalidParameter(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentByHouseId()).
+		WithHandler(handler.FindByHouseId()).
 		WithVar("id", "id")
 
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
@@ -221,13 +221,13 @@ func Test_FindPaymentByUserId(t *testing.T) {
 
 	paymentResponses := []model.PaymentResponse{generatePaymentResponse(id)}
 
-	payments.On("FindPaymentByUserId", id).
+	payments.On("FindByUserId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentByUserId()).
+		WithHandler(handler.FindByUserId()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
@@ -246,13 +246,13 @@ func Test_FindPaymentByUserId_WithEmptyResponse(t *testing.T) {
 
 	paymentResponses := []model.PaymentResponse{}
 
-	payments.On("FindPaymentByUserId", id).
+	payments.On("FindByUserId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentByUserId()).
+		WithHandler(handler.FindByUserId()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
@@ -270,7 +270,7 @@ func Test_FindPaymentByUserId_WithInvalidParameter(t *testing.T) {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindPaymentByUserId()).
+		WithHandler(handler.FindByUserId()).
 		WithVar("id", "id")
 
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)

@@ -2,57 +2,57 @@ package handler
 
 import (
 	"common/rest"
-	"meter/model"
-	"meter/service"
+	"income/model"
+	"income/service"
 	"net/http"
 )
 
-type meterHandlerObject struct {
-	meterService service.MeterService
+type incomeHandlerObject struct {
+	incomeService service.IncomeService
 }
 
-func NewMeterHandler(meterService service.MeterService) MeterHandler {
-	return &meterHandlerObject{meterService}
+func NewIncomeHandler(incomeService service.IncomeService) IncomeHandler {
+	return &incomeHandlerObject{incomeService}
 }
 
-type MeterHandler interface {
+type IncomeHandler interface {
 	Add() http.HandlerFunc
 	FindById() http.HandlerFunc
-	FindByPaymentId() http.HandlerFunc
+	FindByHouseId() http.HandlerFunc
 }
 
-func (m *meterHandlerObject) Add() http.HandlerFunc {
+func (i *incomeHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		var requestBody model.CreateMeterRequest
+		var requestBody model.CreateIncomeRequest
 
 		if err := rest.PerformRequest(&requestBody, writer, request); err != nil {
 			return
 		}
 
-		meter, err := m.meterService.AddMeter(requestBody)
+		meter, err := i.incomeService.AddIncome(requestBody)
 
 		rest.PerformResponseWithCode(writer, meter, http.StatusCreated, err)
 	}
 }
 
-func (m *meterHandlerObject) FindById() http.HandlerFunc {
+func (i *incomeHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			meterResponse, err := m.meterService.FindById(id)
+			meterResponse, err := i.incomeService.FindById(id)
 
 			rest.PerformResponse(writer, meterResponse, err)
 		}
 	}
 }
 
-func (m *meterHandlerObject) FindByPaymentId() http.HandlerFunc {
+func (i *incomeHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			if meterResponse, err := m.meterService.FindByPaymentId(id); err == nil {
+			if meterResponse, err := i.incomeService.FindByHouseId(id); err == nil {
 				rest.PerformResponse(writer, meterResponse, err)
 			}
 		}

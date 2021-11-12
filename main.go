@@ -10,6 +10,8 @@ import (
 	"github.com/gorilla/mux"
 	houseHandler "house/handler"
 	houses "house/service"
+	incomeHandler "income/handler"
+	incomes "income/service"
 	"io/ioutil"
 	"log"
 	meterHandler "meter/handler"
@@ -43,6 +45,10 @@ type application struct {
 		meterService meters.MeterService
 		meterHandler meterHandler.MeterHandler
 	}
+	income struct {
+		incomeService incomes.IncomeService
+		incomeHandler incomeHandler.IncomeHandler
+	}
 }
 
 func main() {
@@ -63,6 +69,7 @@ func initRouter(app *application) *mux.Router {
 	initUserHandler(router, app)
 	initPaymentHandler(router, app)
 	initMeterHandler(router, app)
+	initIncomeHandler(router, app)
 
 	return router
 }
@@ -70,40 +77,48 @@ func initRouter(app *application) *mux.Router {
 func initCountryHandler(router *mux.Router, handler *application) {
 	countryRouter := router.PathPrefix("/api/v1/country").Subrouter()
 
-	countryRouter.Path("/").HandlerFunc(handler.country.countryHandler.FindAllCountries()).Methods("GET")
-	countryRouter.Path("/{code}").HandlerFunc(handler.country.countryHandler.FindAllCountries()).Methods("GET")
+	countryRouter.Path("/").HandlerFunc(handler.country.countryHandler.FindAll()).Methods("GET")
+	countryRouter.Path("/{code}").HandlerFunc(handler.country.countryHandler.FindByCode()).Methods("GET")
 }
 
 func initHouseHandler(router *mux.Router, handler *application) {
 	houseRouter := router.PathPrefix("/api/v1/house").Subrouter()
 
-	houseRouter.Path("/").HandlerFunc(handler.house.houseHandler.AddHouseHandler()).Methods("POST")
-	houseRouter.Path("/").HandlerFunc(handler.house.houseHandler.FindAllHousesHandler()).Methods("GET")
-	houseRouter.Path("/{id}").HandlerFunc(handler.house.houseHandler.FindHouseByIdHandler()).Methods("GET")
+	houseRouter.Path("/").HandlerFunc(handler.house.houseHandler.Add()).Methods("POST")
+	houseRouter.Path("/").HandlerFunc(handler.house.houseHandler.FindAll()).Methods("GET")
+	houseRouter.Path("/{id}").HandlerFunc(handler.house.houseHandler.FindById()).Methods("GET")
 }
 
 func initUserHandler(router *mux.Router, handler *application) {
 	houseRouter := router.PathPrefix("/api/v1/user").Subrouter()
 
-	houseRouter.Path("/").HandlerFunc(handler.user.userHandler.AddUser()).Methods("POST")
-	houseRouter.Path("/{id}").HandlerFunc(handler.user.userHandler.FindUserById()).Methods("GET")
+	houseRouter.Path("/").HandlerFunc(handler.user.userHandler.Add()).Methods("POST")
+	houseRouter.Path("/{id}").HandlerFunc(handler.user.userHandler.FindById()).Methods("GET")
 }
 
 func initPaymentHandler(router *mux.Router, handler *application) {
 	houseRouter := router.PathPrefix("/api/v1/payment").Subrouter()
 
-	houseRouter.Path("/").HandlerFunc(handler.payment.paymentHandler.AddPayment()).Methods("POST")
-	houseRouter.Path("/{id}").HandlerFunc(handler.payment.paymentHandler.FindPaymentById()).Methods("GET")
-	houseRouter.Path("/house/{id}").HandlerFunc(handler.payment.paymentHandler.FindPaymentByHouseId()).Methods("GET")
-	houseRouter.Path("/user/{id}").HandlerFunc(handler.payment.paymentHandler.FindPaymentByUserId()).Methods("GET")
+	houseRouter.Path("/").HandlerFunc(handler.payment.paymentHandler.Add()).Methods("POST")
+	houseRouter.Path("/{id}").HandlerFunc(handler.payment.paymentHandler.FindById()).Methods("GET")
+	houseRouter.Path("/house/{id}").HandlerFunc(handler.payment.paymentHandler.FindByHouseId()).Methods("GET")
+	houseRouter.Path("/user/{id}").HandlerFunc(handler.payment.paymentHandler.FindByUserId()).Methods("GET")
 }
 
 func initMeterHandler(router *mux.Router, handler *application) {
 	houseRouter := router.PathPrefix("/api/v1/meter").Subrouter()
 
-	houseRouter.Path("/").HandlerFunc(handler.meter.meterHandler.AddMeter()).Methods("POST")
+	houseRouter.Path("/").HandlerFunc(handler.meter.meterHandler.Add()).Methods("POST")
 	houseRouter.Path("/{id}").HandlerFunc(handler.meter.meterHandler.FindById()).Methods("GET")
 	houseRouter.Path("/payment/{id}").HandlerFunc(handler.meter.meterHandler.FindByPaymentId()).Methods("GET")
+}
+
+func initIncomeHandler(router *mux.Router, handler *application) {
+	houseRouter := router.PathPrefix("/api/v1/income").Subrouter()
+
+	houseRouter.Path("/").HandlerFunc(handler.income.incomeHandler.Add()).Methods("POST")
+	houseRouter.Path("/{id}").HandlerFunc(handler.income.incomeHandler.FindById()).Methods("GET")
+	houseRouter.Path("/house/{id}").HandlerFunc(handler.income.incomeHandler.FindByHouseId()).Methods("GET")
 }
 
 func initApplication() *application {
@@ -112,6 +127,7 @@ func initApplication() *application {
 	userService := users.NewUserService()
 	paymentService := payments.NewPaymentService(userService, houseService)
 	meterService := meters.NewMeterService(paymentService)
+	incomeService := incomes.NewIncomeService(houseService)
 
 	return &application{
 		country: struct {
@@ -148,6 +164,13 @@ func initApplication() *application {
 		}{
 			meterService: meterService,
 			meterHandler: meterHandler.NewMeterHandler(meterService),
+		},
+		income: struct {
+			incomeService incomes.IncomeService
+			incomeHandler incomeHandler.IncomeHandler
+		}{
+			incomeService: incomeService,
+			incomeHandler: incomeHandler.NewIncomeHandler(incomeService),
 		},
 	}
 }
