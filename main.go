@@ -14,6 +14,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	paymentHandler "payment/handler"
+	payments "payment/service"
 	userHandler "user/handler"
 	users "user/service"
 )
@@ -30,6 +32,10 @@ type application struct {
 	user struct {
 		userService users.UserService
 		userHandler userHandler.UserHandler
+	}
+	payment struct {
+		paymentService payments.PaymentService
+		paymentHandler paymentHandler.PaymentHandler
 	}
 }
 
@@ -49,6 +55,7 @@ func initRouter(app *application) *mux.Router {
 	initCountryHandler(router, app)
 	initHouseHandler(router, app)
 	initUserHandler(router, app)
+	initPaymentHandler(router, app)
 
 	return router
 }
@@ -75,10 +82,20 @@ func initUserHandler(router *mux.Router, handler *application) {
 	houseRouter.Path("/{id}").HandlerFunc(handler.user.userHandler.FindUserById()).Methods("GET")
 }
 
+func initPaymentHandler(router *mux.Router, handler *application) {
+	houseRouter := router.PathPrefix("/api/v1/payment").Subrouter()
+
+	houseRouter.Path("/").HandlerFunc(handler.payment.paymentHandler.AddPayment()).Methods("POST")
+	houseRouter.Path("/{id}").HandlerFunc(handler.payment.paymentHandler.FindPaymentById()).Methods("GET")
+	houseRouter.Path("/house/{id}").HandlerFunc(handler.payment.paymentHandler.FindPaymentByHouseId()).Methods("GET")
+	houseRouter.Path("/user/{id}").HandlerFunc(handler.payment.paymentHandler.FindPaymentByUserId()).Methods("GET")
+}
+
 func initApplication() *application {
 	countriesService := initCountriesService()
 	houseService := houses.NewHouseService(countriesService)
 	userService := users.NewUserService()
+	paymentService := payments.NewPaymentService(userService, houseService)
 
 	return &application{
 		country: struct {
@@ -101,6 +118,13 @@ func initApplication() *application {
 		}{
 			userService: userService,
 			userHandler: userHandler.NewUserHandler(userService),
+		},
+		payment: struct {
+			paymentService payments.PaymentService
+			paymentHandler paymentHandler.PaymentHandler
+		}{
+			paymentService: paymentService,
+			paymentHandler: paymentHandler.NewPaymentHandler(paymentService),
 		},
 	}
 }
