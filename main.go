@@ -11,6 +11,8 @@ import (
 	houseHandler "house/handler"
 	houses "house/service"
 	incomeHandler "income/handler"
+	incomeSchedulerHandler "income/scheduler/handler"
+	incomeSchedulers "income/scheduler/service"
 	incomes "income/service"
 	"io/ioutil"
 	"log"
@@ -56,6 +58,10 @@ type application struct {
 		incomeService incomes.IncomeService
 		incomeHandler incomeHandler.IncomeHandler
 	}
+	incomeScheduler struct {
+		incomeSchedulerService incomeSchedulers.IncomeSchedulerService
+		incomeSchedulerHandler incomeSchedulerHandler.IncomeSchedulerHandler
+	}
 	serviceScheduler scheduler.ServiceScheduler
 }
 
@@ -79,6 +85,7 @@ func initRouter(app *application) *mux.Router {
 	initPaymentSchedulerHandler(router, app)
 	initMeterHandler(router, app)
 	initIncomeHandler(router, app)
+	initIncomeSchedulerHandler(router, app)
 
 	return router
 }
@@ -140,6 +147,15 @@ func initIncomeHandler(router *mux.Router, handler *application) {
 	houseRouter.Path("/house/{id}").HandlerFunc(handler.income.incomeHandler.FindByHouseId()).Methods("GET")
 }
 
+func initIncomeSchedulerHandler(router *mux.Router, handler *application) {
+	houseRouter := router.PathPrefix("/api/v1/income/scheduler").Subrouter()
+
+	houseRouter.Path("/").HandlerFunc(handler.incomeScheduler.incomeSchedulerHandler.Add()).Methods("POST")
+	houseRouter.Path("/{id}").HandlerFunc(handler.incomeScheduler.incomeSchedulerHandler.FindById()).Methods("GET")
+	houseRouter.Path("/{id}").HandlerFunc(handler.incomeScheduler.incomeSchedulerHandler.Remove()).Methods("DELETE")
+	houseRouter.Path("/house/{id}").HandlerFunc(handler.incomeScheduler.incomeSchedulerHandler.FindByHouseId()).Methods("GET")
+}
+
 func initApplication() *application {
 	countriesService := initCountriesService()
 	houseService := houses.NewHouseService(countriesService)
@@ -149,6 +165,7 @@ func initApplication() *application {
 	incomeService := incomes.NewIncomeService(houseService)
 	serviceScheduler := scheduler.NewSchedulerService()
 	paymentSchedulerService := paymentSchedulers.NewPaymentSchedulerService(userService, houseService, paymentService, serviceScheduler)
+	incomeSchedulerService := incomeSchedulers.NewIncomeSchedulerService(houseService, incomeService, serviceScheduler)
 
 	return &application{
 		country: struct {
@@ -199,6 +216,13 @@ func initApplication() *application {
 		}{
 			incomeService: incomeService,
 			incomeHandler: incomeHandler.NewIncomeHandler(incomeService),
+		},
+		incomeScheduler: struct {
+			incomeSchedulerService incomeSchedulers.IncomeSchedulerService
+			incomeSchedulerHandler incomeSchedulerHandler.IncomeSchedulerHandler
+		}{
+			incomeSchedulerService: incomeSchedulerService,
+			incomeSchedulerHandler: incomeSchedulerHandler.NewIncomeSchedulerHandler(incomeSchedulerService),
 		},
 		serviceScheduler: serviceScheduler,
 	}

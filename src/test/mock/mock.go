@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	hm "house/model"
 	i "income/model"
+	isr "income/scheduler/model"
 	m "meter/model"
 	pm "payment/model"
 	psr "payment/scheduler/model"
@@ -129,7 +130,7 @@ type IncomeServiceMock struct {
 	mock.Mock
 }
 
-func (is *IncomeServiceMock) AddIncome(request i.CreateIncomeRequest) (i.IncomeResponse, error) {
+func (is *IncomeServiceMock) Add(request i.CreateIncomeRequest) (i.IncomeResponse, error) {
 	args := is.Called(request)
 
 	return args.Get(0).(i.IncomeResponse), args.Error(1)
@@ -201,4 +202,32 @@ func (p *PaymentSchedulerServiceMock) FindByUserId(userId uuid.UUID) []psr.Payme
 	args := p.Called(userId)
 
 	return args.Get(0).([]psr.PaymentSchedulerResponse)
+}
+
+type IncomeSchedulerServiceMock struct {
+	mock.Mock
+}
+
+func (i *IncomeSchedulerServiceMock) Add(request isr.CreateIncomeSchedulerRequest) (isr.IncomeSchedulerResponse, error) {
+	args := i.Called(request)
+
+	return args.Get(0).(isr.IncomeSchedulerResponse), args.Error(1)
+}
+
+func (i *IncomeSchedulerServiceMock) Remove(id uuid.UUID) error {
+	args := i.Called(id)
+
+	return args.Error(0)
+}
+
+func (i *IncomeSchedulerServiceMock) FindById(id uuid.UUID) (isr.IncomeSchedulerResponse, error) {
+	args := i.Called(id)
+
+	return args.Get(0).(isr.IncomeSchedulerResponse), args.Error(1)
+}
+
+func (i *IncomeSchedulerServiceMock) FindByHouseId(houseId uuid.UUID) (isr.IncomeSchedulerResponse, error) {
+	args := i.Called(houseId)
+
+	return args.Get(0).(isr.IncomeSchedulerResponse), args.Error(1)
 }

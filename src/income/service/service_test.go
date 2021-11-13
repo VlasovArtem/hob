@@ -31,7 +31,7 @@ func Test_AddIncome(t *testing.T) {
 
 	request := generateCreateIncomeRequest()
 
-	meter, err := service.AddIncome(request)
+	meter, err := service.Add(request)
 
 	expectedResponse := request.ToEntity().ToResponse()
 	expectedResponse.Id = meter.Id
@@ -47,7 +47,7 @@ func Test_AddIncome_WithHouseNotExists(t *testing.T) {
 
 	request := generateCreateIncomeRequest()
 
-	payment, err := service.AddIncome(request)
+	payment, err := service.Add(request)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s not exists", request.HouseId)), err)
 	assert.Equal(t, model.IncomeResponse{}, payment)

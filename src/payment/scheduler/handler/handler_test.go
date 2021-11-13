@@ -35,7 +35,7 @@ func Test_Add(t *testing.T) {
 	paymentsScheduler.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/scheduler/scheduler").
+		WithURL("https://test.com/api/v1/payment/scheduler").
 		WithMethod("POST").
 		WithHandler(handler.Add()).
 		WithBody(request)
@@ -53,7 +53,7 @@ func Test_Add_WithInvalidRequest(t *testing.T) {
 	handler := handlerGenerator()
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/scheduler/scheduler").
+		WithURL("https://test.com/api/v1/payment/scheduler").
 		WithMethod("POST").
 		WithHandler(handler.Add())
 

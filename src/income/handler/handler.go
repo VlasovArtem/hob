@@ -29,7 +29,7 @@ func (i *incomeHandlerObject) Add() http.HandlerFunc {
 			return
 		}
 
-		meter, err := i.incomeService.AddIncome(requestBody)
+		meter, err := i.incomeService.Add(requestBody)
 
 		rest.PerformResponseWithCode(writer, meter, http.StatusCreated, err)
 	}

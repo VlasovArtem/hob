@@ -4,7 +4,6 @@ import (
 	"github.com/google/uuid"
 	"payment/model"
 	"scheduler"
-	"time"
 )
 
 type PaymentScheduler struct {
@@ -17,7 +16,6 @@ type CreatePaymentSchedulerRequest struct {
 	Description string
 	HouseId     uuid.UUID
 	UserId      uuid.UUID
-	Start       time.Time
 	Sum         float32
 	Spec        scheduler.SchedulingSpecification
 }

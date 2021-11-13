@@ -23,12 +23,12 @@ func NewIncomeService(houseService hs.HouseService) IncomeService {
 }
 
 type IncomeService interface {
-	AddIncome(request model.CreateIncomeRequest) (model.IncomeResponse, error)
+	Add(request model.CreateIncomeRequest) (model.IncomeResponse, error)
 	FindById(id uuid.UUID) (model.IncomeResponse, error)
 	FindByHouseId(id uuid.UUID) (model.IncomeResponse, error)
 }
 
-func (i *incomeServiceObject) AddIncome(request model.CreateIncomeRequest) (response model.IncomeResponse, err error) {
+func (i *incomeServiceObject) Add(request model.CreateIncomeRequest) (response model.IncomeResponse, err error) {
 	if !i.houseService.ExistsById(request.HouseId) {
 		return response, errors.New(fmt.Sprintf("house with id %s not exists", request.HouseId))
 	}
