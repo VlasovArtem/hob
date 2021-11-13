@@ -101,8 +101,8 @@ func initHouseHandler(router *mux.Router, handler *application) {
 	houseRouter := router.PathPrefix("/api/v1/house").Subrouter()
 
 	houseRouter.Path("/").HandlerFunc(handler.house.houseHandler.Add()).Methods("POST")
-	houseRouter.Path("/").HandlerFunc(handler.house.houseHandler.FindAll()).Methods("GET")
 	houseRouter.Path("/{id}").HandlerFunc(handler.house.houseHandler.FindById()).Methods("GET")
+	houseRouter.Path("/user/{id}").HandlerFunc(handler.house.houseHandler.FindByUserId()).Methods("GET")
 }
 
 func initUserHandler(router *mux.Router, handler *application) {
@@ -158,8 +158,8 @@ func initIncomeSchedulerHandler(router *mux.Router, handler *application) {
 
 func initApplication() *application {
 	countriesService := initCountriesService()
-	houseService := houses.NewHouseService(countriesService)
 	userService := users.NewUserService()
+	houseService := houses.NewHouseService(countriesService, userService)
 	paymentService := payments.NewPaymentService(userService, houseService)
 	meterService := meters.NewMeterService(paymentService)
 	incomeService := incomes.NewIncomeService(houseService)

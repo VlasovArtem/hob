@@ -7,155 +7,131 @@ import (
 	"github.com/stretchr/testify/assert"
 	"house/model"
 	"test"
+	"test/mock"
 	"test/testhelper"
 	"testing"
 )
 
-var countriesService = testhelper.InitCountryService()
+var (
+	users            *mock.UserServiceMock
+	countriesService = testhelper.InitCountryService()
+	userId           = testhelper.ParseUUID("0757088a-ed8e-465e-b9ed-34ebacbfb3be")
+)
 
-func serviceGenerator() HouseService { return NewHouseService(countriesService) }
+func serviceGenerator() HouseService {
+	users = new(mock.UserServiceMock)
 
-func TestAddHouse(t *testing.T) {
-	houseService := serviceGenerator()
-
-	type args struct {
-		house model.CreateHouseRequest
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "with new house",
-			args: args{house: test.GenerateCreateHouseRequest()},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			response, err2 := houseService.Add(tt.args.house)
-
-			assert.Nil(t, err2)
-
-			house, err := houseService.FindById(response.Id)
-			assert.Nil(t, err)
-			assert.Equal(t, test.GenerateHouseResponse(house.Id, house.Name), house, "Houses should be the same")
-		})
-	}
+	return NewHouseService(countriesService, users)
 }
 
-func TestFindAllHouses(t *testing.T) {
-	houseService := serviceGenerator()
+func Test_Add(t *testing.T) {
+	service := serviceGenerator()
 
-	request := test.GenerateCreateHouseRequest()
-	response, err := houseService.Add(request)
+	users.On("ExistsById", userId).Return(true)
+
+	request := generateCreateHouseRequest()
+
+	actual, err := service.Add(request)
 
 	assert.Nil(t, err)
+	assert.Equal(t, model.HouseResponse{
+		Id:          actual.Id,
+		Name:        "Test House",
+		Country:     "Ukraine",
+		City:        "City",
+		StreetLine1: "StreetLine1",
+		StreetLine2: "StreetLine2",
+		UserId:      userId,
+	}, actual)
 
-	tests := []struct {
-		name            string
-		wantResult      []model.HouseResponse
-		serviceProvider func() HouseService
-	}{
-		{
-			name:            "houses",
-			wantResult:      []model.HouseResponse{response},
-			serviceProvider: func() HouseService { return houseService },
-		},
-		{
-			name:            "empty",
-			wantResult:      []model.HouseResponse{},
-			serviceProvider: serviceGenerator,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.serviceProvider().FindAll()
+	serviceObject := service.(*houseServiceObject)
 
-			assert.Equal(t, tt.wantResult, actual)
-		})
-	}
+	_, houseExists := serviceObject.houses[actual.Id]
+	assert.True(t, houseExists)
+
+	_, userHouseExists := serviceObject.userHouses[actual.UserId]
+	assert.True(t, userHouseExists)
 }
 
-func TestFindById(t *testing.T) {
+func Test_FindById(t *testing.T) {
 	houseService := serviceGenerator()
 
-	request := test.GenerateCreateHouseRequest()
-	response, err := houseService.Add(request)
+	house := generateCreateHouse()
+
+	houseService.(*houseServiceObject).houses[house.Id] = house
+
+	actual, err := houseService.FindById(house.Id)
 
 	assert.Nil(t, err)
+	assert.Equal(t, house.ToResponse(), actual)
+}
 
-	notExistingId := uuid.New()
+func Test_FindById_WithNotExists(t *testing.T) {
+	houseService := serviceGenerator()
 
-	type args struct {
-		id uuid.UUID
-	}
-	tests := []struct {
-		name      string
-		args      args
-		wantError error
-		wantModel model.HouseResponse
-	}{
-		{
-			name: "with existing",
-			args: args{
-				id: response.Id,
-			},
-			wantModel: response,
-			wantError: nil,
-		}, {
-			name: "with not existing",
-			args: args{
-				id: notExistingId,
-			},
-			wantModel: model.HouseResponse{},
-			wantError: errors.New(fmt.Sprintf("House with id - %s not exists", notExistingId)),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			house, err := houseService.FindById(tt.args.id)
-			assert.Equalf(t, tt.wantError, err, "FindById(%v)", tt.args.id)
-			assert.Equalf(t, tt.wantModel, house, "FindById(%v)", tt.args.id)
-		})
-	}
+	id := uuid.New()
+
+	actual, err := houseService.FindById(id)
+
+	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s not found", id)), err)
+	assert.Equal(t, model.HouseResponse{}, actual)
+}
+
+func Test_FindByUserId(t *testing.T) {
+	houseService := serviceGenerator()
+
+	house := generateCreateHouse()
+
+	houseService.(*houseServiceObject).userHouses[house.UserId] = []model.House{house}
+
+	actual := houseService.FindByUserId(house.UserId)
+
+	assert.Equal(t, []model.HouseResponse{house.ToResponse()}, actual)
+}
+
+func Test_FindByUserId_WithNotExists(t *testing.T) {
+	houseService := serviceGenerator()
+
+	actual := houseService.FindByUserId(uuid.New())
+
+	assert.Equal(t, []model.HouseResponse{}, actual)
 }
 
 func Test_ExistsById(t *testing.T) {
 	houseService := serviceGenerator()
 
-	request := test.GenerateCreateHouseRequest()
-	response, err := houseService.Add(request)
+	house := generateCreateHouse()
 
-	assert.Nil(t, err)
+	houseService.(*houseServiceObject).houses[house.Id] = house
 
-	notExistingId := uuid.New()
+	assert.True(t, houseService.ExistsById(house.Id))
+}
 
-	type args struct {
-		id uuid.UUID
+func Test_ExistsById_WithNotExists(t *testing.T) {
+	houseService := serviceGenerator()
+
+	assert.False(t, houseService.ExistsById(uuid.New()))
+}
+
+func generateCreateHouseRequest() model.CreateHouseRequest {
+	return model.CreateHouseRequest{
+		Name:        "Test House",
+		Country:     "UA",
+		City:        "City",
+		StreetLine1: "StreetLine1",
+		StreetLine2: "StreetLine2",
+		UserId:      userId,
 	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "with existing",
-			args: args{
-				id: response.Id,
-			},
-			want: true,
-		}, {
-			name: "with not existing",
-			args: args{
-				id: notExistingId,
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			exists := houseService.ExistsById(tt.args.id)
-			assert.Equalf(t, tt.want, exists, "FindById(%v)", tt.args.id)
-		})
+}
+
+func generateCreateHouse() model.House {
+	return model.House{
+		Id:          uuid.New(),
+		Name:        "Test House",
+		Country:     test.CountryObject,
+		City:        "City",
+		StreetLine1: "StreetLine1",
+		StreetLine2: "StreetLine2",
+		UserId:      userId,
 	}
 }

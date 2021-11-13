@@ -49,11 +49,11 @@ type HouseServiceMock struct {
 func (h *HouseServiceMock) Add(house hm.CreateHouseRequest) (hm.HouseResponse, error) {
 	args := h.Called(house)
 
-	return args.Get(0).(hm.HouseResponse), args.Error(0)
+	return args.Get(0).(hm.HouseResponse), args.Error(1)
 }
 
-func (h *HouseServiceMock) FindAll() []hm.HouseResponse {
-	args := h.Called()
+func (h *HouseServiceMock) FindByUserId(userId uuid.UUID) []hm.HouseResponse {
+	args := h.Called(userId)
 
 	return args.Get(0).([]hm.HouseResponse)
 }
@@ -61,7 +61,7 @@ func (h *HouseServiceMock) FindAll() []hm.HouseResponse {
 func (h *HouseServiceMock) FindById(id uuid.UUID) (hm.HouseResponse, error) {
 	args := h.Called(id)
 
-	return args.Get(0).(hm.HouseResponse), args.Error(0)
+	return args.Get(0).(hm.HouseResponse), args.Error(1)
 }
 
 func (h *HouseServiceMock) ExistsById(id uuid.UUID) bool {

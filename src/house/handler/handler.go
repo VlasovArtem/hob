@@ -2,11 +2,6 @@ package handler
 
 import (
 	"common/rest"
-	helper "common/service"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/google/uuid"
 	"house/model"
 	"house/service"
 	"net/http"
@@ -22,65 +17,46 @@ func NewHouseHandler(houseService service.HouseService) HouseHandler {
 
 type HouseHandler interface {
 	Add() http.HandlerFunc
-	FindAll() http.HandlerFunc
 	FindById() http.HandlerFunc
+	FindByUserId() http.HandlerFunc
 }
 
 func (h *houseHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := model.CreateHouseRequest{}
 
-		if err := rest.PerformRequest(&requestEntity, writer, request); err == nil {
-			if response, err := h.houseService.Add(requestEntity); err != nil {
-				rest.HandleBadRequestWithError(writer, err)
-			} else {
-				writer.WriteHeader(http.StatusCreated)
-
-				json.NewEncoder(writer).Encode(response)
-			}
-		} else {
+		if err := rest.PerformRequest(&requestEntity, writer, request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
-		}
-	}
-}
+		} else {
+			response, err := h.houseService.Add(requestEntity)
 
-func (h *houseHandlerObject) FindAll() http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		houses := h.houseService.FindAll()
-
-		err := json.NewEncoder(writer).Encode(houses)
-
-		if helper.HandleError(err, "Unable to encode response for find all request") {
-			writer.WriteHeader(http.StatusInternalServerError)
+			rest.PerformResponseWithCode(writer, response, http.StatusCreated, err)
 		}
 	}
 }
 
 func (h *houseHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		parameter, _ := rest.GetRequestParameter(request, "id")
-
-		id, err := uuid.Parse(parameter)
-
-		if err != nil {
-			rest.HandleBadRequestWithError(writer, errors.New(fmt.Sprintf("the id is not valid %s", parameter)))
-
-			return
-		}
-
-		if house, err := h.houseService.FindById(id); err != nil {
-			rest.HandleErrorResponseWithError(writer, http.StatusNotFound, err)
+		if id, err := rest.GetIdRequestParameter(request); err != nil {
+			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			content, err := json.Marshal(house)
-
-			if err != nil {
-				rest.HandleBadRequestWithError(writer, err)
-
-				return
+			if house, err := h.houseService.FindById(id); err != nil {
+				rest.HandleErrorResponseWithError(writer, http.StatusNotFound, err)
+			} else {
+				rest.PerformResponseWithCode(writer, house, http.StatusOK, nil)
 			}
-
-			writer.Write(content)
 		}
+	}
+}
 
+func (h *houseHandlerObject) FindByUserId() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if id, err := rest.GetIdRequestParameter(request); err != nil {
+			rest.HandleBadRequestWithError(writer, err)
+		} else {
+			responses := h.houseService.FindByUserId(id)
+
+			rest.PerformResponse(writer, responses, nil)
+		}
 	}
 }

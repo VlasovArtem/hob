@@ -13,6 +13,7 @@ type House struct {
 	StreetLine1 string
 	StreetLine2 string
 	Deleted     bool
+	UserId      uuid.UUID
 }
 
 type HouseResponse struct {
@@ -22,6 +23,7 @@ type HouseResponse struct {
 	City        string
 	StreetLine1 string
 	StreetLine2 string
+	UserId      uuid.UUID
 }
 
 type CreateHouseRequest struct {
@@ -30,6 +32,7 @@ type CreateHouseRequest struct {
 	City        string
 	StreetLine1 string
 	StreetLine2 string
+	UserId      uuid.UUID
 }
 
 func (h House) ToResponse() HouseResponse {
@@ -40,6 +43,7 @@ func (h House) ToResponse() HouseResponse {
 		City:        h.City,
 		StreetLine1: h.StreetLine1,
 		StreetLine2: h.StreetLine2,
+		UserId:      h.UserId,
 	}
 }
 
@@ -51,6 +55,7 @@ func (c CreateHouseRequest) ToEntity(country *model.Country) House {
 		City:        c.City,
 		StreetLine1: c.StreetLine1,
 		StreetLine2: c.StreetLine2,
-		Deleted:     true,
+		UserId:      c.UserId,
+		Deleted:     false,
 	}
 }
