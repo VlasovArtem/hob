@@ -1,12 +1,15 @@
 package mock
 
 import (
+	"context"
 	"github.com/google/uuid"
+	"github.com/robfig/cron"
 	"github.com/stretchr/testify/mock"
 	hm "house/model"
 	i "income/model"
 	m "meter/model"
 	pm "payment/model"
+	psr "payment/scheduler/model"
 	um "user/model"
 )
 
@@ -70,25 +73,25 @@ type PaymentServiceMock struct {
 	mock.Mock
 }
 
-func (p *PaymentServiceMock) AddPayment(request pm.CreatePaymentRequest) (pm.PaymentResponse, error) {
+func (p *PaymentServiceMock) Add(request pm.CreatePaymentRequest) (pm.PaymentResponse, error) {
 	args := p.Called(request)
 
 	return args.Get(0).(pm.PaymentResponse), args.Error(1)
 }
 
-func (p *PaymentServiceMock) FindPaymentById(id uuid.UUID) (pm.PaymentResponse, error) {
+func (p *PaymentServiceMock) FindById(id uuid.UUID) (pm.PaymentResponse, error) {
 	args := p.Called(id)
 
 	return args.Get(0).(pm.PaymentResponse), args.Error(1)
 }
 
-func (p *PaymentServiceMock) FindPaymentByHouseId(houseId uuid.UUID) []pm.PaymentResponse {
+func (p *PaymentServiceMock) FindByHouseId(houseId uuid.UUID) []pm.PaymentResponse {
 	args := p.Called(houseId)
 
 	return args.Get(0).([]pm.PaymentResponse)
 }
 
-func (p *PaymentServiceMock) FindPaymentByUserId(userId uuid.UUID) []pm.PaymentResponse {
+func (p *PaymentServiceMock) FindByUserId(userId uuid.UUID) []pm.PaymentResponse {
 	args := p.Called(userId)
 
 	return args.Get(0).([]pm.PaymentResponse)
@@ -142,4 +145,60 @@ func (is *IncomeServiceMock) FindByHouseId(id uuid.UUID) (i.IncomeResponse, erro
 	args := is.Called(id)
 
 	return args.Get(0).(i.IncomeResponse), args.Error(1)
+}
+
+type SchedulerServiceMock struct {
+	mock.Mock
+}
+
+func (s *SchedulerServiceMock) Add(scheduledItemId uuid.UUID, scheduleSpec string, scheduleFunc func()) (cron.EntryID, error) {
+	args := s.Called(scheduledItemId, scheduleSpec, scheduleFunc)
+
+	return args.Get(0).(cron.EntryID), args.Error(1)
+}
+
+func (s *SchedulerServiceMock) Remove(id uuid.UUID) error {
+	args := s.Called(id)
+
+	return args.Error(0)
+}
+
+func (s *SchedulerServiceMock) Stop() context.Context {
+	args := s.Called()
+
+	return args.Get(0).(context.Context)
+}
+
+type PaymentSchedulerServiceMock struct {
+	mock.Mock
+}
+
+func (p *PaymentSchedulerServiceMock) Add(request psr.CreatePaymentSchedulerRequest) (psr.PaymentSchedulerResponse, error) {
+	args := p.Called(request)
+
+	return args.Get(0).(psr.PaymentSchedulerResponse), args.Error(1)
+}
+
+func (p *PaymentSchedulerServiceMock) Remove(id uuid.UUID) error {
+	args := p.Called(id)
+
+	return args.Error(0)
+}
+
+func (p *PaymentSchedulerServiceMock) FindById(id uuid.UUID) (psr.PaymentSchedulerResponse, error) {
+	args := p.Called(id)
+
+	return args.Get(0).(psr.PaymentSchedulerResponse), args.Error(1)
+}
+
+func (p *PaymentSchedulerServiceMock) FindByHouseId(houseId uuid.UUID) []psr.PaymentSchedulerResponse {
+	args := p.Called(houseId)
+
+	return args.Get(0).([]psr.PaymentSchedulerResponse)
+}
+
+func (p *PaymentSchedulerServiceMock) FindByUserId(userId uuid.UUID) []psr.PaymentSchedulerResponse {
+	args := p.Called(userId)
+
+	return args.Get(0).([]psr.PaymentSchedulerResponse)
 }

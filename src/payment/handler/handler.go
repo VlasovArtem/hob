@@ -33,7 +33,7 @@ func (p *paymentHandlerObject) Add() http.HandlerFunc {
 			return
 		}
 
-		if payment, err := p.paymentService.AddPayment(paymentRequest); err != nil {
+		if payment, err := p.paymentService.Add(paymentRequest); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
 			writer.WriteHeader(http.StatusCreated)
@@ -47,7 +47,7 @@ func (p *paymentHandlerObject) FindById() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			response, err := p.paymentService.FindPaymentById(id)
+			response, err := p.paymentService.FindById(id)
 
 			rest.PerformResponse(writer, response, err)
 		}
@@ -59,7 +59,7 @@ func (p *paymentHandlerObject) FindByHouseId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, p.paymentService.FindPaymentByHouseId(id), nil)
+			rest.PerformResponse(writer, p.paymentService.FindByHouseId(id), nil)
 		}
 	}
 }
@@ -69,7 +69,7 @@ func (p *paymentHandlerObject) FindByUserId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, p.paymentService.FindPaymentByUserId(id), nil)
+			rest.PerformResponse(writer, p.paymentService.FindByUserId(id), nil)
 		}
 	}
 }

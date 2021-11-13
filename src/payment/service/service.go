@@ -28,14 +28,14 @@ func NewPaymentService(userService us.UserService, houseService hs.HouseService)
 }
 
 type PaymentService interface {
-	AddPayment(request model.CreatePaymentRequest) (model.PaymentResponse, error)
-	FindPaymentById(id uuid.UUID) (model.PaymentResponse, error)
-	FindPaymentByHouseId(houseId uuid.UUID) []model.PaymentResponse
-	FindPaymentByUserId(userId uuid.UUID) []model.PaymentResponse
+	Add(request model.CreatePaymentRequest) (model.PaymentResponse, error)
+	FindById(id uuid.UUID) (model.PaymentResponse, error)
+	FindByHouseId(houseId uuid.UUID) []model.PaymentResponse
+	FindByUserId(userId uuid.UUID) []model.PaymentResponse
 	ExistsById(id uuid.UUID) bool
 }
 
-func (p *paymentServiceObject) AddPayment(request model.CreatePaymentRequest) (response model.PaymentResponse, err error) {
+func (p *paymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentResponse, err error) {
 	if !p.userService.ExistsById(request.UserId) {
 		return response, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId))
 	}
@@ -52,18 +52,18 @@ func (p *paymentServiceObject) AddPayment(request model.CreatePaymentRequest) (r
 	return entity.ToResponse(), nil
 }
 
-func (p *paymentServiceObject) FindPaymentById(id uuid.UUID) (model.PaymentResponse, error) {
+func (p *paymentServiceObject) FindById(id uuid.UUID) (model.PaymentResponse, error) {
 	if payment, ok := p.payments[id]; ok {
 		return payment.ToResponse(), nil
 	}
 	return model.PaymentResponse{}, errors.New(fmt.Sprintf("payment with id %s not found", id))
 }
 
-func (p *paymentServiceObject) FindPaymentByHouseId(houseId uuid.UUID) []model.PaymentResponse {
+func (p *paymentServiceObject) FindByHouseId(houseId uuid.UUID) []model.PaymentResponse {
 	return convert(p.housePayments[houseId])
 }
 
-func (p *paymentServiceObject) FindPaymentByUserId(userId uuid.UUID) []model.PaymentResponse {
+func (p *paymentServiceObject) FindByUserId(userId uuid.UUID) []model.PaymentResponse {
 	return convert(p.userPayments[userId])
 }
 

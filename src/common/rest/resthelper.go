@@ -58,7 +58,7 @@ func GetIdRequestParameter(request *http.Request) (uuid.UUID, error) {
 func PerformResponse(writer http.ResponseWriter, response interface{}, err error) {
 	if err != nil {
 		HandleBadRequestWithError(writer, err)
-	} else {
+	} else if response != nil {
 		if err = json.NewEncoder(writer).Encode(response); err != nil {
 			HandleErrorResponseWithError(writer, http.StatusInternalServerError, err)
 		}
@@ -71,8 +71,10 @@ func PerformResponseWithCode(writer http.ResponseWriter, response interface{}, s
 	} else {
 		writer.WriteHeader(statusCode)
 
-		if err = json.NewEncoder(writer).Encode(response); err != nil {
-			HandleErrorResponseWithError(writer, http.StatusInternalServerError, err)
+		if response != nil {
+			if err = json.NewEncoder(writer).Encode(response); err != nil {
+				HandleErrorResponseWithError(writer, http.StatusInternalServerError, err)
+			}
 		}
 	}
 }

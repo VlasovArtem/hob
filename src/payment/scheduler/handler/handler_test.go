@@ -7,63 +7,53 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"net/http"
-	"payment/model"
+	paymentModel "payment/model"
+	paymentScheduler "payment/scheduler/model"
+	scheduler2 "scheduler"
 	"test/mock"
 	"test/testhelper"
 	"testing"
-	"time"
 )
 
 var (
-	payments *mock.PaymentServiceMock
-	houseId  = testhelper.ParseUUID("d077adaa-00d7-4e80-ac86-57512267505d")
-	userId   = testhelper.ParseUUID("ad2c5035-6745-48d0-9eee-fd22f5dae8e0")
-	date     = time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC)
+	paymentsScheduler *mock.PaymentSchedulerServiceMock
+	houseId           = testhelper.ParseUUID("84d801b0-75fd-4304-aab4-97c8c46356bb")
+	userId            = testhelper.ParseUUID("eddbd5ca-cc87-4cbd-9753-7bbb11bdef83")
 )
 
-func handlerGenerator() PaymentHandler {
-	payments = new(mock.PaymentServiceMock)
+func handlerGenerator() PaymentSchedulerHandler {
+	paymentsScheduler = new(mock.PaymentSchedulerServiceMock)
 
-	return NewPaymentHandler(payments)
+	return NewPaymentSchedulerHandler(paymentsScheduler)
 }
 
 func Test_Add(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := generateCreatePaymentRequest()
+	request := generateCreatePaymentSchedulerRequest()
 
-	payments.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
+	paymentsScheduler.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment").
+		WithURL("https://test.com/api/v1/payment/scheduler/scheduler").
 		WithMethod("POST").
 		WithHandler(handler.Add()).
 		WithBody(request)
 
 	responseByteArray := testRequest.Verify(t, http.StatusCreated)
 
-	actual := model.PaymentResponse{}
+	actual := paymentScheduler.PaymentSchedulerResponse{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, model.PaymentResponse{
-		Payment: model.Payment{
-			Id:          actual.Id,
-			Name:        "Test Payment",
-			Description: "Test Payment Description",
-			HouseId:     houseId,
-			UserId:      userId,
-			Date:        date,
-			Sum:         1000,
-		},
-	}, actual)
+	assert.Equal(t, generatePaymentSchedulerResponse(actual.Id), actual)
 }
 
 func Test_Add_WithInvalidRequest(t *testing.T) {
 	handler := handlerGenerator()
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment").
+		WithURL("https://test.com/api/v1/payment/scheduler/scheduler").
 		WithMethod("POST").
 		WithHandler(handler.Add())
 
@@ -73,14 +63,14 @@ func Test_Add_WithInvalidRequest(t *testing.T) {
 func Test_Add_WithErrorFromService(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := generateCreatePaymentRequest()
+	request := generateCreatePaymentSchedulerRequest()
 
 	expected := errors.New("error")
 
-	payments.On("Add", request).Return(model.PaymentResponse{}, expected)
+	paymentsScheduler.On("Add", request).Return(paymentScheduler.PaymentSchedulerResponse{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment").
+		WithURL("https://test.com/api/v1/payment/scheduler").
 		WithMethod("POST").
 		WithHandler(handler.Add()).
 		WithBody(request)
@@ -90,25 +80,68 @@ func Test_Add_WithErrorFromService(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
 }
 
+func Test_Remove(t *testing.T) {
+	handler := handlerGenerator()
+
+	id := uuid.New()
+
+	paymentsScheduler.On("Remove", id).Return(nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
+		WithMethod("DELETE").
+		WithHandler(handler.Remove()).
+		WithVar("id", id.String())
+
+	testRequest.Verify(t, http.StatusNoContent)
+}
+
+func Test_Remove_WithMissingParameter(t *testing.T) {
+	handler := handlerGenerator()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
+		WithMethod("DELETE").
+		WithHandler(handler.Remove())
+
+	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "parameter 'id' not found\n", string(responseByteArray))
+}
+
+func Test_Remove_WithInvalidParameter(t *testing.T) {
+	handler := handlerGenerator()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
+		WithMethod("DELETE").
+		WithHandler(handler.Remove()).
+		WithVar("id", "id")
+
+	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+}
+
 func Test_FindById(t *testing.T) {
 	handler := handlerGenerator()
 
 	id := uuid.New()
 
-	paymentResponse := generatePaymentResponse(id)
+	paymentResponse := generatePaymentSchedulerResponse(id)
 
-	payments.On("FindById", id).
+	paymentsScheduler.On("FindById", id).
 		Return(paymentResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindById()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := model.PaymentResponse{}
+	actual := paymentScheduler.PaymentSchedulerResponse{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -122,11 +155,11 @@ func Test_FindById_WithError(t *testing.T) {
 
 	expected := errors.New("error")
 
-	payments.On("FindById", id).
-		Return(model.PaymentResponse{}, expected)
+	paymentsScheduler.On("FindById", id).
+		Return(paymentScheduler.PaymentSchedulerResponse{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindById()).
 		WithVar("id", id.String())
@@ -140,7 +173,7 @@ func Test_FindById_WithInvalidParameter(t *testing.T) {
 	handler := handlerGenerator()
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindById()).
 		WithVar("id", "id")
@@ -155,20 +188,20 @@ func Test_FindByHouseId(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []model.PaymentResponse{generatePaymentResponse(id)}
+	paymentResponses := []paymentScheduler.PaymentSchedulerResponse{generatePaymentSchedulerResponse(id)}
 
-	payments.On("FindByHouseId", id).
+	paymentsScheduler.On("FindByHouseId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/house/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/house/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindByHouseId()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentResponse{}
+	actual := []paymentScheduler.PaymentSchedulerResponse{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -180,20 +213,20 @@ func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []model.PaymentResponse{}
+	paymentResponses := []paymentScheduler.PaymentSchedulerResponse{}
 
-	payments.On("FindByHouseId", id).
+	paymentsScheduler.On("FindByHouseId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/house/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/house/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindByHouseId()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentResponse{}
+	actual := []paymentScheduler.PaymentSchedulerResponse{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -204,7 +237,7 @@ func Test_FindByHouseId_WithInvalidParameter(t *testing.T) {
 	handler := handlerGenerator()
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/house/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/house/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindByHouseId()).
 		WithVar("id", "id")
@@ -219,20 +252,20 @@ func Test_FindByUserId(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []model.PaymentResponse{generatePaymentResponse(id)}
+	paymentResponses := []paymentScheduler.PaymentSchedulerResponse{generatePaymentSchedulerResponse(id)}
 
-	payments.On("FindByUserId", id).
+	paymentsScheduler.On("FindByUserId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/user/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindByUserId()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentResponse{}
+	actual := []paymentScheduler.PaymentSchedulerResponse{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -244,20 +277,20 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []model.PaymentResponse{}
+	paymentResponses := []paymentScheduler.PaymentSchedulerResponse{}
 
-	payments.On("FindByUserId", id).
+	paymentsScheduler.On("FindByUserId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/user/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindByUserId()).
 		WithVar("id", id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentResponse{}
+	actual := []paymentScheduler.PaymentSchedulerResponse{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -268,7 +301,7 @@ func Test_FindByUserId_WithInvalidParameter(t *testing.T) {
 	handler := handlerGenerator()
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}").
+		WithURL("https://test.com/api/v1/payment/scheduler/user/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindByUserId()).
 		WithVar("id", "id")
@@ -278,27 +311,29 @@ func Test_FindByUserId_WithInvalidParameter(t *testing.T) {
 	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
 }
 
-func generateCreatePaymentRequest() model.CreatePaymentRequest {
-	return model.CreatePaymentRequest{
+func generateCreatePaymentSchedulerRequest() paymentScheduler.CreatePaymentSchedulerRequest {
+	return paymentScheduler.CreatePaymentSchedulerRequest{
 		Name:        "Test Payment",
 		Description: "Test Payment Description",
 		HouseId:     houseId,
 		UserId:      userId,
-		Date:        date,
 		Sum:         1000,
+		Spec:        scheduler2.DAILY,
 	}
 }
 
-func generatePaymentResponse(id uuid.UUID) model.PaymentResponse {
-	return model.PaymentResponse{
-		Payment: model.Payment{
-			Id:          id,
-			Name:        "Test Payment",
-			Description: "Test Payment Description",
-			HouseId:     houseId,
-			UserId:      userId,
-			Date:        date,
-			Sum:         1000,
+func generatePaymentSchedulerResponse(id uuid.UUID) paymentScheduler.PaymentSchedulerResponse {
+	return paymentScheduler.PaymentSchedulerResponse{
+		PaymentScheduler: paymentScheduler.PaymentScheduler{
+			Payment: paymentModel.Payment{
+				Id:          id,
+				Name:        "Test Payment",
+				Description: "Test Payment Description",
+				HouseId:     houseId,
+				UserId:      userId,
+				Sum:         1000,
+			},
+			Spec: scheduler2.DAILY,
 		},
 	}
 }

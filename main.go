@@ -19,7 +19,10 @@ import (
 	"net/http"
 	"os"
 	paymentHandler "payment/handler"
+	paymentSchedulerHandler "payment/scheduler/handler"
+	paymentSchedulers "payment/scheduler/service"
 	payments "payment/service"
+	"scheduler"
 	userHandler "user/handler"
 	users "user/service"
 )
@@ -41,6 +44,10 @@ type application struct {
 		paymentService payments.PaymentService
 		paymentHandler paymentHandler.PaymentHandler
 	}
+	paymentScheduler struct {
+		paymentSchedulerService paymentSchedulers.PaymentSchedulerService
+		paymentSchedulerHandler paymentSchedulerHandler.PaymentSchedulerHandler
+	}
 	meter struct {
 		meterService meters.MeterService
 		meterHandler meterHandler.MeterHandler
@@ -49,6 +56,7 @@ type application struct {
 		incomeService incomes.IncomeService
 		incomeHandler incomeHandler.IncomeHandler
 	}
+	serviceScheduler scheduler.ServiceScheduler
 }
 
 func main() {
@@ -68,6 +76,7 @@ func initRouter(app *application) *mux.Router {
 	initHouseHandler(router, app)
 	initUserHandler(router, app)
 	initPaymentHandler(router, app)
+	initPaymentSchedulerHandler(router, app)
 	initMeterHandler(router, app)
 	initIncomeHandler(router, app)
 
@@ -105,6 +114,16 @@ func initPaymentHandler(router *mux.Router, handler *application) {
 	houseRouter.Path("/user/{id}").HandlerFunc(handler.payment.paymentHandler.FindByUserId()).Methods("GET")
 }
 
+func initPaymentSchedulerHandler(router *mux.Router, handler *application) {
+	houseRouter := router.PathPrefix("/api/v1/payment/scheduler").Subrouter()
+
+	houseRouter.Path("/").HandlerFunc(handler.paymentScheduler.paymentSchedulerHandler.Add()).Methods("POST")
+	houseRouter.Path("/{id}").HandlerFunc(handler.paymentScheduler.paymentSchedulerHandler.FindById()).Methods("GET")
+	houseRouter.Path("/{id}").HandlerFunc(handler.paymentScheduler.paymentSchedulerHandler.Remove()).Methods("DELETE")
+	houseRouter.Path("/house/{id}").HandlerFunc(handler.paymentScheduler.paymentSchedulerHandler.FindByHouseId()).Methods("GET")
+	houseRouter.Path("/user/{id}").HandlerFunc(handler.paymentScheduler.paymentSchedulerHandler.FindByUserId()).Methods("GET")
+}
+
 func initMeterHandler(router *mux.Router, handler *application) {
 	houseRouter := router.PathPrefix("/api/v1/meter").Subrouter()
 
@@ -128,6 +147,8 @@ func initApplication() *application {
 	paymentService := payments.NewPaymentService(userService, houseService)
 	meterService := meters.NewMeterService(paymentService)
 	incomeService := incomes.NewIncomeService(houseService)
+	serviceScheduler := scheduler.NewSchedulerService()
+	paymentSchedulerService := paymentSchedulers.NewPaymentSchedulerService(userService, houseService, paymentService, serviceScheduler)
 
 	return &application{
 		country: struct {
@@ -158,6 +179,13 @@ func initApplication() *application {
 			paymentService: paymentService,
 			paymentHandler: paymentHandler.NewPaymentHandler(paymentService),
 		},
+		paymentScheduler: struct {
+			paymentSchedulerService paymentSchedulers.PaymentSchedulerService
+			paymentSchedulerHandler paymentSchedulerHandler.PaymentSchedulerHandler
+		}{
+			paymentSchedulerService: paymentSchedulerService,
+			paymentSchedulerHandler: paymentSchedulerHandler.NewPaymentSchedulerHandler(paymentSchedulerService),
+		},
 		meter: struct {
 			meterService meters.MeterService
 			meterHandler meterHandler.MeterHandler
@@ -172,6 +200,7 @@ func initApplication() *application {
 			incomeService: incomeService,
 			incomeHandler: incomeHandler.NewIncomeHandler(incomeService),
 		},
+		serviceScheduler: serviceScheduler,
 	}
 }
 

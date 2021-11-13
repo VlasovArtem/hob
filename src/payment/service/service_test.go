@@ -35,7 +35,7 @@ func Test_AddPayment(t *testing.T) {
 
 	request := generateCreatePaymentRequest()
 
-	payment, err := paymentService.AddPayment(request)
+	payment, err := paymentService.Add(request)
 
 	expectedEntity := request.ToEntity()
 	expectedEntity.Id = payment.Id
@@ -43,22 +43,34 @@ func Test_AddPayment(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedResponse, payment)
+
+	serviceObject := paymentService.(*paymentServiceObject)
+
+	_, paymentExists := serviceObject.payments[payment.Id]
+	assert.True(t, paymentExists)
+
+	_, housePaymentExists := serviceObject.housePayments[payment.HouseId]
+	assert.True(t, housePaymentExists)
+
+	_, userPaymentExists := serviceObject.userPayments[payment.UserId]
+	assert.True(t, userPaymentExists)
 }
 
-func Test_AddPayment_WithUserNotExists(t *testing.T) {
+func Test_Add_WithUserNotExists(t *testing.T) {
 	paymentService := serviceGenerator()
 
 	users.On("ExistsById", userId).Return(false)
 
 	request := generateCreatePaymentRequest()
 
-	payment, err := paymentService.AddPayment(request)
+	payment, err := paymentService.Add(request)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId)), err)
 	assert.Equal(t, model.PaymentResponse{}, payment)
+	assert.Len(t, paymentService.(*paymentServiceObject).payments, 0)
 }
 
-func Test_AddPayment_WithHouseNotExists(t *testing.T) {
+func Test_Add_WithHouseNotExists(t *testing.T) {
 	paymentService := serviceGenerator()
 
 	users.On("ExistsById", userId).Return(true)
@@ -66,10 +78,11 @@ func Test_AddPayment_WithHouseNotExists(t *testing.T) {
 
 	request := generateCreatePaymentRequest()
 
-	payment, err := paymentService.AddPayment(request)
+	payment, err := paymentService.Add(request)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId)), err)
 	assert.Equal(t, model.PaymentResponse{}, payment)
+	assert.Len(t, paymentService.(*paymentServiceObject).payments, 0)
 }
 
 func Test_FindPaymentById(t *testing.T) {
@@ -80,11 +93,11 @@ func Test_FindPaymentById(t *testing.T) {
 
 	request := generateCreatePaymentRequest()
 
-	payment, err := paymentService.AddPayment(request)
+	payment, err := paymentService.Add(request)
 
 	assert.Nil(t, err)
 
-	actual, err := paymentService.FindPaymentById(payment.Id)
+	actual, err := paymentService.FindById(payment.Id)
 
 	assert.Nil(t, nil)
 	assert.Equal(t, payment, actual)
@@ -94,7 +107,7 @@ func Test_FindPaymentById_WithNotExistingId(t *testing.T) {
 	paymentService := serviceGenerator()
 
 	id := uuid.New()
-	actual, err := paymentService.FindPaymentById(id)
+	actual, err := paymentService.FindById(id)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("payment with id %s not found", id)), err)
 	assert.Equal(t, model.PaymentResponse{}, actual)
@@ -108,11 +121,11 @@ func Test_FindPaymentByHouseId(t *testing.T) {
 
 	request := generateCreatePaymentRequest()
 
-	payment, err := paymentService.AddPayment(request)
+	payment, err := paymentService.Add(request)
 
 	assert.Nil(t, err)
 
-	payments := paymentService.FindPaymentByHouseId(payment.HouseId)
+	payments := paymentService.FindByHouseId(payment.HouseId)
 
 	assert.Equal(t, []model.PaymentResponse{payment}, payments)
 }
@@ -120,7 +133,7 @@ func Test_FindPaymentByHouseId(t *testing.T) {
 func Test_FindPaymentByHouseId_WithNotExistingRecords(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	payments := paymentService.FindPaymentByHouseId(uuid.New())
+	payments := paymentService.FindByHouseId(uuid.New())
 
 	assert.Equal(t, []model.PaymentResponse{}, payments)
 }
@@ -133,11 +146,11 @@ func Test_FindPaymentByUserId(t *testing.T) {
 
 	request := generateCreatePaymentRequest()
 
-	payment, err := paymentService.AddPayment(request)
+	payment, err := paymentService.Add(request)
 
 	assert.Nil(t, err)
 
-	payments := paymentService.FindPaymentByUserId(payment.UserId)
+	payments := paymentService.FindByUserId(payment.UserId)
 
 	assert.Equal(t, []model.PaymentResponse{payment}, payments)
 }
@@ -145,7 +158,7 @@ func Test_FindPaymentByUserId(t *testing.T) {
 func Test_FindPaymentByUserId_WithNotExistingRecords(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	payments := paymentService.FindPaymentByUserId(uuid.New())
+	payments := paymentService.FindByUserId(uuid.New())
 
 	assert.Equal(t, []model.PaymentResponse{}, payments)
 }
