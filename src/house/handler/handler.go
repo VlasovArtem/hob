@@ -1,18 +1,34 @@
 package handler
 
 import (
+	"common/dependency"
 	"common/rest"
+	"github.com/gorilla/mux"
 	"house/model"
 	"house/service"
 	"net/http"
 )
 
-type houseHandlerObject struct {
+type HouseHandlerObject struct {
 	houseService service.HouseService
 }
 
 func NewHouseHandler(houseService service.HouseService) HouseHandler {
-	return &houseHandlerObject{houseService}
+	return &HouseHandlerObject{houseService}
+}
+
+func (h *HouseHandlerObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(
+		NewHouseHandler(factory.FindRequiredByObject(service.HouseServiceObject{}).(service.HouseService)),
+	)
+}
+
+func (h *HouseHandlerObject) Init(router *mux.Router) {
+	subrouter := router.PathPrefix("/api/v1/house").Subrouter()
+
+	subrouter.Path("").HandlerFunc(h.Add()).Methods("POST")
+	subrouter.Path("/{id}").HandlerFunc(h.FindById()).Methods("GET")
+	subrouter.Path("/user/{id}").HandlerFunc(h.FindByUserId()).Methods("GET")
 }
 
 type HouseHandler interface {
@@ -21,7 +37,7 @@ type HouseHandler interface {
 	FindByUserId() http.HandlerFunc
 }
 
-func (h *houseHandlerObject) Add() http.HandlerFunc {
+func (h *HouseHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := model.CreateHouseRequest{}
 
@@ -35,7 +51,7 @@ func (h *houseHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (h *houseHandlerObject) FindById() http.HandlerFunc {
+func (h *HouseHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -49,7 +65,7 @@ func (h *houseHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (h *houseHandlerObject) FindByUserId() http.HandlerFunc {
+func (h *HouseHandlerObject) FindByUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)

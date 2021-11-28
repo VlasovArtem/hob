@@ -1,13 +1,15 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 type User struct {
-	Id        uuid.UUID
+	Id        uuid.UUID `gorm:"primarykey"`
 	FirstName string
 	LastName  string
-	password  []byte
-	Email     string
+	Password  []byte
+	Email     string `gorm:"unique"`
 }
 
 type UserResponse struct {
@@ -20,7 +22,7 @@ type UserResponse struct {
 type CreateUserRequest struct {
 	FirstName string
 	LastName  string
-	Password  []byte
+	Password  string
 	Email     string
 }
 
@@ -29,7 +31,7 @@ func (u CreateUserRequest) ToEntity() User {
 		Id:        uuid.New(),
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
-		password:  u.Password,
+		Password:  []byte(u.Password),
 		Email:     u.Email,
 	}
 }

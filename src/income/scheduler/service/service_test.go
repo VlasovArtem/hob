@@ -7,44 +7,51 @@ import (
 	"github.com/robfig/cron"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	houseMocks "house/mocks"
+	incomeMocks "income/mocks"
 	incomeModel "income/model"
-	incomeSchedulerModel "income/scheduler/model"
-	scheduler2 "scheduler"
-	innerMock "test/mock"
-	"test/testhelper"
+	"income/scheduler/mocks"
+	"income/scheduler/model"
+	schedulerMocks "scheduler/mocks"
 	"testing"
 )
 
 var (
-	houses     *innerMock.HouseServiceMock
-	incomes    *innerMock.IncomeServiceMock
-	schedulers *innerMock.SchedulerServiceMock
-	houseId    = testhelper.ParseUUID("99c48818-ea50-4f56-8d02-44e55e3bfc32")
+	houses              *houseMocks.HouseService
+	incomes             *incomeMocks.IncomeService
+	schedulers          *schedulerMocks.ServiceScheduler
+	schedulerRepository *mocks.IncomeSchedulerRepository
 )
 
 func serviceGenerator() IncomeSchedulerService {
-	houses = new(innerMock.HouseServiceMock)
-	incomes = new(innerMock.IncomeServiceMock)
-	schedulers = new(innerMock.SchedulerServiceMock)
+	houses = new(houseMocks.HouseService)
+	incomes = new(incomeMocks.IncomeService)
+	schedulers = new(schedulerMocks.ServiceScheduler)
+	schedulerRepository = new(mocks.IncomeSchedulerRepository)
 
-	return NewIncomeSchedulerService(houses, incomes, schedulers)
+	return NewIncomeSchedulerService(houses, incomes, schedulers, schedulerRepository)
 }
 
 func Test_Add(t *testing.T) {
 	service := serviceGenerator()
+	request := mocks.GenerateCreateIncomeSchedulerRequest()
 
-	houses.On("ExistsById", houseId).
+	houses.On("ExistsById", request.HouseId).
 		Return(true)
 	schedulers.On("Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
 		Return(cron.EntryID(0), nil)
-
-	request := generateCreateIncomeSchedulerRequest()
+	schedulerRepository.On("Create", mock.Anything).Return(
+		func(meter model.IncomeScheduler) model.IncomeScheduler {
+			return meter
+		},
+		nil,
+	)
 
 	payment, err := service.Add(request)
 
 	expectedEntity := request.ToEntity()
 	expectedEntity.Id = payment.Id
-	expectedResponse := expectedEntity.ToResponse()
+	expectedResponse := expectedEntity.ToDto()
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedResponse, payment)
@@ -60,183 +67,175 @@ func Test_Add(t *testing.T) {
 	assert.Equal(t, incomeModel.CreateIncomeRequest{
 		Name:        "Test Income",
 		Description: "Test Income Description",
-		HouseId:     houseId,
+		HouseId:     createIncomeRequest.HouseId,
 		Date:        createIncomeRequest.Date,
 		Sum:         1000,
 	}, createIncomeRequest)
-
-	serviceObject := service.(*incomeSchedulerServiceObject)
-
-	_, paymentExists := serviceObject.incomeSchedulers[payment.Id]
-	assert.True(t, paymentExists)
-
-	_, housePaymentExists := serviceObject.houseIncomeSchedulers[payment.HouseId]
-	assert.True(t, housePaymentExists)
 }
 
 func Test_Add_WithHouseNotExists(t *testing.T) {
 	service := serviceGenerator()
+	request := mocks.GenerateCreateIncomeSchedulerRequest()
 
-	houses.On("ExistsById", houseId).Return(false)
-
-	request := generateCreateIncomeSchedulerRequest()
+	houses.On("ExistsById", request.HouseId).Return(false)
 
 	payment, err := service.Add(request)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s not found", request.HouseId)), err)
-	assert.Equal(t, incomeSchedulerModel.IncomeSchedulerResponse{}, payment)
-	assert.Len(t, service.(*incomeSchedulerServiceObject).incomeSchedulers, 0)
-	assert.Len(t, service.(*incomeSchedulerServiceObject).houseIncomeSchedulers, 0)
+	assert.Equal(t, model.IncomeSchedulerDto{}, payment)
+	schedulers.AssertNotCalled(t, "Create", mock.Anything, "@daily", mock.Anything)
 }
 
 func Test_Add_WithInvalidSpec(t *testing.T) {
 	service := serviceGenerator()
+	request := mocks.GenerateCreateIncomeSchedulerRequest()
 
-	houses.On("ExistsById", houseId).
+	houses.On("ExistsById", request.HouseId).
 		Return(true)
-	schedulers.On("Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
+	schedulers.On("Create", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
 		Return(cron.EntryID(0), nil)
 
-	request := generateCreateIncomeSchedulerRequest()
 	request.Spec = ""
 
 	payment, err := service.Add(request)
 
 	assert.Equal(t, errors.New("scheduler configuration not provided"), err)
-	assert.Equal(t, incomeSchedulerModel.IncomeSchedulerResponse{}, payment)
-	assert.Len(t, service.(*incomeSchedulerServiceObject).incomeSchedulers, 0)
-	assert.Len(t, service.(*incomeSchedulerServiceObject).houseIncomeSchedulers, 0)
+	assert.Equal(t, model.IncomeSchedulerDto{}, payment)
 }
 
 func Test_Add_WithErrorDuringScheduling(t *testing.T) {
 	service := serviceGenerator()
+	request := mocks.GenerateCreateIncomeSchedulerRequest()
 
-	houses.On("ExistsById", houseId).
+	houses.On("ExistsById", request.HouseId).
 		Return(true)
 	schedulers.On("Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
 		Return(cron.EntryID(0), errors.New("error"))
 
-	request := generateCreateIncomeSchedulerRequest()
-
 	payment, err := service.Add(request)
 
 	assert.Equal(t, errors.New("error"), err)
-	assert.Equal(t, incomeSchedulerModel.IncomeSchedulerResponse{}, payment)
-	assert.Len(t, service.(*incomeSchedulerServiceObject).incomeSchedulers, 0)
-	assert.Len(t, service.(*incomeSchedulerServiceObject).houseIncomeSchedulers, 0)
+	assert.Equal(t, model.IncomeSchedulerDto{}, payment)
 }
 
 func Test_Remove(t *testing.T) {
 	service := serviceGenerator()
 
-	scheduler := generatePaymentScheduler()
+	scheduler := mocks.GenerateIncomeScheduler(uuid.New())
 
-	service.(*incomeSchedulerServiceObject).incomeSchedulers[scheduler.Id] = scheduler
-	service.(*incomeSchedulerServiceObject).houseIncomeSchedulers[scheduler.HouseId] = scheduler
-
+	schedulerRepository.On("ExistsById", scheduler.Id).Return(true)
 	schedulers.On("Remove", scheduler.Id).Return(nil)
+	schedulerRepository.On("DeleteById", scheduler.Id).Return()
 
 	err := service.Remove(scheduler.Id)
 
 	assert.Nil(t, err)
 
-	assert.Len(t, service.(*incomeSchedulerServiceObject).incomeSchedulers, 0)
-	assert.Len(t, service.(*incomeSchedulerServiceObject).houseIncomeSchedulers, 0)
+	schedulerRepository.AssertCalled(t, "ExistsById", scheduler.Id)
+	schedulers.AssertCalled(t, "Remove", scheduler.Id)
+	schedulerRepository.AssertCalled(t, "DeleteById", scheduler.Id)
 }
 
-func Test_Remove_WithErrorFromScheduler(t *testing.T) {
+func Test_Remove_WithNotExistsScheduler(t *testing.T) {
 	service := serviceGenerator()
 
-	scheduler := generatePaymentScheduler()
+	scheduler := mocks.GenerateIncomeScheduler(uuid.New())
 
-	service.(*incomeSchedulerServiceObject).incomeSchedulers[scheduler.Id] = scheduler
-	service.(*incomeSchedulerServiceObject).houseIncomeSchedulers[scheduler.HouseId] = scheduler
+	schedulerRepository.On("ExistsById", scheduler.Id).Return(false)
 
-	schedulers.On("Remove", scheduler.Id).Return(errors.New("error"))
+	err := service.Remove(scheduler.Id)
+
+	assert.Equal(t, errors.New(fmt.Sprintf("income scheduler with id %s not found", scheduler.Id)), err)
+
+	schedulerRepository.AssertCalled(t, "ExistsById", scheduler.Id)
+	schedulers.AssertNotCalled(t, "Remove", scheduler.Id)
+	schedulerRepository.AssertNotCalled(t, "DeleteById", scheduler.Id)
+}
+
+func Test_Remove_WithErrorDuringRemoveScheduler(t *testing.T) {
+	service := serviceGenerator()
+
+	scheduler := mocks.GenerateIncomeScheduler(uuid.New())
+	expectedError := errors.New("test")
+
+	schedulerRepository.On("ExistsById", scheduler.Id).Return(true)
+	schedulers.On("Remove", scheduler.Id).Return(expectedError)
+	schedulerRepository.On("DeleteById", scheduler.Id).Return()
 
 	err := service.Remove(scheduler.Id)
 
 	assert.Nil(t, err)
 
-	assert.Len(t, service.(*incomeSchedulerServiceObject).incomeSchedulers, 0)
-	assert.Len(t, service.(*incomeSchedulerServiceObject).houseIncomeSchedulers, 0)
-}
-
-func Test_Remove_WithMissingRecord(t *testing.T) {
-	service := serviceGenerator()
-
-	id := uuid.New()
-
-	err := service.Remove(id)
-
-	assert.Equal(t, errors.New(fmt.Sprintf("income scheduler with id %s not found", id)), err)
+	schedulerRepository.AssertCalled(t, "ExistsById", scheduler.Id)
+	schedulers.AssertCalled(t, "Remove", scheduler.Id)
+	schedulerRepository.AssertCalled(t, "DeleteById", scheduler.Id)
 }
 
 func Test_FindById(t *testing.T) {
 	service := serviceGenerator()
 
-	scheduler := generatePaymentScheduler()
+	scheduler := mocks.GenerateIncomeScheduler(uuid.New())
 
-	service.(*incomeSchedulerServiceObject).incomeSchedulers[scheduler.Id] = scheduler
+	schedulerRepository.On("ExistsById", scheduler.Id).Return(true)
+	schedulerRepository.On("FindById", scheduler.Id).Return(scheduler, nil)
 
 	actual, err := service.FindById(scheduler.Id)
 
 	assert.Nil(t, err)
-	assert.Equal(t, scheduler.ToResponse(), actual)
+	assert.Equal(t, scheduler.ToDto(), actual)
 }
 
 func Test_FindById_WithNotExistingId(t *testing.T) {
 	paymentService := serviceGenerator()
 
 	id := uuid.New()
+
+	schedulerRepository.On("ExistsById", id).Return(false)
+
 	actual, err := paymentService.FindById(id)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("income scheduler with id %s not found", id)), err)
-	assert.Equal(t, incomeSchedulerModel.IncomeSchedulerResponse{}, actual)
+	assert.Equal(t, model.IncomeSchedulerDto{}, actual)
+
+	schedulerRepository.AssertNotCalled(t, "FindById", id)
+}
+
+func Test_FindById_WithErrorFromDatabase(t *testing.T) {
+	paymentService := serviceGenerator()
+
+	id := uuid.New()
+	expectedError := errors.New("error")
+
+	schedulerRepository.On("ExistsById", id).Return(true)
+	schedulerRepository.On("FindById", id).Return(model.IncomeScheduler{}, expectedError)
+
+	actual, err := paymentService.FindById(id)
+
+	assert.Equal(t, expectedError, err)
+	assert.Equal(t, model.IncomeSchedulerDto{}, actual)
+
+	schedulerRepository.AssertCalled(t, "FindById", id)
 }
 
 func Test_FindByHouseId(t *testing.T) {
 	service := serviceGenerator()
 
-	scheduler := generatePaymentScheduler()
+	scheduler := mocks.GenerateIncomeScheduler(uuid.New())
 
-	service.(*incomeSchedulerServiceObject).houseIncomeSchedulers[scheduler.HouseId] = scheduler
+	schedulerRepository.On("FindByHouseId", scheduler.HouseId).Return([]model.IncomeScheduler{scheduler})
 
-	actual, err := service.FindByHouseId(scheduler.HouseId)
+	actual := service.FindByHouseId(scheduler.HouseId)
 
-	assert.Nil(t, err)
-	assert.Equal(t, scheduler.ToResponse(), actual)
+	assert.Equal(t, []model.IncomeSchedulerDto{scheduler.ToDto()}, actual)
 }
 
 func Test_FindByHouseId_WithNotExistingRecords(t *testing.T) {
 	paymentService := serviceGenerator()
 
 	id := uuid.New()
-	actual, err := paymentService.FindByHouseId(id)
+	schedulerRepository.On("FindByHouseId", id).Return([]model.IncomeScheduler{})
 
-	assert.Equal(t, errors.New(fmt.Sprintf("income scheduler with house id %s not found", id)), err)
-	assert.Equal(t, incomeSchedulerModel.IncomeSchedulerResponse{}, actual)
-}
+	actual := paymentService.FindByHouseId(id)
 
-func generateCreateIncomeSchedulerRequest() incomeSchedulerModel.CreateIncomeSchedulerRequest {
-	return incomeSchedulerModel.CreateIncomeSchedulerRequest{
-		Name:        "Test Income",
-		Description: "Test Income Description",
-		HouseId:     houseId,
-		Sum:         1000,
-		Spec:        scheduler2.DAILY,
-	}
-}
-
-func generatePaymentScheduler() incomeSchedulerModel.IncomeScheduler {
-	return incomeSchedulerModel.IncomeScheduler{
-		Income: incomeModel.Income{
-			Id:          uuid.New(),
-			Name:        "Test Income",
-			Description: "Test Income Description",
-			HouseId:     houseId,
-			Sum:         1000,
-		},
-		Spec: scheduler2.DAILY,
-	}
+	assert.Equal(t, []model.IncomeSchedulerDto{}, actual)
 }

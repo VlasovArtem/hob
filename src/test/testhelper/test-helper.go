@@ -2,7 +2,7 @@ package testhelper
 
 import (
 	"bytes"
-	helperModel "common/model"
+	helperModel "common/errors"
 	"country/model"
 	countries "country/service"
 	"encoding/json"
@@ -120,11 +120,11 @@ func (t *TestRequest) Verify(test *testing.T, expectedStatusCode int) []byte {
 	return ReadBytes(response)
 }
 
-func ReadErrorResponse(content []byte) (response helperModel.ErrorResponse) {
-	errorResponse := helperModel.ErrorResponse{}
+func ReadErrorResponse(content []byte) (response helperModel.ErrorResponseObject) {
+	errorResponse := helperModel.ErrorResponseObject{}
 
 	if err := json.Unmarshal(content, &errorResponse); err != nil {
-		log.Fatal("Could not parse ErrorResponse")
+		log.Fatal("Could not parse ErrorResponseObject")
 	}
 
 	return errorResponse

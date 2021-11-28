@@ -1,59 +1,66 @@
 package service
 
 import (
+	"common/dependency"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	hs "house/service"
 	"income/model"
+	"income/repository"
 )
 
-type incomeServiceObject struct {
+type IncomeServiceObject struct {
 	houseService hs.HouseService
-	incomes      map[uuid.UUID]model.Income
-	houseIncomes map[uuid.UUID]model.Income
+	repository   repository.IncomeRepository
 }
 
-func NewIncomeService(houseService hs.HouseService) IncomeService {
-	return &incomeServiceObject{
+func NewIncomeService(houseService hs.HouseService, repository repository.IncomeRepository) IncomeService {
+	return &IncomeServiceObject{
 		houseService: houseService,
-		incomes:      make(map[uuid.UUID]model.Income),
-		houseIncomes: make(map[uuid.UUID]model.Income),
+		repository:   repository,
 	}
+}
+
+func (i *IncomeServiceObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(
+		NewIncomeService(
+			factory.FindRequiredByObject(hs.HouseServiceObject{}).(hs.HouseService),
+			factory.FindRequiredByObject(repository.IncomeRepositoryObject{}).(repository.IncomeRepository),
+		),
+	)
 }
 
 type IncomeService interface {
 	Add(request model.CreateIncomeRequest) (model.IncomeResponse, error)
 	FindById(id uuid.UUID) (model.IncomeResponse, error)
-	FindByHouseId(id uuid.UUID) (model.IncomeResponse, error)
+	FindByHouseId(id uuid.UUID) []model.IncomeResponse
 }
 
-func (i *incomeServiceObject) Add(request model.CreateIncomeRequest) (response model.IncomeResponse, err error) {
+func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response model.IncomeResponse, err error) {
 	if !i.houseService.ExistsById(request.HouseId) {
 		return response, errors.New(fmt.Sprintf("house with id %s not exists", request.HouseId))
 	}
 
-	entity := request.ToEntity()
-
-	i.incomes[entity.Id] = entity
-	i.houseIncomes[entity.HouseId] = entity
-
-	return entity.ToResponse(), nil
-}
-
-func (i *incomeServiceObject) FindById(id uuid.UUID) (response model.IncomeResponse, err error) {
-	if income, ok := i.incomes[id]; !ok {
-		return response, errors.New(fmt.Sprintf("income with id %s not exists", id))
+	if entity, err := i.repository.Create(request.ToEntity()); err != nil {
+		return response, err
 	} else {
-		return income.ToResponse(), nil
+		return entity.ToResponse(), nil
 	}
 }
 
-func (i *incomeServiceObject) FindByHouseId(id uuid.UUID) (response model.IncomeResponse, err error) {
-	if income, ok := i.houseIncomes[id]; !ok {
-		return response, errors.New(fmt.Sprintf("income with house id %s not found", id))
-
+func (i *IncomeServiceObject) FindById(id uuid.UUID) (response model.IncomeResponse, err error) {
+	if response, err = i.repository.FindResponseById(id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return response, errors.New(fmt.Sprintf("income with id %s not exists", id))
+		}
+		return response, err
 	} else {
-		return income.ToResponse(), nil
+		return response, nil
 	}
+}
+
+func (i *IncomeServiceObject) FindByHouseId(id uuid.UUID) []model.IncomeResponse {
+	return i.repository.FindResponseByHouseId(id)
 }

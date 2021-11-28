@@ -1,21 +1,40 @@
 package handler
 
 import (
+	"common/dependency"
 	"common/rest"
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"net/http"
 	"payment/model"
 	ps "payment/service"
 )
 
-type paymentHandlerObject struct {
+type PaymentHandlerObject struct {
 	paymentService ps.PaymentService
 }
 
 func NewPaymentHandler(paymentService ps.PaymentService) PaymentHandler {
-	return &paymentHandlerObject{
+	return &PaymentHandlerObject{
 		paymentService: paymentService,
 	}
+}
+
+func (p *PaymentHandlerObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(
+		NewPaymentHandler(
+			factory.FindRequiredByObject(ps.PaymentServiceObject{}).(ps.PaymentService),
+		),
+	)
+}
+
+func (p *PaymentHandlerObject) Init(router *mux.Router) {
+	subrouter := router.PathPrefix("/api/v1/payment").Subrouter()
+
+	subrouter.Path("").HandlerFunc(p.Add()).Methods("POST")
+	subrouter.Path("/{id}").HandlerFunc(p.FindById()).Methods("GET")
+	subrouter.Path("/house/{id}").HandlerFunc(p.FindByHouseId()).Methods("GET")
+	subrouter.Path("/user/{id}").HandlerFunc(p.FindByUserId()).Methods("GET")
 }
 
 type PaymentHandler interface {
@@ -25,7 +44,7 @@ type PaymentHandler interface {
 	FindByUserId() http.HandlerFunc
 }
 
-func (p *paymentHandlerObject) Add() http.HandlerFunc {
+func (p *PaymentHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		paymentRequest := model.CreatePaymentRequest{}
 
@@ -42,7 +61,7 @@ func (p *paymentHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (p *paymentHandlerObject) FindById() http.HandlerFunc {
+func (p *PaymentHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -54,7 +73,7 @@ func (p *paymentHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (p *paymentHandlerObject) FindByHouseId() http.HandlerFunc {
+func (p *PaymentHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -64,7 +83,7 @@ func (p *paymentHandlerObject) FindByHouseId() http.HandlerFunc {
 	}
 }
 
-func (p *paymentHandlerObject) FindByUserId() http.HandlerFunc {
+func (p *PaymentHandlerObject) FindByUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)

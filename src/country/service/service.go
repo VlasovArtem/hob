@@ -4,10 +4,10 @@ import (
 	"country/model"
 	"errors"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
-type countryServiceObject struct {
+type CountryServiceObject struct {
 	countriesMap map[string]model.Country
 	countries    []model.Country
 }
@@ -18,7 +18,7 @@ type CountryService interface {
 }
 
 func NewCountryService(countries []model.Country) CountryService {
-	object := &countryServiceObject{
+	object := &CountryServiceObject{
 		countriesMap: make(map[string]model.Country),
 		countries:    countries,
 	}
@@ -27,18 +27,18 @@ func NewCountryService(countries []model.Country) CountryService {
 		object.countriesMap[country.Code] = country
 	}
 
-	log.Println("Countries init completed")
+	log.Info().Msg("Countries init completed")
 
 	return object
 }
 
-func (c *countryServiceObject) FindCountryByCode(code string) (error, model.Country) {
+func (c *CountryServiceObject) FindCountryByCode(code string) (error, model.Country) {
 	if country, ok := c.countriesMap[code]; ok {
 		return nil, country
 	}
 	return errors.New(fmt.Sprintf("country with code %s is not found", code)), model.Country{}
 }
 
-func (c *countryServiceObject) FindAllCountries() []model.Country {
+func (c *CountryServiceObject) FindAllCountries() []model.Country {
 	return c.countries
 }

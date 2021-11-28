@@ -2,12 +2,12 @@ package service
 
 import (
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
-func HandleError(err error, message string) bool {
+func LogError(err error, message string) bool {
 	if err != nil {
-		log.Println(fmt.Sprint(err, message))
+		log.Err(err).Msg(fmt.Sprint(err, message))
 		return true
 	}
 	return false

@@ -1,21 +1,34 @@
 package handler
 
 import (
-	helperModel "common/model"
+	"common/dependency"
+	projectErrors "common/errors"
 	"common/rest"
 	"encoding/json"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"net/http"
 	"user/model"
 	"user/service"
+	"user/validator"
 )
 
-type userHandlerObject struct {
-	userService service.UserService
+type UserHandlerObject struct {
+	userService   service.UserService
+	userValidator validator.UserRequestValidator
 }
 
-func NewUserHandler(userService service.UserService) UserHandler {
-	return &userHandlerObject{userService}
+func NewUserHandler(userService service.UserService, userValidator validator.UserRequestValidator) UserHandler {
+	return &UserHandlerObject{userService, userValidator}
+}
+
+func (u *UserHandlerObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(
+		NewUserHandler(
+			factory.FindRequiredByObject(service.UserServiceObject{}).(service.UserService),
+			factory.FindRequiredByObject(validator.UserRequestValidatorObject{}).(validator.UserRequestValidator),
+		),
+	)
 }
 
 type UserHandler interface {
@@ -23,7 +36,14 @@ type UserHandler interface {
 	FindById() http.HandlerFunc
 }
 
-func (u *userHandlerObject) Add() http.HandlerFunc {
+func (u *UserHandlerObject) Init(router *mux.Router) {
+	userRouter := router.PathPrefix("/api/v1/user").Subrouter()
+
+	userRouter.Path("").HandlerFunc(u.Add()).Methods("POST")
+	userRouter.Path("/{id}").HandlerFunc(u.FindById()).Methods("GET")
+}
+
+func (u *UserHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := model.CreateUserRequest{}
 
@@ -31,14 +51,12 @@ func (u *userHandlerObject) Add() http.HandlerFunc {
 			rest.HandleBadRequestWithError(writer, err)
 			return
 		}
-		if rest.HandleIfRequiredBadRequestWithErrorResponse(writer, validateCreateUserRequest(requestEntity)) {
+		if rest.HandleBadRequestWithErrorResponse(writer, u.userValidator.ValidateCreateRequest(requestEntity)) {
 			return
 		}
 
 		if userResponse, err := u.userService.Add(requestEntity); err != nil {
-			rest.HandleBadRequestWithErrorResponse(writer, helperModel.ErrorResponse{
-				Error: err.Error(),
-			})
+			rest.HandleBadRequestWithErrorResponse(writer, projectErrors.NewWithDetails(err.Error()))
 		} else {
 			writer.WriteHeader(http.StatusCreated)
 			json.NewEncoder(writer).Encode(userResponse)
@@ -46,7 +64,7 @@ func (u *userHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (u *userHandlerObject) FindById() http.HandlerFunc {
+func (u *UserHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if parameter, err := rest.GetRequestParameter(request, "id"); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -63,28 +81,5 @@ func (u *userHandlerObject) FindById() http.HandlerFunc {
 				}
 			}
 		}
-	}
-}
-
-func validateCreateUserRequest(request model.CreateUserRequest) helperModel.ErrorResponse {
-	response := helperModel.ErrorResponse{
-		Error: "Create User Request Validation Error",
-	}
-
-	validateStringFieldNotEmpty(&response, request.Email, "email should not be empty")
-	validateByteFieldNotEmpty(&response, request.Password, "password should not be empty")
-
-	return response
-}
-
-func validateStringFieldNotEmpty(errorsAccumulator *helperModel.ErrorResponse, value string, message string) {
-	if value == "" {
-		errorsAccumulator.Messages = append(errorsAccumulator.Messages, message)
-	}
-}
-
-func validateByteFieldNotEmpty(errorsAccumulator *helperModel.ErrorResponse, value []byte, message string) {
-	if len(value) == 0 {
-		errorsAccumulator.Messages = append(errorsAccumulator.Messages, message)
 	}
 }

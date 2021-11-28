@@ -5,133 +5,133 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
+	"house/mocks"
 	"house/model"
-	"test"
-	"test/mock"
 	"test/testhelper"
 	"testing"
+	userMocks "user/mocks"
 )
 
 var (
-	users            *mock.UserServiceMock
+	users            *userMocks.UserService
+	repository       *mocks.HouseRepository
 	countriesService = testhelper.InitCountryService()
-	userId           = testhelper.ParseUUID("0757088a-ed8e-465e-b9ed-34ebacbfb3be")
 )
 
 func serviceGenerator() HouseService {
-	users = new(mock.UserServiceMock)
+	users = new(userMocks.UserService)
+	repository = new(mocks.HouseRepository)
 
-	return NewHouseService(countriesService, users)
+	return NewHouseService(countriesService, users, repository)
 }
 
 func Test_Add(t *testing.T) {
 	service := serviceGenerator()
 
-	users.On("ExistsById", userId).Return(true)
+	request := mocks.GenerateCreateHouseRequest()
 
-	request := generateCreateHouseRequest()
+	users.On("ExistsById", request.UserId).Return(true)
+	repository.On("Create", mock.Anything).Return(
+		func(house model.House) model.House { return house },
+		nil,
+	)
 
 	actual, err := service.Add(request)
 
 	assert.Nil(t, err)
-	assert.Equal(t, model.HouseResponse{
+	assert.Equal(t, model.HouseDto{
 		Id:          actual.Id,
 		Name:        "Test House",
-		Country:     "Ukraine",
+		CountryCode: "UA",
 		City:        "City",
 		StreetLine1: "StreetLine1",
 		StreetLine2: "StreetLine2",
-		UserId:      userId,
+		UserId:      request.UserId,
 	}, actual)
-
-	serviceObject := service.(*houseServiceObject)
-
-	_, houseExists := serviceObject.houses[actual.Id]
-	assert.True(t, houseExists)
-
-	_, userHouseExists := serviceObject.userHouses[actual.UserId]
-	assert.True(t, userHouseExists)
 }
 
 func Test_FindById(t *testing.T) {
 	houseService := serviceGenerator()
 
-	house := generateCreateHouse()
+	house := mocks.GenerateHouseResponse()
 
-	houseService.(*houseServiceObject).houses[house.Id] = house
+	repository.On("FindResponseById", house.Id).Return(house, nil)
 
 	actual, err := houseService.FindById(house.Id)
 
 	assert.Nil(t, err)
-	assert.Equal(t, house.ToResponse(), actual)
+	assert.Equal(t, house, actual)
 }
 
-func Test_FindById_WithNotExists(t *testing.T) {
+func Test_FindById_WithRecordNotFound(t *testing.T) {
 	houseService := serviceGenerator()
 
 	id := uuid.New()
 
+	repository.On("FindResponseById", id).Return(model.HouseDto{}, gorm.ErrRecordNotFound)
+
 	actual, err := houseService.FindById(id)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s not found", id)), err)
-	assert.Equal(t, model.HouseResponse{}, actual)
+	assert.Equal(t, model.HouseDto{}, actual)
+}
+
+func Test_FindById_WithRecordNotFoundExists(t *testing.T) {
+	houseService := serviceGenerator()
+
+	id := uuid.New()
+
+	expectedError := errors.New("error")
+	repository.On("FindResponseById", id).Return(model.HouseDto{}, expectedError)
+
+	actual, err := houseService.FindById(id)
+
+	assert.Equal(t, expectedError, err)
+	assert.Equal(t, model.HouseDto{}, actual)
 }
 
 func Test_FindByUserId(t *testing.T) {
 	houseService := serviceGenerator()
 
-	house := generateCreateHouse()
+	house := mocks.GenerateHouseResponse()
 
-	houseService.(*houseServiceObject).userHouses[house.UserId] = []model.House{house}
+	repository.On("FindResponseByUserId", house.UserId).Return([]model.HouseDto{house})
 
 	actual := houseService.FindByUserId(house.UserId)
 
-	assert.Equal(t, []model.HouseResponse{house.ToResponse()}, actual)
+	assert.Equal(t, []model.HouseDto{house}, actual)
 }
 
 func Test_FindByUserId_WithNotExists(t *testing.T) {
 	houseService := serviceGenerator()
 
-	actual := houseService.FindByUserId(uuid.New())
+	id := uuid.New()
 
-	assert.Equal(t, []model.HouseResponse{}, actual)
+	repository.On("FindResponseByUserId", id).Return([]model.HouseDto{})
+
+	actual := houseService.FindByUserId(id)
+
+	assert.Equal(t, []model.HouseDto{}, actual)
 }
 
 func Test_ExistsById(t *testing.T) {
 	houseService := serviceGenerator()
 
-	house := generateCreateHouse()
+	houseId := uuid.New()
 
-	houseService.(*houseServiceObject).houses[house.Id] = house
+	repository.On("ExistsById", houseId).Return(true)
 
-	assert.True(t, houseService.ExistsById(house.Id))
+	assert.True(t, houseService.ExistsById(houseId))
 }
 
 func Test_ExistsById_WithNotExists(t *testing.T) {
 	houseService := serviceGenerator()
 
-	assert.False(t, houseService.ExistsById(uuid.New()))
-}
+	id := uuid.New()
 
-func generateCreateHouseRequest() model.CreateHouseRequest {
-	return model.CreateHouseRequest{
-		Name:        "Test House",
-		Country:     "UA",
-		City:        "City",
-		StreetLine1: "StreetLine1",
-		StreetLine2: "StreetLine2",
-		UserId:      userId,
-	}
-}
+	repository.On("ExistsById", id).Return(false)
 
-func generateCreateHouse() model.House {
-	return model.House{
-		Id:          uuid.New(),
-		Name:        "Test House",
-		Country:     test.CountryObject,
-		City:        "City",
-		StreetLine1: "StreetLine1",
-		StreetLine2: "StreetLine2",
-		UserId:      userId,
-	}
+	assert.False(t, houseService.ExistsById(id))
 }

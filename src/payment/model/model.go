@@ -2,17 +2,21 @@ package model
 
 import (
 	"github.com/google/uuid"
+	houseModel "house/model"
 	"time"
+	userModel "user/model"
 )
 
 type Payment struct {
-	Id          uuid.UUID
+	Id          uuid.UUID `gorm:"primarykey"`
 	Name        string
 	Description string
 	HouseId     uuid.UUID
 	UserId      uuid.UUID
 	Date        time.Time
 	Sum         float32
+	User        userModel.User   `gorm:"foreignKey:UserId"`
+	House       houseModel.House `gorm:"foreignKey:HouseId"`
 }
 
 type CreatePaymentRequest struct {
@@ -24,12 +28,26 @@ type CreatePaymentRequest struct {
 	Sum         float32
 }
 
-type PaymentResponse struct {
-	Payment
+type PaymentDto struct {
+	Id          uuid.UUID
+	Name        string
+	Description string
+	HouseId     uuid.UUID
+	UserId      uuid.UUID
+	Date        time.Time
+	Sum         float32
 }
 
-func (p Payment) ToResponse() PaymentResponse {
-	return PaymentResponse{p}
+func (p Payment) ToDto() PaymentDto {
+	return PaymentDto{
+		Id:          p.Id,
+		Name:        p.Name,
+		Description: p.Description,
+		HouseId:     p.HouseId,
+		UserId:      p.UserId,
+		Date:        p.Date,
+		Sum:         p.Sum,
+	}
 }
 
 func (c CreatePaymentRequest) ToEntity() Payment {

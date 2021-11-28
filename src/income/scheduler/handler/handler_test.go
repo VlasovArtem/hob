@@ -7,21 +7,21 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	incomeModel "income/model"
+	"income/scheduler/mocks"
 	incomeSchedulerModel "income/scheduler/model"
 	"net/http"
 	scheduler2 "scheduler"
-	"test/mock"
 	"test/testhelper"
 	"testing"
 )
 
 var (
-	incomesScheduler *mock.IncomeSchedulerServiceMock
+	incomesScheduler *mocks.IncomeSchedulerService
 	houseId          = testhelper.ParseUUID("d0495341-d8fe-4b2b-af9d-73a516cde342")
 )
 
 func handlerGenerator() IncomeSchedulerHandler {
-	incomesScheduler = new(mock.IncomeSchedulerServiceMock)
+	incomesScheduler = new(mocks.IncomeSchedulerService)
 
 	return NewIncomeSchedulerHandler(incomesScheduler)
 }
@@ -31,7 +31,7 @@ func Test_Add(t *testing.T) {
 
 	request := generateCreateIncomeSchedulerRequest()
 
-	incomesScheduler.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
+	incomesScheduler.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income/scheduler").
@@ -41,7 +41,7 @@ func Test_Add(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusCreated)
 
-	actual := incomeSchedulerModel.IncomeSchedulerResponse{}
+	actual := incomeSchedulerModel.IncomeSchedulerDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -66,7 +66,7 @@ func Test_Add_WithErrorFromService(t *testing.T) {
 
 	expected := errors.New("error")
 
-	incomesScheduler.On("Add", request).Return(incomeSchedulerModel.IncomeSchedulerResponse{}, expected)
+	incomesScheduler.On("Add", request).Return(incomeSchedulerModel.IncomeSchedulerDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income/scheduler").
@@ -127,10 +127,10 @@ func Test_FindById(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponse := generateIncomeSchedulerResponse(id)
+	incomeSchedulerResponse := generateIncomeSchedulerResponse(id)
 
 	incomesScheduler.On("FindById", id).
-		Return(paymentResponse, nil)
+		Return(incomeSchedulerResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income/scheduler/{id}").
@@ -140,11 +140,11 @@ func Test_FindById(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := incomeSchedulerModel.IncomeSchedulerResponse{}
+	actual := incomeSchedulerModel.IncomeSchedulerDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponse, actual)
+	assert.Equal(t, incomeSchedulerResponse, actual)
 }
 
 func Test_FindById_WithError(t *testing.T) {
@@ -155,7 +155,7 @@ func Test_FindById_WithError(t *testing.T) {
 	expected := errors.New("error")
 
 	incomesScheduler.On("FindById", id).
-		Return(incomeSchedulerModel.IncomeSchedulerResponse{}, expected)
+		Return(incomeSchedulerModel.IncomeSchedulerDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income/scheduler/{id}").
@@ -187,10 +187,10 @@ func Test_FindByHouseId(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponse := generateIncomeSchedulerResponse(id)
+	incomeSchedulerResponse := generateIncomeSchedulerResponse(id)
 
 	incomesScheduler.On("FindByHouseId", id).
-		Return(paymentResponse, nil)
+		Return([]incomeSchedulerModel.IncomeSchedulerDto{incomeSchedulerResponse})
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income/scheduler/house/{id}").
@@ -200,11 +200,34 @@ func Test_FindByHouseId(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := incomeSchedulerModel.IncomeSchedulerResponse{}
+	var actual []incomeSchedulerModel.IncomeSchedulerDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponse, actual)
+	assert.Equal(t, []incomeSchedulerModel.IncomeSchedulerDto{incomeSchedulerResponse}, actual)
+}
+
+func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
+	handler := handlerGenerator()
+
+	id := uuid.New()
+
+	incomesScheduler.On("FindByHouseId", id).
+		Return([]incomeSchedulerModel.IncomeSchedulerDto{})
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/income/scheduler/house/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindByHouseId()).
+		WithVar("id", id.String())
+
+	responseByteArray := testRequest.Verify(t, http.StatusOK)
+
+	var actual []incomeSchedulerModel.IncomeSchedulerDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(t, []incomeSchedulerModel.IncomeSchedulerDto{}, actual)
 }
 
 func Test_FindByHouseId_WithInvalidParameter(t *testing.T) {
@@ -221,6 +244,19 @@ func Test_FindByHouseId_WithInvalidParameter(t *testing.T) {
 	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
 }
 
+func Test_FindByHouseId_WithMissingParameter(t *testing.T) {
+	handler := handlerGenerator()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/income/scheduler/house/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindByHouseId())
+
+	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "parameter 'id' not found\n", string(responseByteArray))
+}
+
 func generateCreateIncomeSchedulerRequest() incomeSchedulerModel.CreateIncomeSchedulerRequest {
 	return incomeSchedulerModel.CreateIncomeSchedulerRequest{
 		Name:        "Test Income",
@@ -231,8 +267,8 @@ func generateCreateIncomeSchedulerRequest() incomeSchedulerModel.CreateIncomeSch
 	}
 }
 
-func generateIncomeSchedulerResponse(id uuid.UUID) incomeSchedulerModel.IncomeSchedulerResponse {
-	return incomeSchedulerModel.IncomeSchedulerResponse{
+func generateIncomeSchedulerResponse(id uuid.UUID) incomeSchedulerModel.IncomeSchedulerDto {
+	return incomeSchedulerModel.IncomeSchedulerDto{
 		IncomeScheduler: incomeSchedulerModel.IncomeScheduler{
 			Income: incomeModel.Income{
 				Id:          id,

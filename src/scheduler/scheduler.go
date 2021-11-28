@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"common/dependency"
 	"context"
 	"errors"
 	"fmt"
@@ -18,13 +19,13 @@ const (
 	ANNUALLY SchedulingSpecification = "@annually"
 )
 
-type schedulerServiceObject struct {
+type SchedulerServiceObject struct {
 	cron    *cron.Cron
 	entries map[uuid.UUID]cron.EntryID
 }
 
 func NewSchedulerService() ServiceScheduler {
-	schedulerService := &schedulerServiceObject{
+	schedulerService := &SchedulerServiceObject{
 		cron:    cron.New(),
 		entries: make(map[uuid.UUID]cron.EntryID),
 	}
@@ -33,13 +34,18 @@ func NewSchedulerService() ServiceScheduler {
 	return schedulerService
 }
 
+func (s *SchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(NewSchedulerService())
+}
+
 type ServiceScheduler interface {
 	Add(scheduledItemId uuid.UUID, scheduleSpec string, scheduleFunc func()) (cron.EntryID, error)
 	Remove(id uuid.UUID) error
 	Stop() context.Context
+	Update(id uuid.UUID, scheduleSpec string, scheduleFunc func()) (cron.EntryID, error)
 }
 
-func (s *schedulerServiceObject) Add(scheduledItemId uuid.UUID, scheduleSpec string, scheduleFunc func()) (entryID cron.EntryID, err error) {
+func (s *SchedulerServiceObject) Add(scheduledItemId uuid.UUID, scheduleSpec string, scheduleFunc func()) (entryID cron.EntryID, err error) {
 	if _, ok := s.entries[scheduledItemId]; ok {
 		return entryID, errors.New(fmt.Sprintf("scheduler for the entity id %s exists", scheduledItemId))
 	}
@@ -52,7 +58,7 @@ func (s *schedulerServiceObject) Add(scheduledItemId uuid.UUID, scheduleSpec str
 	}
 }
 
-func (s *schedulerServiceObject) Remove(scheduledItemId uuid.UUID) error {
+func (s *SchedulerServiceObject) Remove(scheduledItemId uuid.UUID) error {
 	if entryId, ok := s.entries[scheduledItemId]; !ok {
 		return errors.New(fmt.Sprintf("Scheduler with is %s not found", scheduledItemId))
 	} else {
@@ -61,6 +67,20 @@ func (s *schedulerServiceObject) Remove(scheduledItemId uuid.UUID) error {
 	return nil
 }
 
-func (s *schedulerServiceObject) Stop() context.Context {
+func (s *SchedulerServiceObject) Stop() context.Context {
 	return s.cron.Stop()
+}
+
+func (s *SchedulerServiceObject) Update(id uuid.UUID, scheduleSpec string, scheduleFunc func()) (entryID cron.EntryID, err error) {
+	if entryID, ok := s.entries[id]; !ok {
+		return entryID, errors.New(fmt.Sprintf("scheduler for the entity id %s not exists", id))
+	} else {
+		s.cron.Remove(entryID)
+		if entryID, err = s.cron.AddFunc(scheduleSpec, scheduleFunc); err != nil {
+			return entryID, err
+		} else {
+			s.entries[id] = entryID
+			return entryID, err
+		}
+	}
 }

@@ -2,13 +2,21 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"payment/model"
+	houseModel "house/model"
 	"scheduler"
+	userModel "user/model"
 )
 
 type PaymentScheduler struct {
-	model.Payment
-	Spec scheduler.SchedulingSpecification
+	Id          uuid.UUID `gorm:"primarykey"`
+	Name        string
+	Description string
+	HouseId     uuid.UUID
+	UserId      uuid.UUID
+	Sum         float32
+	User        userModel.User   `gorm:"foreignKey:UserId"`
+	House       houseModel.House `gorm:"foreignKey:HouseId"`
+	Spec        scheduler.SchedulingSpecification
 }
 
 type CreatePaymentSchedulerRequest struct {
@@ -20,24 +28,36 @@ type CreatePaymentSchedulerRequest struct {
 	Spec        scheduler.SchedulingSpecification
 }
 
-type PaymentSchedulerResponse struct {
-	PaymentScheduler
+type PaymentSchedulerDto struct {
+	Id          uuid.UUID
+	Name        string
+	Description string
+	HouseId     uuid.UUID
+	UserId      uuid.UUID
+	Sum         float32
+	Spec        scheduler.SchedulingSpecification
 }
 
-func (ps PaymentScheduler) ToResponse() PaymentSchedulerResponse {
-	return PaymentSchedulerResponse{ps}
+func (ps PaymentScheduler) ToDto() PaymentSchedulerDto {
+	return PaymentSchedulerDto{
+		Id:          ps.Id,
+		Name:        ps.Name,
+		Description: ps.Description,
+		HouseId:     ps.HouseId,
+		UserId:      ps.UserId,
+		Sum:         ps.Sum,
+		Spec:        ps.Spec,
+	}
 }
 
 func (request CreatePaymentSchedulerRequest) ToEntity() PaymentScheduler {
 	return PaymentScheduler{
-		Payment: model.Payment{
-			Id:          uuid.New(),
-			Name:        request.Name,
-			Description: request.Description,
-			HouseId:     request.HouseId,
-			UserId:      request.UserId,
-			Sum:         request.Sum,
-		},
-		Spec: request.Spec,
+		Id:          uuid.New(),
+		Name:        request.Name,
+		Description: request.Description,
+		HouseId:     request.HouseId,
+		UserId:      request.UserId,
+		Sum:         request.Sum,
+		Spec:        request.Spec,
 	}
 }

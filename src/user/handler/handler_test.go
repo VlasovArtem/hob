@@ -1,27 +1,38 @@
 package handler
 
 import (
-	helperModel "common/model"
+	helperModel "common/errors"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"net/http"
-	"test"
 	"test/testhelper"
 	"testing"
+	"user/mocks"
 	"user/model"
-	"user/service"
 )
 
-var userService, handler = func() (service.UserService, UserHandler) {
-	userService := service.NewUserService()
+var (
+	userService   *mocks.UserService
+	userValidator *mocks.UserRequestValidator
+)
 
-	return userService, NewUserHandler(userService)
-}()
+func generateHandler() UserHandler {
+	userService = new(mocks.UserService)
+	userValidator = new(mocks.UserRequestValidator)
+
+	return NewUserHandler(userService, userValidator)
+}
 
 func Test_AddUser(t *testing.T) {
-	request := test.GetCreateUserRequest()
+	handler := generateHandler()
+
+	request := mocks.GenerateCreateUserRequest()
+
+	userValidator.On("ValidateCreateRequest", request).Return(nil)
+	userService.On("Add", request).Return(mocks.GenerateUserResponse(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
@@ -35,10 +46,17 @@ func Test_AddUser(t *testing.T) {
 
 	json.Unmarshal(content, &actualResponse)
 
-	assert.Equal(t, test.GetUserResponse(actualResponse.Id, actualResponse.Email), actualResponse)
+	assert.Equal(t, model.UserResponse{
+		Id:        actualResponse.Id,
+		FirstName: "First Name",
+		LastName:  "Last Name",
+		Email:     "mail@mai.com",
+	}, actualResponse)
 }
 
 func Test_AddUserWithInvalidRequest(t *testing.T) {
+	handler := generateHandler()
+
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
@@ -48,10 +66,12 @@ func Test_AddUserWithInvalidRequest(t *testing.T) {
 }
 
 func Test_AddUserWithMissingDetails(t *testing.T) {
-	request := test.GetCreateUserRequest()
+	handler := generateHandler()
 
-	request.Email = ""
-	request.Password = []byte{}
+	request := mocks.GenerateCreateUserRequest()
+
+	error := helperModel.NewWithDetails("error", "details")
+	userValidator.On("ValidateCreateRequest", request).Return(error)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
@@ -61,23 +81,19 @@ func Test_AddUserWithMissingDetails(t *testing.T) {
 
 	response := testRequest.Verify(t, http.StatusBadRequest)
 
-	assert.Equal(t, helperModel.ErrorResponse{
-		Error: "Create User Request Validation Error",
-		Messages: []string{
-			"email should not be empty",
-			"password should not be empty",
-		},
-	}, testhelper.ReadErrorResponse(response))
+	assert.Equal(t, *error.(*helperModel.ErrorResponseObject), testhelper.ReadErrorResponse(response))
 }
 
-func Test_AddUserWithExistingEmail(t *testing.T) {
-	request := test.GetCreateUserRequest()
+func Test_Add_WithErrorFromService(t *testing.T) {
+	handler := generateHandler()
 
-	request.Email = "newemail@mail.com"
+	request := mocks.GenerateCreateUserRequest()
 
-	_, err := userService.Add(request)
+	userValidator.On("ValidateCreateRequest", request).Return(nil)
 
-	assert.Nil(t, err)
+	err := errors.New("error")
+
+	userService.On("Add", request).Return(model.UserResponse{}, err)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
@@ -87,36 +103,53 @@ func Test_AddUserWithExistingEmail(t *testing.T) {
 
 	response := testRequest.Verify(t, http.StatusBadRequest)
 
-	assert.Equal(t, helperModel.ErrorResponse{
-		Error: fmt.Sprintf("user with '%s' already exists", request.Email),
-	}, testhelper.ReadErrorResponse(response))
+	assert.Equal(t, helperModel.ErrorResponseObject{Error: "error"}, testhelper.ReadErrorResponse(response))
 }
 
 func Test_FindById(t *testing.T) {
-	request := test.GetCreateUserRequest()
+	handler := generateHandler()
 
-	user, err := userService.Add(request)
+	request := mocks.GenerateCreateUserRequest()
+	expected := request.ToEntity().ToResponse()
 
-	assert.Nil(t, err)
+	userService.On("FindById", expected.Id).Return(expected, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindById()).
-		WithVar("id", user.Id.String())
+		WithVar("id", expected.Id.String())
 
 	content := testRequest.Verify(t, http.StatusOK)
 
 	actual := model.UserResponse{}
 
-	err = json.Unmarshal(content, &actual)
+	err := json.Unmarshal(content, &actual)
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, user, actual)
+	assert.Equal(t, expected, actual)
+}
+
+func Test_FindById_WithErrorFromService(t *testing.T) {
+	handler := generateHandler()
+
+	userService.On("FindById", mock.Anything).Return(model.UserResponse{}, errors.New("test"))
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/user/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindById()).
+		WithVar("id", uuid.New().String())
+
+	content := testRequest.Verify(t, http.StatusNotFound)
+
+	assert.Equal(t, "test\n", string(content))
 }
 
 func Test_FindByIdWithMissingParameter(t *testing.T) {
+	handler := generateHandler()
+
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
@@ -127,41 +160,16 @@ func Test_FindByIdWithMissingParameter(t *testing.T) {
 	assert.Equal(t, "parameter 'id' not found\n", string(content))
 }
 
-func Test_FindByIdInvalid(t *testing.T) {
-	type args struct {
-		id   string
-		code int
-	}
+func Test_FindById_WithInvalidUUID(t *testing.T) {
+	handler := generateHandler()
 
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "invalid uuid",
-			args: args{
-				id:   "id",
-				code: http.StatusBadRequest,
-			},
-		},
-		{
-			name: "with not exists",
-			args: args{
-				id:   uuid.New().String(),
-				code: http.StatusNotFound,
-			},
-		},
-	}
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/user/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindById()).
+		WithVar("id", "id")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			testRequest := testhelper.NewTestRequest().
-				WithURL("https://test.com/api/v1/user/{id}").
-				WithMethod("GET").
-				WithHandler(handler.FindById()).
-				WithVar("id", tt.args.id)
+	content := testRequest.Verify(t, http.StatusBadRequest)
 
-			testRequest.Verify(t, tt.args.code)
-		})
-	}
+	assert.Equal(t, "invalid UUID length: 2\n", string(content))
 }

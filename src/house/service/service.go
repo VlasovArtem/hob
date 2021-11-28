@@ -1,82 +1,88 @@
 package service
 
 import (
+	"common/dependency"
 	countries "country/service"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"house/model"
+	"house/respository"
 	"log"
-	"user/service"
+	userService "user/service"
 )
 
-type houseServiceObject struct {
-	houses           map[uuid.UUID]model.House
-	userHouses       map[uuid.UUID][]model.House
+type HouseServiceObject struct {
 	countriesService countries.CountryService
-	userService      service.UserService
-}
-
-type HouseService interface {
-	Add(house model.CreateHouseRequest) (model.HouseResponse, error)
-	FindById(id uuid.UUID) (model.HouseResponse, error)
-	FindByUserId(userId uuid.UUID) []model.HouseResponse
-	ExistsById(id uuid.UUID) bool
+	userService      userService.UserService
+	repository       respository.HouseRepository
 }
 
 func NewHouseService(
 	countriesService countries.CountryService,
-	userService service.UserService,
+	userService userService.UserService,
+	repository respository.HouseRepository,
 ) HouseService {
 	if countriesService == nil {
 		log.Fatal("Country service is required")
 	}
 
-	return &houseServiceObject{
-		houses:           make(map[uuid.UUID]model.House),
-		userHouses:       make(map[uuid.UUID][]model.House),
+	return &HouseServiceObject{
 		countriesService: countriesService,
 		userService:      userService,
+		repository:       repository,
 	}
 }
 
-func (h *houseServiceObject) Add(request model.CreateHouseRequest) (response model.HouseResponse, err error) {
+func (h *HouseServiceObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(
+		NewHouseService(
+			factory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService),
+			factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),
+			factory.FindRequiredByObject(respository.HouseRepositoryObject{}).(respository.HouseRepository),
+		),
+	)
+}
+
+type HouseService interface {
+	Add(house model.CreateHouseRequest) (model.HouseDto, error)
+	FindById(id uuid.UUID) (model.HouseDto, error)
+	FindByUserId(userId uuid.UUID) []model.HouseDto
+	ExistsById(id uuid.UUID) bool
+}
+
+func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response model.HouseDto, err error) {
 	if err, country := h.countriesService.FindCountryByCode(request.Country); err != nil {
 		return response, err
 	} else if !h.userService.ExistsById(request.UserId) {
 		return response, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId))
 	} else {
 		entity := request.ToEntity(&country)
-		h.houses[entity.Id] = entity
-		h.userHouses[entity.UserId] = append(h.userHouses[entity.UserId], entity)
 
-		return entity.ToResponse(), nil
-	}
-}
-
-func (h *houseServiceObject) FindById(id uuid.UUID) (model.HouseResponse, error) {
-	if house, ok := h.houses[id]; ok {
-		return house.ToResponse(), nil
-	}
-
-	return model.HouseResponse{}, errors.New(fmt.Sprintf("house with id %s not found", id))
-}
-
-func (h *houseServiceObject) FindByUserId(userId uuid.UUID) []model.HouseResponse {
-	if houses, ok := h.userHouses[userId]; ok {
-		var response []model.HouseResponse
-
-		for _, house := range houses {
-			response = append(response, house.ToResponse())
+		if entity, err := h.repository.Create(entity); err != nil {
+			return response, err
+		} else {
+			return entity.ToDto(), nil
 		}
-
-		return response
 	}
-	return []model.HouseResponse{}
 }
 
-func (h *houseServiceObject) ExistsById(id uuid.UUID) bool {
-	_, ok := h.houses[id]
+func (h *HouseServiceObject) FindById(id uuid.UUID) (response model.HouseDto, err error) {
+	if response, err = h.repository.FindResponseById(id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return response, errors.New(fmt.Sprintf("house with id %s not found", id))
+		}
+		return response, err
+	} else {
+		return response, nil
+	}
+}
 
-	return ok
+func (h *HouseServiceObject) FindByUserId(userId uuid.UUID) []model.HouseDto {
+	return h.repository.FindResponseByUserId(userId)
+}
+
+func (h *HouseServiceObject) ExistsById(id uuid.UUID) bool {
+	return h.repository.ExistsById(id)
 }

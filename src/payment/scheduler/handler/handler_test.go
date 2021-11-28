@@ -7,22 +7,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"net/http"
-	paymentModel "payment/model"
+	"payment/scheduler/mocks"
 	paymentScheduler "payment/scheduler/model"
-	scheduler2 "scheduler"
-	"test/mock"
 	"test/testhelper"
 	"testing"
 )
 
-var (
-	paymentsScheduler *mock.PaymentSchedulerServiceMock
-	houseId           = testhelper.ParseUUID("84d801b0-75fd-4304-aab4-97c8c46356bb")
-	userId            = testhelper.ParseUUID("eddbd5ca-cc87-4cbd-9753-7bbb11bdef83")
-)
+var paymentsScheduler *mocks.PaymentSchedulerService
 
 func handlerGenerator() PaymentSchedulerHandler {
-	paymentsScheduler = new(mock.PaymentSchedulerServiceMock)
+	paymentsScheduler = new(mocks.PaymentSchedulerService)
 
 	return NewPaymentSchedulerHandler(paymentsScheduler)
 }
@@ -30,9 +24,9 @@ func handlerGenerator() PaymentSchedulerHandler {
 func Test_Add(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := generateCreatePaymentSchedulerRequest()
+	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
 
-	paymentsScheduler.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
+	paymentsScheduler.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/scheduler").
@@ -42,11 +36,11 @@ func Test_Add(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusCreated)
 
-	actual := paymentScheduler.PaymentSchedulerResponse{}
+	actual := paymentScheduler.PaymentSchedulerDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, generatePaymentSchedulerResponse(actual.Id), actual)
+	assert.Equal(t, mocks.GeneratePaymentSchedulerResponse(actual.Id, mocks.HouseId, mocks.UserId), actual)
 }
 
 func Test_Add_WithInvalidRequest(t *testing.T) {
@@ -63,11 +57,11 @@ func Test_Add_WithInvalidRequest(t *testing.T) {
 func Test_Add_WithErrorFromService(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := generateCreatePaymentSchedulerRequest()
+	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
 
 	expected := errors.New("error")
 
-	paymentsScheduler.On("Add", request).Return(paymentScheduler.PaymentSchedulerResponse{}, expected)
+	paymentsScheduler.On("Add", request).Return(paymentScheduler.PaymentSchedulerDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/scheduler").
@@ -128,7 +122,7 @@ func Test_FindById(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponse := generatePaymentSchedulerResponse(id)
+	paymentResponse := mocks.GeneratePaymentSchedulerResponse(id, mocks.HouseId, mocks.UserId)
 
 	paymentsScheduler.On("FindById", id).
 		Return(paymentResponse, nil)
@@ -141,7 +135,7 @@ func Test_FindById(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := paymentScheduler.PaymentSchedulerResponse{}
+	actual := paymentScheduler.PaymentSchedulerDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -156,7 +150,7 @@ func Test_FindById_WithError(t *testing.T) {
 	expected := errors.New("error")
 
 	paymentsScheduler.On("FindById", id).
-		Return(paymentScheduler.PaymentSchedulerResponse{}, expected)
+		Return(paymentScheduler.PaymentSchedulerDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
@@ -188,7 +182,9 @@ func Test_FindByHouseId(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []paymentScheduler.PaymentSchedulerResponse{generatePaymentSchedulerResponse(id)}
+	response := mocks.GeneratePaymentSchedulerResponse(id, mocks.HouseId, mocks.UserId)
+
+	paymentResponses := []paymentScheduler.PaymentSchedulerDto{response}
 
 	paymentsScheduler.On("FindByHouseId", id).
 		Return(paymentResponses, nil)
@@ -201,7 +197,7 @@ func Test_FindByHouseId(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []paymentScheduler.PaymentSchedulerResponse{}
+	actual := []paymentScheduler.PaymentSchedulerDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -213,7 +209,7 @@ func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []paymentScheduler.PaymentSchedulerResponse{}
+	paymentResponses := []paymentScheduler.PaymentSchedulerDto{}
 
 	paymentsScheduler.On("FindByHouseId", id).
 		Return(paymentResponses, nil)
@@ -226,7 +222,7 @@ func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []paymentScheduler.PaymentSchedulerResponse{}
+	actual := []paymentScheduler.PaymentSchedulerDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -252,7 +248,9 @@ func Test_FindByUserId(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []paymentScheduler.PaymentSchedulerResponse{generatePaymentSchedulerResponse(id)}
+	response := mocks.GeneratePaymentSchedulerResponse(id, mocks.HouseId, mocks.UserId)
+
+	paymentResponses := []paymentScheduler.PaymentSchedulerDto{response}
 
 	paymentsScheduler.On("FindByUserId", id).
 		Return(paymentResponses, nil)
@@ -265,7 +263,7 @@ func Test_FindByUserId(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []paymentScheduler.PaymentSchedulerResponse{}
+	actual := []paymentScheduler.PaymentSchedulerDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -277,7 +275,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []paymentScheduler.PaymentSchedulerResponse{}
+	paymentResponses := []paymentScheduler.PaymentSchedulerDto{}
 
 	paymentsScheduler.On("FindByUserId", id).
 		Return(paymentResponses, nil)
@@ -290,7 +288,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []paymentScheduler.PaymentSchedulerResponse{}
+	actual := []paymentScheduler.PaymentSchedulerDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -309,31 +307,4 @@ func Test_FindByUserId_WithInvalidParameter(t *testing.T) {
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
 
 	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
-}
-
-func generateCreatePaymentSchedulerRequest() paymentScheduler.CreatePaymentSchedulerRequest {
-	return paymentScheduler.CreatePaymentSchedulerRequest{
-		Name:        "Test Payment",
-		Description: "Test Payment Description",
-		HouseId:     houseId,
-		UserId:      userId,
-		Sum:         1000,
-		Spec:        scheduler2.DAILY,
-	}
-}
-
-func generatePaymentSchedulerResponse(id uuid.UUID) paymentScheduler.PaymentSchedulerResponse {
-	return paymentScheduler.PaymentSchedulerResponse{
-		PaymentScheduler: paymentScheduler.PaymentScheduler{
-			Payment: paymentModel.Payment{
-				Id:          id,
-				Name:        "Test Payment",
-				Description: "Test Payment Description",
-				HouseId:     houseId,
-				UserId:      userId,
-				Sum:         1000,
-			},
-			Spec: scheduler2.DAILY,
-		},
-	}
 }

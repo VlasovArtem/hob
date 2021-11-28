@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"common/model"
+	projectErrors "common/errors"
 	"common/service"
 	"encoding/json"
 	"errors"
@@ -10,12 +10,13 @@ import (
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 func PerformRequest(target interface{}, w http.ResponseWriter, r *http.Request) error {
 	reqBody, err := ioutil.ReadAll(r.Body)
 
-	service.HandleError(err, "")
+	service.LogError(err, "")
 
 	err = json.Unmarshal(reqBody, &target)
 
@@ -23,7 +24,7 @@ func PerformRequest(target interface{}, w http.ResponseWriter, r *http.Request) 
 		err = errors.New("request not parsed")
 	}
 
-	if service.HandleError(err, "") {
+	if service.LogError(err, "") {
 		w.WriteHeader(400)
 		w.Write([]byte(err.Error()))
 	}
@@ -38,6 +39,16 @@ func GetRequestParameter(request *http.Request, name string) (string, error) {
 		return result, nil
 	}
 	return "", errors.New(fmt.Sprintf("parameter '%s' not found", name))
+}
+
+func GetQueryIntParameterOrDefault(request *http.Request, name string, defaultValue int) (int, error) {
+	parameter := request.URL.Query().Get(name)
+
+	if parameter == "" {
+		return defaultValue, nil
+	}
+
+	return strconv.Atoi(parameter)
 }
 
 func GetIdRequestParameter(request *http.Request) (uuid.UUID, error) {
@@ -89,17 +100,12 @@ func HandleBadRequestWithError(writer http.ResponseWriter, err error) {
 	HandleErrorResponseWithError(writer, http.StatusBadRequest, err)
 }
 
-func HandleIfRequiredBadRequestWithErrorResponse(writer http.ResponseWriter, response model.ErrorResponse) bool {
-	if len(response.Messages) == 0 {
-		return false
+func HandleBadRequestWithErrorResponse(writer http.ResponseWriter, response projectErrors.ErrorResponse) bool {
+	if response != nil {
+		writer.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(writer).Encode(response)
+		return true
 	}
-	writer.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(writer).Encode(response)
 
-	return true
-}
-
-func HandleBadRequestWithErrorResponse(writer http.ResponseWriter, response model.ErrorResponse) {
-	writer.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(writer).Encode(response)
+	return false
 }

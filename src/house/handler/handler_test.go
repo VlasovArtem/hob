@@ -5,21 +5,20 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"house/mocks"
 	"house/model"
 	"net/http"
 	"test"
-	"test/mock"
 	"test/testhelper"
 	"testing"
 )
 
 var (
-	houses *mock.HouseServiceMock
-	userId = testhelper.ParseUUID("98c8cab4-18be-42cf-83e9-e6369dbb2689")
+	houses *mocks.HouseService
 )
 
 func handlerGenerator() HouseHandler {
-	houses = new(mock.HouseServiceMock)
+	houses = new(mocks.HouseService)
 
 	return NewHouseHandler(houses)
 }
@@ -38,9 +37,9 @@ func Test_Add_WithNotValidRequest(t *testing.T) {
 func Test_Add(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := generateCreateHouseRequest()
+	request := mocks.GenerateCreateHouseRequest()
 
-	houses.On("Add", request).Return(request.ToEntity(test.CountryObject).ToResponse(), nil)
+	houses.On("Add", request).Return(request.ToEntity(test.CountryObject).ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
@@ -50,28 +49,28 @@ func Test_Add(t *testing.T) {
 
 	body := testRequest.Verify(t, http.StatusCreated)
 
-	actual := model.HouseResponse{}
+	actual := model.HouseDto{}
 
 	json.Unmarshal(body, &actual)
 
 	assert.Equal(t,
-		model.HouseResponse{
+		model.HouseDto{
 			Id:          actual.Id,
 			Name:        "Test House",
-			Country:     "Ukraine",
+			CountryCode: "UA",
 			City:        "City",
 			StreetLine1: "StreetLine1",
 			StreetLine2: "StreetLine2",
-			UserId:      userId,
+			UserId:      actual.UserId,
 		}, actual)
 }
 
 func Test_Add_WithErrorFromService(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := generateCreateHouseRequest()
+	request := mocks.GenerateCreateHouseRequest()
 
-	houses.On("Add", request).Return(model.HouseResponse{}, errors.New("error"))
+	houses.On("Add", request).Return(model.HouseDto{}, errors.New("error"))
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
@@ -87,7 +86,7 @@ func Test_Add_WithErrorFromService(t *testing.T) {
 func Test_FindById(t *testing.T) {
 	handler := handlerGenerator()
 
-	houseResponse := generateHouseResponse()
+	houseResponse := mocks.GenerateHouseResponse()
 
 	houses.On("FindById", houseResponse.Id).Return(houseResponse, nil)
 
@@ -99,7 +98,7 @@ func Test_FindById(t *testing.T) {
 
 	body := testRequest.Verify(t, http.StatusOK)
 
-	var responses model.HouseResponse
+	var responses model.HouseDto
 	json.Unmarshal(body, &responses)
 
 	assert.Equal(t, houseResponse, responses)
@@ -110,7 +109,7 @@ func Test_FindById_WithErrorFromService(t *testing.T) {
 
 	id := uuid.New()
 
-	houses.On("FindById", id).Return(model.HouseResponse{}, errors.New("error"))
+	houses.On("FindById", id).Return(model.HouseDto{}, errors.New("error"))
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/{id}").
@@ -153,9 +152,9 @@ func Test_FindById_WithMissingId(t *testing.T) {
 func Test_FindByUserId(t *testing.T) {
 	handler := handlerGenerator()
 
-	houseResponse := generateHouseResponse()
+	houseResponse := mocks.GenerateHouseResponse()
 
-	houseResponses := []model.HouseResponse{houseResponse}
+	houseResponses := []model.HouseDto{houseResponse}
 	houses.On("FindByUserId", houseResponse.Id).Return(houseResponses)
 
 	testRequest := testhelper.NewTestRequest().
@@ -166,7 +165,7 @@ func Test_FindByUserId(t *testing.T) {
 
 	body := testRequest.Verify(t, http.StatusOK)
 
-	var responses []model.HouseResponse
+	var responses []model.HouseDto
 	json.Unmarshal(body, &responses)
 
 	assert.Equal(t, houseResponses, responses)
@@ -177,7 +176,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	houses.On("FindByUserId", id).Return([]model.HouseResponse{})
+	houses.On("FindByUserId", id).Return([]model.HouseDto{})
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/user/{id}").
@@ -187,10 +186,10 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	body := testRequest.Verify(t, http.StatusOK)
 
-	var responses []model.HouseResponse
+	var responses []model.HouseDto
 	json.Unmarshal(body, &responses)
 
-	assert.Equal(t, []model.HouseResponse{}, responses)
+	assert.Equal(t, []model.HouseDto{}, responses)
 }
 
 func Test_FindByUserId_WithInvalidId(t *testing.T) {
@@ -218,27 +217,4 @@ func Test_FindByUserId_WithMissingId(t *testing.T) {
 	body := testRequest.Verify(t, http.StatusBadRequest)
 
 	assert.Equal(t, "parameter 'id' not found\n", string(body))
-}
-
-func generateCreateHouseRequest() model.CreateHouseRequest {
-	return model.CreateHouseRequest{
-		Name:        "Test House",
-		Country:     "UA",
-		City:        "City",
-		StreetLine1: "StreetLine1",
-		StreetLine2: "StreetLine2",
-		UserId:      userId,
-	}
-}
-
-func generateHouseResponse() model.HouseResponse {
-	return model.HouseResponse{
-		Id:          uuid.New(),
-		Name:        "Test Name",
-		Country:     "Ukraine",
-		City:        "City",
-		StreetLine1: "StreetLine1",
-		StreetLine2: "StreetLine2",
-		UserId:      userId,
-	}
 }

@@ -5,162 +5,168 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
+	houseMocks "house/mocks"
+	"payment/mocks"
 	"payment/model"
-	"test/mock"
-	"test/testhelper"
 	"testing"
-	"time"
+	userMocks "user/mocks"
 )
 
 var (
-	users   *mock.UserServiceMock
-	houses  *mock.HouseServiceMock
-	houseId = testhelper.ParseUUID("d077adaa-00d7-4e80-ac86-57512267505d")
-	userId  = testhelper.ParseUUID("ad2c5035-6745-48d0-9eee-fd22f5dae8e0")
-	date    = time.Now()
+	users             *userMocks.UserService
+	houses            *houseMocks.HouseService
+	paymentRepository *mocks.PaymentRepository
 )
 
 func serviceGenerator() PaymentService {
-	users = new(mock.UserServiceMock)
-	houses = new(mock.HouseServiceMock)
+	users = new(userMocks.UserService)
+	houses = new(houseMocks.HouseService)
+	paymentRepository = new(mocks.PaymentRepository)
 
-	return NewPaymentService(users, houses)
+	return NewPaymentService(users, houses, paymentRepository)
 }
 
-func Test_AddPayment(t *testing.T) {
+func Test_Add(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	users.On("ExistsById", userId).Return(true)
-	houses.On("ExistsById", houseId).Return(true)
+	users.On("ExistsById", mocks.UserId).Return(true)
+	houses.On("ExistsById", mocks.HouseId).Return(true)
+	paymentRepository.On("Create", mock.Anything).Return(
+		func(payment model.Payment) model.Payment { return payment },
+		nil,
+	)
 
-	request := generateCreatePaymentRequest()
+	request := mocks.GenerateCreatePaymentRequest()
 
 	payment, err := paymentService.Add(request)
 
 	expectedEntity := request.ToEntity()
 	expectedEntity.Id = payment.Id
-	expectedResponse := expectedEntity.ToResponse()
+	expectedResponse := expectedEntity.ToDto()
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedResponse, payment)
-
-	serviceObject := paymentService.(*paymentServiceObject)
-
-	_, paymentExists := serviceObject.payments[payment.Id]
-	assert.True(t, paymentExists)
-
-	_, housePaymentExists := serviceObject.housePayments[payment.HouseId]
-	assert.True(t, housePaymentExists)
-
-	_, userPaymentExists := serviceObject.userPayments[payment.UserId]
-	assert.True(t, userPaymentExists)
 }
 
 func Test_Add_WithUserNotExists(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	users.On("ExistsById", userId).Return(false)
+	users.On("ExistsById", mocks.UserId).Return(false)
 
-	request := generateCreatePaymentRequest()
+	request := mocks.GenerateCreatePaymentRequest()
 
 	payment, err := paymentService.Add(request)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId)), err)
-	assert.Equal(t, model.PaymentResponse{}, payment)
-	assert.Len(t, paymentService.(*paymentServiceObject).payments, 0)
+	assert.Equal(t, model.PaymentDto{}, payment)
 }
 
 func Test_Add_WithHouseNotExists(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	users.On("ExistsById", userId).Return(true)
-	houses.On("ExistsById", houseId).Return(false)
+	users.On("ExistsById", mocks.UserId).Return(true)
+	houses.On("ExistsById", mocks.HouseId).Return(false)
 
-	request := generateCreatePaymentRequest()
+	request := mocks.GenerateCreatePaymentRequest()
 
 	payment, err := paymentService.Add(request)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId)), err)
-	assert.Equal(t, model.PaymentResponse{}, payment)
-	assert.Len(t, paymentService.(*paymentServiceObject).payments, 0)
+	assert.Equal(t, model.PaymentDto{}, payment)
 }
 
-func Test_FindPaymentById(t *testing.T) {
+func Test_FindById(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	users.On("ExistsById", userId).Return(true)
-	houses.On("ExistsById", houseId).Return(true)
+	payment := mocks.GeneratePayment(mocks.HouseId, mocks.UserId)
 
-	request := generateCreatePaymentRequest()
-
-	payment, err := paymentService.Add(request)
-
-	assert.Nil(t, err)
+	paymentRepository.On("FindById", payment.Id).Return(payment, nil)
 
 	actual, err := paymentService.FindById(payment.Id)
 
-	assert.Nil(t, nil)
-	assert.Equal(t, payment, actual)
+	assert.Nil(t, err)
+	assert.Equal(t, payment.ToDto(), actual)
 }
 
-func Test_FindPaymentById_WithNotExistingId(t *testing.T) {
+func Test_FindById_WithNotExistingId(t *testing.T) {
 	paymentService := serviceGenerator()
 
 	id := uuid.New()
+
+	paymentRepository.On("FindById", id).Return(model.Payment{}, gorm.ErrRecordNotFound)
+
 	actual, err := paymentService.FindById(id)
 
 	assert.Equal(t, errors.New(fmt.Sprintf("payment with id %s not found", id)), err)
-	assert.Equal(t, model.PaymentResponse{}, actual)
+	assert.Equal(t, model.PaymentDto{}, actual)
 }
 
-func Test_FindPaymentByHouseId(t *testing.T) {
+func Test_FindById_WithError(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	users.On("ExistsById", userId).Return(true)
-	houses.On("ExistsById", houseId).Return(true)
+	id := uuid.New()
+	err2 := errors.New("error")
 
-	request := generateCreatePaymentRequest()
+	paymentRepository.On("FindById", id).Return(model.Payment{}, err2)
 
-	payment, err := paymentService.Add(request)
+	actual, err := paymentService.FindById(id)
 
-	assert.Nil(t, err)
-
-	payments := paymentService.FindByHouseId(payment.HouseId)
-
-	assert.Equal(t, []model.PaymentResponse{payment}, payments)
+	assert.Equal(t, err2, err)
+	assert.Equal(t, model.PaymentDto{}, actual)
 }
 
-func Test_FindPaymentByHouseId_WithNotExistingRecords(t *testing.T) {
+func Test_FindByHouseId(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	payments := paymentService.FindByHouseId(uuid.New())
+	payment := mocks.GeneratePayment(mocks.HouseId, mocks.UserId)
 
-	assert.Equal(t, []model.PaymentResponse{}, payments)
+	houseId := uuid.New()
+
+	paymentRepository.On("FindByHouseId", houseId).Return([]model.Payment{payment})
+
+	payments := paymentService.FindByHouseId(houseId)
+
+	assert.Equal(t, []model.PaymentDto{payment.ToDto()}, payments)
 }
 
-func Test_FindPaymentByUserId(t *testing.T) {
+func Test_FindByHouseId_WithNotExistingRecords(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	users.On("ExistsById", userId).Return(true)
-	houses.On("ExistsById", houseId).Return(true)
+	houseId := uuid.New()
 
-	request := generateCreatePaymentRequest()
+	paymentRepository.On("FindByHouseId", houseId).Return([]model.Payment{})
 
-	payment, err := paymentService.Add(request)
+	payments := paymentService.FindByHouseId(houseId)
 
-	assert.Nil(t, err)
-
-	payments := paymentService.FindByUserId(payment.UserId)
-
-	assert.Equal(t, []model.PaymentResponse{payment}, payments)
+	assert.Equal(t, []model.PaymentDto{}, payments)
 }
 
-func Test_FindPaymentByUserId_WithNotExistingRecords(t *testing.T) {
+func Test_FindByUserId(t *testing.T) {
 	paymentService := serviceGenerator()
 
-	payments := paymentService.FindByUserId(uuid.New())
+	payment := mocks.GeneratePayment(mocks.HouseId, mocks.UserId)
 
-	assert.Equal(t, []model.PaymentResponse{}, payments)
+	userId := uuid.New()
+
+	paymentRepository.On("FindByUserId", userId).Return([]model.Payment{payment})
+
+	payments := paymentService.FindByUserId(userId)
+
+	assert.Equal(t, []model.PaymentDto{payment.ToDto()}, payments)
+}
+
+func Test_FindByUserId_WithNotExistingRecords(t *testing.T) {
+	paymentService := serviceGenerator()
+
+	userId := uuid.New()
+
+	paymentRepository.On("FindByUserId", userId).Return([]model.Payment{})
+
+	payments := paymentService.FindByUserId(userId)
+
+	assert.Equal(t, []model.PaymentDto{}, payments)
 }
 
 func Test_ExistsById(t *testing.T) {
@@ -168,7 +174,7 @@ func Test_ExistsById(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentService.(*paymentServiceObject).payments[id] = model.Payment{}
+	paymentRepository.On("ExistsById", id).Return(true)
 
 	assert.True(t, paymentService.ExistsById(id))
 }
@@ -178,16 +184,7 @@ func Test_ExistsById_WithNotExists(t *testing.T) {
 
 	id := uuid.New()
 
-	assert.False(t, paymentService.ExistsById(id))
-}
+	paymentRepository.On("ExistsById", id).Return(false)
 
-func generateCreatePaymentRequest() model.CreatePaymentRequest {
-	return model.CreatePaymentRequest{
-		Name:        "Test Payment",
-		Description: "Test Payment Description",
-		HouseId:     houseId,
-		UserId:      userId,
-		Date:        date,
-		Sum:         1000,
-	}
+	assert.False(t, paymentService.ExistsById(id))
 }

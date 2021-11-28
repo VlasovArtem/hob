@@ -1,18 +1,32 @@
 package handler
 
 import (
+	"common/dependency"
 	"common/rest"
+	"github.com/gorilla/mux"
 	"income/model"
 	"income/service"
 	"net/http"
 )
 
-type incomeHandlerObject struct {
+type IncomeHandlerObject struct {
 	incomeService service.IncomeService
 }
 
 func NewIncomeHandler(incomeService service.IncomeService) IncomeHandler {
-	return &incomeHandlerObject{incomeService}
+	return &IncomeHandlerObject{incomeService}
+}
+
+func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(NewIncomeHandler(factory.FindRequiredByObject(service.IncomeServiceObject{}).(service.IncomeService)))
+}
+
+func (i *IncomeHandlerObject) Init(router *mux.Router) {
+	incomeRouter := router.PathPrefix("/api/v1/income").Subrouter()
+
+	incomeRouter.Path("").HandlerFunc(i.Add()).Methods("POST")
+	incomeRouter.Path("/{id}").HandlerFunc(i.FindById()).Methods("GET")
+	incomeRouter.Path("/house/{id}").HandlerFunc(i.FindByHouseId()).Methods("GET")
 }
 
 type IncomeHandler interface {
@@ -21,7 +35,7 @@ type IncomeHandler interface {
 	FindByHouseId() http.HandlerFunc
 }
 
-func (i *incomeHandlerObject) Add() http.HandlerFunc {
+func (i *IncomeHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var requestBody model.CreateIncomeRequest
 
@@ -35,7 +49,7 @@ func (i *incomeHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (i *incomeHandlerObject) FindById() http.HandlerFunc {
+func (i *IncomeHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -47,14 +61,12 @@ func (i *incomeHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (i *incomeHandlerObject) FindByHouseId() http.HandlerFunc {
+func (i *IncomeHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
 		} else {
-			if meterResponse, err := i.incomeService.FindByHouseId(id); err == nil {
-				rest.PerformResponse(writer, meterResponse, err)
-			}
+			rest.PerformResponse(writer, i.incomeService.FindByHouseId(id), err)
 		}
 	}
 }

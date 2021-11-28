@@ -19,12 +19,24 @@ type CreateIncomeSchedulerRequest struct {
 	Spec        scheduler.SchedulingSpecification
 }
 
-type IncomeSchedulerResponse struct {
-	IncomeScheduler
+type IncomeSchedulerDto struct {
+	Id          uuid.UUID
+	Name        string
+	Description string
+	Sum         float32
+	HouseId     uuid.UUID
+	Spec        scheduler.SchedulingSpecification
 }
 
-func (i IncomeScheduler) ToResponse() IncomeSchedulerResponse {
-	return IncomeSchedulerResponse{i}
+func (i IncomeScheduler) ToDto() IncomeSchedulerDto {
+	return IncomeSchedulerDto{
+		Id:          i.Id,
+		Name:        i.Name,
+		Description: i.Description,
+		Sum:         i.Sum,
+		HouseId:     i.HouseId,
+		Spec:        i.Spec,
+	}
 }
 
 func (c CreateIncomeSchedulerRequest) ToEntity() IncomeScheduler {

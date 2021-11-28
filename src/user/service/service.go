@@ -1,58 +1,61 @@
 package service
 
 import (
+	. "common/database"
+	"common/dependency"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"user/model"
+	"user/repository"
 )
 
-type userServiceObject struct {
-	users map[uuid.UUID]model.User
+type UserServiceObject struct {
+	repository repository.UserRepository
 }
 
-func NewUserService() UserService {
-	return &userServiceObject{
-		users: make(map[uuid.UUID]model.User),
-	}
+func (u *UserServiceObject) Initialize(factory dependency.DependenciesFactory) {
+	userRepository := factory.FindRequiredByObject(repository.UserRepositoryObject{}).(repository.UserRepository)
+
+	factory.Add(NewUserService(userRepository))
+}
+
+func NewUserService(repository repository.UserRepository) UserService {
+	return &UserServiceObject{repository}
 }
 
 type UserService interface {
 	Add(request model.CreateUserRequest) (model.UserResponse, error)
 	FindById(id uuid.UUID) (model.UserResponse, error)
 	ExistsById(id uuid.UUID) bool
-	ExistsByEmail(email string) bool
 }
 
-func (u *userServiceObject) Add(request model.CreateUserRequest) (model.UserResponse, error) {
-	if u.ExistsByEmail(request.Email) {
-		return model.UserResponse{}, errors.New(fmt.Sprintf("user with '%s' already exists", request.Email))
+func (u *UserServiceObject) Add(request model.CreateUserRequest) (response model.UserResponse, err error) {
+	if u.repository.ExistsByEmail(request.Email) {
+		return response, errors.New(fmt.Sprintf("user with '%s' already exists", request.Email))
+	}
+	if request.Email == "" {
+		return response, errors.New(fmt.Sprintf("email is missing"))
+	}
+	if request.Password == "" {
+		return response, errors.New(fmt.Sprintf("password is missing"))
 	}
 
-	user := request.ToEntity()
-
-	u.users[user.Id] = user
-
-	return user.ToResponse(), nil
+	if user, err := u.repository.Create(request.ToEntity()); err != nil {
+		return response, err
+	} else {
+		return user.ToResponse(), err
+	}
 }
 
-func (u *userServiceObject) FindById(id uuid.UUID) (model.UserResponse, error) {
-	if user, ok := u.users[id]; ok {
+func (u *UserServiceObject) FindById(id uuid.UUID) (response model.UserResponse, err error) {
+	if user, err := u.repository.FindById(id); err != nil {
+		return response, HandlerFindError(err, fmt.Sprintf("user with id %s in not exists", id))
+	} else {
 		return user.ToResponse(), nil
 	}
-	return model.UserResponse{}, errors.New(fmt.Sprintf("user with %s is not found", id))
 }
 
-func (u *userServiceObject) ExistsById(id uuid.UUID) bool {
-	_, ok := u.users[id]
-	return ok
-}
-
-func (u *userServiceObject) ExistsByEmail(email string) bool {
-	for _, user := range u.users {
-		if user.Email == email {
-			return true
-		}
-	}
-	return false
+func (u *UserServiceObject) ExistsById(id uuid.UUID) bool {
+	return u.repository.ExistsById(id)
 }

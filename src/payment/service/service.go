@@ -1,87 +1,93 @@
 package service
 
 import (
+	"common/database"
+	"common/dependency"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	hs "house/service"
 	"payment/model"
+	"payment/repository"
 	us "user/service"
 )
 
-type paymentServiceObject struct {
-	userService   us.UserService
-	houseService  hs.HouseService
-	payments      map[uuid.UUID]model.Payment
-	housePayments map[uuid.UUID][]model.Payment
-	userPayments  map[uuid.UUID][]model.Payment
+type PaymentServiceObject struct {
+	userService       us.UserService
+	houseService      hs.HouseService
+	paymentRepository repository.PaymentRepository
 }
 
-func NewPaymentService(userService us.UserService, houseService hs.HouseService) PaymentService {
-	return &paymentServiceObject{
-		userService:   userService,
-		houseService:  houseService,
-		payments:      make(map[uuid.UUID]model.Payment),
-		housePayments: make(map[uuid.UUID][]model.Payment),
-		userPayments:  make(map[uuid.UUID][]model.Payment),
+func NewPaymentService(userService us.UserService, houseService hs.HouseService, paymentRepository repository.PaymentRepository) PaymentService {
+	return &PaymentServiceObject{
+		userService:       userService,
+		houseService:      houseService,
+		paymentRepository: paymentRepository,
 	}
 }
 
+func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(
+		NewPaymentService(
+			factory.FindRequiredByObject(us.UserServiceObject{}).(us.UserService),
+			factory.FindRequiredByObject(hs.HouseServiceObject{}).(hs.HouseService),
+			factory.FindRequiredByObject(repository.PaymentRepositoryObject{}).(repository.PaymentRepository),
+		),
+	)
+}
+
 type PaymentService interface {
-	Add(request model.CreatePaymentRequest) (model.PaymentResponse, error)
-	FindById(id uuid.UUID) (model.PaymentResponse, error)
-	FindByHouseId(houseId uuid.UUID) []model.PaymentResponse
-	FindByUserId(userId uuid.UUID) []model.PaymentResponse
+	Add(request model.CreatePaymentRequest) (model.PaymentDto, error)
+	FindById(id uuid.UUID) (model.PaymentDto, error)
+	FindByHouseId(houseId uuid.UUID) []model.PaymentDto
+	FindByUserId(userId uuid.UUID) []model.PaymentDto
 	ExistsById(id uuid.UUID) bool
 }
 
-func (p *paymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentResponse, err error) {
+func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentDto, err error) {
 	if !p.userService.ExistsById(request.UserId) {
 		return response, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId))
 	}
 	if !p.houseService.ExistsById(request.HouseId) {
 		return response, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId))
+	} else if err != nil {
+		return response, err
 	}
 
-	entity := request.ToEntity()
+	payment, err := p.paymentRepository.Create(request.ToEntity())
 
-	p.payments[entity.Id] = entity
-	p.housePayments[entity.HouseId] = append(p.housePayments[entity.HouseId], entity)
-	p.userPayments[entity.UserId] = append(p.userPayments[entity.UserId], entity)
-
-	return entity.ToResponse(), nil
+	return payment.ToDto(), err
 }
 
-func (p *paymentServiceObject) FindById(id uuid.UUID) (model.PaymentResponse, error) {
-	if payment, ok := p.payments[id]; ok {
-		return payment.ToResponse(), nil
+func (p *PaymentServiceObject) FindById(id uuid.UUID) (model.PaymentDto, error) {
+	if payment, err := p.paymentRepository.FindById(id); err != nil {
+		return model.PaymentDto{}, database.HandlerFindError(err, fmt.Sprintf("payment with id %s not found", id))
+	} else {
+		return payment.ToDto(), nil
 	}
-	return model.PaymentResponse{}, errors.New(fmt.Sprintf("payment with id %s not found", id))
 }
 
-func (p *paymentServiceObject) FindByHouseId(houseId uuid.UUID) []model.PaymentResponse {
-	return convert(p.housePayments[houseId])
+func (p *PaymentServiceObject) FindByHouseId(houseId uuid.UUID) []model.PaymentDto {
+	return convert(p.paymentRepository.FindByHouseId(houseId))
 }
 
-func (p *paymentServiceObject) FindByUserId(userId uuid.UUID) []model.PaymentResponse {
-	return convert(p.userPayments[userId])
+func (p *PaymentServiceObject) FindByUserId(userId uuid.UUID) []model.PaymentDto {
+	return convert(p.paymentRepository.FindByUserId(userId))
 }
 
-func (p *paymentServiceObject) ExistsById(id uuid.UUID) bool {
-	_, ok := p.payments[id]
-
-	return ok
+func (p *PaymentServiceObject) ExistsById(id uuid.UUID) bool {
+	return p.paymentRepository.ExistsById(id)
 }
 
-func convert(payments []model.Payment) []model.PaymentResponse {
+func convert(payments []model.Payment) []model.PaymentDto {
 	if len(payments) == 0 {
-		return make([]model.PaymentResponse, 0)
+		return make([]model.PaymentDto, 0)
 	}
 
-	var paymentsResponse []model.PaymentResponse
+	var paymentsResponse []model.PaymentDto
 
 	for _, payment := range payments {
-		paymentsResponse = append(paymentsResponse, payment.ToResponse())
+		paymentsResponse = append(paymentsResponse, payment.ToDto())
 	}
 
 	return paymentsResponse

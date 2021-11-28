@@ -3,23 +3,25 @@ package model
 import (
 	"country/model"
 	"github.com/google/uuid"
+	userModel "user/model"
 )
 
 type House struct {
-	Id          uuid.UUID
+	Id          uuid.UUID `gorm:"primarykey"`
 	Name        string
-	Country     *model.Country
+	CountryCode string
 	City        string
 	StreetLine1 string
 	StreetLine2 string
 	Deleted     bool
 	UserId      uuid.UUID
+	User        userModel.User `gorm:"foreignKey:UserId"`
 }
 
-type HouseResponse struct {
+type HouseDto struct {
 	Id          uuid.UUID
 	Name        string
-	Country     string
+	CountryCode string
 	City        string
 	StreetLine1 string
 	StreetLine2 string
@@ -35,11 +37,11 @@ type CreateHouseRequest struct {
 	UserId      uuid.UUID
 }
 
-func (h House) ToResponse() HouseResponse {
-	return HouseResponse{
+func (h House) ToDto() HouseDto {
+	return HouseDto{
 		Id:          h.Id,
 		Name:        h.Name,
-		Country:     h.Country.Name,
+		CountryCode: h.CountryCode,
 		City:        h.City,
 		StreetLine1: h.StreetLine1,
 		StreetLine2: h.StreetLine2,
@@ -51,7 +53,7 @@ func (c CreateHouseRequest) ToEntity(country *model.Country) House {
 	return House{
 		Id:          uuid.New(),
 		Name:        c.Name,
-		Country:     country,
+		CountryCode: country.Code,
 		City:        c.City,
 		StreetLine1: c.StreetLine1,
 		StreetLine2: c.StreetLine2,

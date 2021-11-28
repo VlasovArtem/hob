@@ -7,22 +7,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"net/http"
+	"payment/mocks"
 	"payment/model"
-	"test/mock"
 	"test/testhelper"
 	"testing"
-	"time"
 )
 
-var (
-	payments *mock.PaymentServiceMock
-	houseId  = testhelper.ParseUUID("d077adaa-00d7-4e80-ac86-57512267505d")
-	userId   = testhelper.ParseUUID("ad2c5035-6745-48d0-9eee-fd22f5dae8e0")
-	date     = time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC)
-)
+var payments *mocks.PaymentService
 
 func handlerGenerator() PaymentHandler {
-	payments = new(mock.PaymentServiceMock)
+	payments = new(mocks.PaymentService)
 
 	return NewPaymentHandler(payments)
 }
@@ -30,9 +24,9 @@ func handlerGenerator() PaymentHandler {
 func Test_Add(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := generateCreatePaymentRequest()
+	request := mocks.GenerateCreatePaymentRequest()
 
-	payments.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
+	payments.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").
@@ -42,18 +36,18 @@ func Test_Add(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusCreated)
 
-	actual := model.PaymentResponse{}
+	actual := model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, model.PaymentResponse{
+	assert.Equal(t, model.PaymentDto{
 		Payment: model.Payment{
 			Id:          actual.Id,
 			Name:        "Test Payment",
 			Description: "Test Payment Description",
-			HouseId:     houseId,
-			UserId:      userId,
-			Date:        date,
+			HouseId:     mocks.HouseId,
+			UserId:      mocks.UserId,
+			Date:        mocks.Date,
 			Sum:         1000,
 		},
 	}, actual)
@@ -73,11 +67,11 @@ func Test_Add_WithInvalidRequest(t *testing.T) {
 func Test_Add_WithErrorFromService(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := generateCreatePaymentRequest()
+	request := mocks.GenerateCreatePaymentRequest()
 
 	expected := errors.New("error")
 
-	payments.On("Add", request).Return(model.PaymentResponse{}, expected)
+	payments.On("Add", request).Return(model.PaymentDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").
@@ -93,22 +87,20 @@ func Test_Add_WithErrorFromService(t *testing.T) {
 func Test_FindById(t *testing.T) {
 	handler := handlerGenerator()
 
-	id := uuid.New()
+	paymentResponse := mocks.GeneratePaymentResponse()
 
-	paymentResponse := generatePaymentResponse(id)
-
-	payments.On("FindById", id).
+	payments.On("FindById", paymentResponse.Id).
 		Return(paymentResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindById()).
-		WithVar("id", id.String())
+		WithVar("id", paymentResponse.Id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := model.PaymentResponse{}
+	actual := model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -123,7 +115,7 @@ func Test_FindById_WithError(t *testing.T) {
 	expected := errors.New("error")
 
 	payments.On("FindById", id).
-		Return(model.PaymentResponse{}, expected)
+		Return(model.PaymentDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
@@ -153,22 +145,22 @@ func Test_FindById_WithInvalidParameter(t *testing.T) {
 func Test_FindByHouseId(t *testing.T) {
 	handler := handlerGenerator()
 
-	id := uuid.New()
+	response := mocks.GeneratePaymentResponse()
 
-	paymentResponses := []model.PaymentResponse{generatePaymentResponse(id)}
+	paymentResponses := []model.PaymentDto{response}
 
-	payments.On("FindByHouseId", id).
+	payments.On("FindByHouseId", response.Id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindByHouseId()).
-		WithVar("id", id.String())
+		WithVar("id", response.Id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentResponse{}
+	actual := []model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -180,7 +172,7 @@ func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []model.PaymentResponse{}
+	paymentResponses := []model.PaymentDto{}
 
 	payments.On("FindByHouseId", id).
 		Return(paymentResponses, nil)
@@ -193,7 +185,7 @@ func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentResponse{}
+	actual := []model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -217,22 +209,22 @@ func Test_FindByHouseId_WithInvalidParameter(t *testing.T) {
 func Test_FindByUserId(t *testing.T) {
 	handler := handlerGenerator()
 
-	id := uuid.New()
+	response := mocks.GeneratePaymentResponse()
 
-	paymentResponses := []model.PaymentResponse{generatePaymentResponse(id)}
+	paymentResponses := []model.PaymentDto{response}
 
-	payments.On("FindByUserId", id).
+	payments.On("FindByUserId", response.Id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
 		WithHandler(handler.FindByUserId()).
-		WithVar("id", id.String())
+		WithVar("id", response.Id.String())
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentResponse{}
+	actual := []model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -244,7 +236,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []model.PaymentResponse{}
+	paymentResponses := []model.PaymentDto{}
 
 	payments.On("FindByUserId", id).
 		Return(paymentResponses, nil)
@@ -257,7 +249,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentResponse{}
+	actual := []model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -276,29 +268,4 @@ func Test_FindByUserId_WithInvalidParameter(t *testing.T) {
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
 
 	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
-}
-
-func generateCreatePaymentRequest() model.CreatePaymentRequest {
-	return model.CreatePaymentRequest{
-		Name:        "Test Payment",
-		Description: "Test Payment Description",
-		HouseId:     houseId,
-		UserId:      userId,
-		Date:        date,
-		Sum:         1000,
-	}
-}
-
-func generatePaymentResponse(id uuid.UUID) model.PaymentResponse {
-	return model.PaymentResponse{
-		Payment: model.Payment{
-			Id:          id,
-			Name:        "Test Payment",
-			Description: "Test Payment Description",
-			HouseId:     houseId,
-			UserId:      userId,
-			Date:        date,
-			Sum:         1000,
-		},
-	}
 }

@@ -2,16 +2,18 @@ package model
 
 import (
 	"github.com/google/uuid"
+	houseModel "house/model"
 	"time"
 )
 
 type Income struct {
-	Id          uuid.UUID
+	Id          uuid.UUID `gorm:"primarykey"`
 	Name        string
 	Description string
 	Date        time.Time
 	Sum         float32
 	HouseId     uuid.UUID
+	House       houseModel.House `gorm:"foreignKey:HouseId"`
 }
 
 type CreateIncomeRequest struct {
@@ -23,11 +25,23 @@ type CreateIncomeRequest struct {
 }
 
 type IncomeResponse struct {
-	Income
+	Id          uuid.UUID
+	Name        string
+	Description string
+	Date        time.Time
+	Sum         float32
+	HouseId     uuid.UUID
 }
 
 func (i Income) ToResponse() IncomeResponse {
-	return IncomeResponse{i}
+	return IncomeResponse{
+		Id:          i.Id,
+		Name:        i.Name,
+		Description: i.Description,
+		Date:        i.Date,
+		Sum:         i.Sum,
+		HouseId:     i.HouseId,
+	}
 }
 
 func (c CreateIncomeRequest) ToEntity() Income {

@@ -1,18 +1,36 @@
 package handler
 
 import (
+	"common/dependency"
 	"common/rest"
+	"github.com/gorilla/mux"
 	"net/http"
 	"payment/scheduler/model"
 	"payment/scheduler/service"
 )
 
-type paymentSchedulerHandlerObject struct {
+type PaymentSchedulerHandlerObject struct {
 	paymentSchedulerService service.PaymentSchedulerService
 }
 
 func NewPaymentSchedulerHandler(paymentSchedulerService service.PaymentSchedulerService) PaymentSchedulerHandler {
-	return &paymentSchedulerHandlerObject{paymentSchedulerService}
+	return &PaymentSchedulerHandlerObject{paymentSchedulerService}
+}
+
+func (p *PaymentSchedulerHandlerObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(
+		NewPaymentSchedulerHandler(factory.FindRequiredByObject(service.PaymentSchedulerServiceObject{}).(service.PaymentSchedulerService)),
+	)
+}
+
+func (p *PaymentSchedulerHandlerObject) Init(router *mux.Router) {
+	subrouter := router.PathPrefix("/api/v1/payment/scheduler").Subrouter()
+
+	subrouter.Path("").HandlerFunc(p.Add()).Methods("POST")
+	subrouter.Path("/{id}").HandlerFunc(p.FindById()).Methods("GET")
+	subrouter.Path("/{id}").HandlerFunc(p.Remove()).Methods("DELETE")
+	subrouter.Path("/house/{id}").HandlerFunc(p.FindByHouseId()).Methods("GET")
+	subrouter.Path("/user/{id}").HandlerFunc(p.FindByUserId()).Methods("GET")
 }
 
 type PaymentSchedulerHandler interface {
@@ -23,7 +41,7 @@ type PaymentSchedulerHandler interface {
 	FindByUserId() http.HandlerFunc
 }
 
-func (p *paymentSchedulerHandlerObject) Add() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		paymentRequest := model.CreatePaymentSchedulerRequest{}
 
@@ -37,7 +55,7 @@ func (p *paymentSchedulerHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (p *paymentSchedulerHandlerObject) Remove() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerObject) Remove() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -49,7 +67,7 @@ func (p *paymentSchedulerHandlerObject) Remove() http.HandlerFunc {
 	}
 }
 
-func (p *paymentSchedulerHandlerObject) FindById() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -61,7 +79,7 @@ func (p *paymentSchedulerHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (p *paymentSchedulerHandlerObject) FindByHouseId() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
@@ -71,7 +89,7 @@ func (p *paymentSchedulerHandlerObject) FindByHouseId() http.HandlerFunc {
 	}
 }
 
-func (p *paymentSchedulerHandlerObject) FindByUserId() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerObject) FindByUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleBadRequestWithError(writer, err)
