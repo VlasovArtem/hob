@@ -1,12 +1,12 @@
 package db
 
 import (
+	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"log"
-	"test/testhelper/database"
 	"testing"
 )
 

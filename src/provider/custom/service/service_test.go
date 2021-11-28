@@ -3,14 +3,14 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/provider/custom/mocks"
+	"github.com/VlasovArtem/hob/src/provider/custom/model"
+	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
-	"provider/custom/mocks"
-	"provider/custom/model"
 	"testing"
-	userMocks "user/mocks"
 )
 
 var (

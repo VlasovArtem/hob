@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	model "income/model"
+	model "github.com/VlasovArtem/hob/src/income/model"
 
 	mock "github.com/stretchr/testify/mock"
 

@@ -1,30 +1,30 @@
 package service
 
 import (
-	"common/dependency"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	houseService "github.com/VlasovArtem/hob/src/house/service"
+	incomeModel "github.com/VlasovArtem/hob/src/income/model"
+	"github.com/VlasovArtem/hob/src/income/scheduler/model"
+	"github.com/VlasovArtem/hob/src/income/scheduler/repository"
+	incomeService "github.com/VlasovArtem/hob/src/income/service"
+	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/google/uuid"
-	hs "house/service"
-	im "income/model"
-	"income/scheduler/model"
-	"income/scheduler/repository"
-	is "income/service"
 	"log"
-	"scheduler"
 	"time"
 )
 
 type IncomeSchedulerServiceObject struct {
-	houseService     hs.HouseService
-	incomeService    is.IncomeService
+	houseService     houseService.HouseService
+	incomeService    incomeService.IncomeService
 	serviceScheduler scheduler.ServiceScheduler
 	repository       repository.IncomeSchedulerRepository
 }
 
 func NewIncomeSchedulerService(
-	houseService hs.HouseService,
-	incomeService is.IncomeService,
+	houseService houseService.HouseService,
+	incomeService incomeService.IncomeService,
 	serviceScheduler scheduler.ServiceScheduler,
 	repository repository.IncomeSchedulerRepository,
 ) IncomeSchedulerService {
@@ -39,8 +39,8 @@ func NewIncomeSchedulerService(
 func (i *IncomeSchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) {
 	factory.Add(
 		NewIncomeSchedulerService(
-			factory.FindRequiredByObject(hs.HouseServiceObject{}).(hs.HouseService),
-			factory.FindRequiredByObject(is.IncomeServiceObject{}).(is.IncomeService),
+			factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
+			factory.FindRequiredByObject(incomeService.IncomeServiceObject{}).(incomeService.IncomeService),
 			factory.FindRequiredByObject(scheduler.SchedulerServiceObject{}).(scheduler.ServiceScheduler),
 			factory.FindRequiredByObject(repository.IncomeSchedulerRepositoryObject{}).(repository.IncomeSchedulerRepository),
 		),
@@ -105,10 +105,10 @@ func (i *IncomeSchedulerServiceObject) FindByHouseId(id uuid.UUID) []model.Incom
 	return convert(i.repository.FindByHouseId(id))
 }
 
-func (i *IncomeSchedulerServiceObject) schedulerFunc(income im.Income) func() {
+func (i *IncomeSchedulerServiceObject) schedulerFunc(income incomeModel.Income) func() {
 	return func() {
 		if _, err := i.incomeService.Add(
-			im.CreateIncomeRequest{
+			incomeModel.CreateIncomeRequest{
 				Name:        income.Name,
 				Description: income.Description,
 				Date:        time.Now(),

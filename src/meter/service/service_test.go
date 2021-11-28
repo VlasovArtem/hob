@@ -3,14 +3,14 @@ package service
 import (
 	"errors"
 	"fmt"
+	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
+	meterMocks "github.com/VlasovArtem/hob/src/meter/mocks"
+	"github.com/VlasovArtem/hob/src/meter/model"
+	paymentMocks "github.com/VlasovArtem/hob/src/payment/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
-	houseMocks "house/mocks"
-	meterMocks "meter/mocks"
-	"meter/model"
-	paymentMocks "payment/mocks"
 	"testing"
 )
 

@@ -1,10 +1,10 @@
 package respository
 
 import (
-	"common/dependency"
-	"db"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/google/uuid"
-	"house/model"
 )
 
 type HouseRepositoryObject struct {

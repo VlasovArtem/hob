@@ -1,8 +1,8 @@
 package model
 
 import (
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
-	userModel "user/model"
 )
 
 type CustomProvider struct {

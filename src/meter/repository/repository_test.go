@@ -1,22 +1,22 @@
 package repository
 
 import (
-	"db"
+	"github.com/VlasovArtem/hob/src/db"
+	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
+	houseModel "github.com/VlasovArtem/hob/src/house/model"
+	meterMocks "github.com/VlasovArtem/hob/src/meter/mocks"
+	"github.com/VlasovArtem/hob/src/meter/model"
+	paymentMocks "github.com/VlasovArtem/hob/src/payment/mocks"
+	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper/database"
+	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	houseMocks "house/mocks"
-	houseModel "house/model"
 	"log"
-	meterMocks "meter/mocks"
-	"meter/model"
-	paymentMocks "payment/mocks"
-	paymentModel "payment/model"
-	"test/testhelper/database"
 	"testing"
-	userMocks "user/mocks"
-	userModel "user/model"
 )
 
 type MeterRepositoryTestSuite struct {

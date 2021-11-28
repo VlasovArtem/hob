@@ -1,11 +1,11 @@
 package repository
 
 import (
-	"common/dependency"
-	"db"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
 	"github.com/google/uuid"
 	"log"
-	"payment/scheduler/model"
 )
 
 type PaymentSchedulerRepositoryObject struct {

@@ -1,17 +1,17 @@
 package handler
 
 import (
-	helperModel "common/errors"
 	"encoding/json"
 	"errors"
+	helperModel "github.com/VlasovArtem/hob/src/common/errors"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
+	"github.com/VlasovArtem/hob/src/user/mocks"
+	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"net/http"
-	"test/testhelper"
 	"testing"
-	"user/mocks"
-	"user/model"
 )
 
 var (

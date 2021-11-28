@@ -3,8 +3,8 @@
 package mocks
 
 import (
-	errors "common/errors"
-	model "user/model"
+	errors "github.com/VlasovArtem/hob/src/common/errors"
+	model "github.com/VlasovArtem/hob/src/user/model"
 
 	mock "github.com/stretchr/testify/mock"
 )

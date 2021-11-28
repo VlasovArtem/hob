@@ -1,9 +1,9 @@
 package model
 
 import (
+	"github.com/VlasovArtem/hob/src/income/model"
+	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/google/uuid"
-	"income/model"
-	"scheduler"
 )
 
 type IncomeScheduler struct {

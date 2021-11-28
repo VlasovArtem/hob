@@ -3,13 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"github.com/VlasovArtem/hob/src/house/mocks"
+	"github.com/VlasovArtem/hob/src/house/model"
+	"github.com/VlasovArtem/hob/src/test"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"house/mocks"
-	"house/model"
 	"net/http"
-	"test"
-	"test/testhelper"
 	"testing"
 )
 

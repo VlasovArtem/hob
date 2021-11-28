@@ -1,34 +1,34 @@
 package service
 
 import (
-	"common/database"
-	"common/dependency"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/database"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	houseService "github.com/VlasovArtem/hob/src/house/service"
+	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/repository"
+	paymentService "github.com/VlasovArtem/hob/src/payment/service"
+	"github.com/VlasovArtem/hob/src/scheduler"
+	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
-	hs "house/service"
 	"log"
-	pm "payment/model"
-	"payment/scheduler/model"
-	"payment/scheduler/repository"
-	ps "payment/service"
-	"scheduler"
 	"time"
-	us "user/service"
 )
 
 type PaymentSchedulerServiceObject struct {
-	userService      us.UserService
-	houseService     hs.HouseService
-	paymentService   ps.PaymentService
+	userService      userService.UserService
+	houseService     houseService.HouseService
+	paymentService   paymentService.PaymentService
 	serviceScheduler scheduler.ServiceScheduler
 	repository       repository.PaymentSchedulerRepository
 }
 
 func NewPaymentSchedulerService(
-	userService us.UserService,
-	houseService hs.HouseService,
-	paymentService ps.PaymentService,
+	userService userService.UserService,
+	houseService houseService.HouseService,
+	paymentService paymentService.PaymentService,
 	serviceScheduler scheduler.ServiceScheduler,
 	repository repository.PaymentSchedulerRepository,
 ) PaymentSchedulerService {
@@ -44,9 +44,9 @@ func NewPaymentSchedulerService(
 func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) {
 	factory.Add(
 		NewPaymentSchedulerService(
-			factory.FindRequiredByObject(us.UserServiceObject{}).(us.UserService),
-			factory.FindRequiredByObject(hs.HouseServiceObject{}).(hs.HouseService),
-			factory.FindRequiredByObject(ps.PaymentServiceObject{}).(ps.PaymentService),
+			factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),
+			factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
+			factory.FindRequiredByObject(paymentService.PaymentServiceObject{}).(paymentService.PaymentService),
 			factory.FindRequiredByObject(scheduler.SchedulerServiceObject{}).(scheduler.ServiceScheduler),
 			factory.FindRequiredByObject(repository.PaymentSchedulerRepositoryObject{}).(repository.PaymentSchedulerRepository),
 		),
@@ -119,7 +119,7 @@ func (p *PaymentSchedulerServiceObject) FindByUserId(userId uuid.UUID) []model.P
 func (p *PaymentSchedulerServiceObject) schedulerFunc(payment model.PaymentScheduler) func() {
 	return func() {
 		if _, err := p.paymentService.Add(
-			pm.CreatePaymentRequest{
+			paymentModel.CreatePaymentRequest{
 				Name:        payment.Name,
 				Description: payment.Description,
 				HouseId:     payment.HouseId,

@@ -1,15 +1,15 @@
 package service
 
 import (
-	"common/database"
-	"common/dependency"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/database"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	hs "github.com/VlasovArtem/hob/src/house/service"
+	"github.com/VlasovArtem/hob/src/payment/model"
+	"github.com/VlasovArtem/hob/src/payment/repository"
+	us "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
-	hs "house/service"
-	"payment/model"
-	"payment/repository"
-	us "user/service"
 )
 
 type PaymentServiceObject struct {

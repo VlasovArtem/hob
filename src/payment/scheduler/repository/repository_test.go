@@ -1,20 +1,20 @@
 package repository
 
 import (
-	"db"
+	"github.com/VlasovArtem/hob/src/db"
+	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
+	houseModel "github.com/VlasovArtem/hob/src/house/model"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/mocks"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper/database"
+	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	houseMocks "house/mocks"
-	houseModel "house/model"
 	"log"
-	"payment/scheduler/mocks"
-	"payment/scheduler/model"
-	"test/testhelper/database"
 	"testing"
-	userMocks "user/mocks"
-	userModel "user/model"
 )
 
 type PaymentRepositorySchedulerTestSuite struct {

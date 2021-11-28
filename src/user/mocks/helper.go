@@ -2,8 +2,8 @@ package mocks
 
 import (
 	"fmt"
+	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
-	"user/model"
 )
 
 func GenerateCreateUserRequest() model.CreateUserRequest {

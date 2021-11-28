@@ -1,22 +1,22 @@
 package service
 
 import (
-	"common/dependency"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	houseService "github.com/VlasovArtem/hob/src/house/service"
+	"github.com/VlasovArtem/hob/src/income/model"
+	"github.com/VlasovArtem/hob/src/income/repository"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	hs "house/service"
-	"income/model"
-	"income/repository"
 )
 
 type IncomeServiceObject struct {
-	houseService hs.HouseService
+	houseService houseService.HouseService
 	repository   repository.IncomeRepository
 }
 
-func NewIncomeService(houseService hs.HouseService, repository repository.IncomeRepository) IncomeService {
+func NewIncomeService(houseService houseService.HouseService, repository repository.IncomeRepository) IncomeService {
 	return &IncomeServiceObject{
 		houseService: houseService,
 		repository:   repository,
@@ -26,7 +26,7 @@ func NewIncomeService(houseService hs.HouseService, repository repository.Income
 func (i *IncomeServiceObject) Initialize(factory dependency.DependenciesFactory) {
 	factory.Add(
 		NewIncomeService(
-			factory.FindRequiredByObject(hs.HouseServiceObject{}).(hs.HouseService),
+			factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
 			factory.FindRequiredByObject(repository.IncomeRepositoryObject{}).(repository.IncomeRepository),
 		),
 	)

@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"common/dependency"
-	"common/rest"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/rest"
+	"github.com/VlasovArtem/hob/src/house/model"
+	"github.com/VlasovArtem/hob/src/house/service"
 	"github.com/gorilla/mux"
-	"house/model"
-	"house/service"
 	"net/http"
 )
 

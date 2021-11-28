@@ -1,10 +1,10 @@
 package mocks
 
 import (
+	im "github.com/VlasovArtem/hob/src/income/model"
+	"github.com/VlasovArtem/hob/src/income/scheduler/model"
+	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/google/uuid"
-	im "income/model"
-	"income/scheduler/model"
-	"scheduler"
 	"time"
 )
 

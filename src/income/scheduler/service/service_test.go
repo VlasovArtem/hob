@@ -3,16 +3,16 @@ package service
 import (
 	"errors"
 	"fmt"
+	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
+	incomeMocks "github.com/VlasovArtem/hob/src/income/mocks"
+	incomeModel "github.com/VlasovArtem/hob/src/income/model"
+	"github.com/VlasovArtem/hob/src/income/scheduler/mocks"
+	"github.com/VlasovArtem/hob/src/income/scheduler/model"
+	schedulerMocks "github.com/VlasovArtem/hob/src/scheduler/mocks"
 	"github.com/google/uuid"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	houseMocks "house/mocks"
-	incomeMocks "income/mocks"
-	incomeModel "income/model"
-	"income/scheduler/mocks"
-	"income/scheduler/model"
-	schedulerMocks "scheduler/mocks"
 	"testing"
 )
 

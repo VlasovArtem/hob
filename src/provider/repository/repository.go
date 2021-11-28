@@ -1,11 +1,11 @@
 package repository
 
 import (
-	"common/dependency"
-	"db"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/google/uuid"
-	"provider/model"
 )
 
 type ProviderRepositoryObject struct {

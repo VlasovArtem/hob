@@ -1,13 +1,13 @@
 package service
 
 import (
-	. "common/database"
-	"common/dependency"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/database"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/user/model"
+	"github.com/VlasovArtem/hob/src/user/repository"
 	"github.com/google/uuid"
-	"user/model"
-	"user/repository"
 )
 
 type UserServiceObject struct {
@@ -50,7 +50,7 @@ func (u *UserServiceObject) Add(request model.CreateUserRequest) (response model
 
 func (u *UserServiceObject) FindById(id uuid.UUID) (response model.UserResponse, err error) {
 	if user, err := u.repository.FindById(id); err != nil {
-		return response, HandlerFindError(err, fmt.Sprintf("user with id %s in not exists", id))
+		return response, database.HandlerFindError(err, fmt.Sprintf("user with id %s in not exists", id))
 	} else {
 		return user.ToResponse(), nil
 	}

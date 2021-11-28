@@ -1,9 +1,9 @@
 package model
 
 import (
-	"country/model"
+	"github.com/VlasovArtem/hob/src/country/model"
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
-	userModel "user/model"
 )
 
 type House struct {

@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"common/dependency"
-	"common/rest"
-	"country/service"
 	"encoding/json"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/rest"
+	"github.com/VlasovArtem/hob/src/country/service"
 	"github.com/gorilla/mux"
 	"net/http"
 )

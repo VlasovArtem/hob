@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/income/scheduler/mocks"
+	incomeSchedulerModel "github.com/VlasovArtem/hob/src/income/scheduler/model"
+	scheduler2 "github.com/VlasovArtem/hob/src/scheduler"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	incomeModel "income/model"
-	"income/scheduler/mocks"
-	incomeSchedulerModel "income/scheduler/model"
 	"net/http"
-	scheduler2 "scheduler"
-	"test/testhelper"
 	"testing"
 )
 
@@ -269,15 +268,11 @@ func generateCreateIncomeSchedulerRequest() incomeSchedulerModel.CreateIncomeSch
 
 func generateIncomeSchedulerResponse(id uuid.UUID) incomeSchedulerModel.IncomeSchedulerDto {
 	return incomeSchedulerModel.IncomeSchedulerDto{
-		IncomeScheduler: incomeSchedulerModel.IncomeScheduler{
-			Income: incomeModel.Income{
-				Id:          id,
-				Name:        "Test Income",
-				Description: "Test Income Description",
-				HouseId:     houseId,
-				Sum:         1000,
-			},
-			Spec: scheduler2.DAILY,
-		},
+		Id:          id,
+		Name:        "Test Income",
+		Description: "Test Income Description",
+		HouseId:     houseId,
+		Sum:         1000,
+		Spec:        scheduler2.DAILY,
 	}
 }

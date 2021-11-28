@@ -1,8 +1,8 @@
 package mocks
 
 import (
+	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/google/uuid"
-	"house/model"
 )
 
 func GenerateHouse(userId uuid.UUID) model.House {

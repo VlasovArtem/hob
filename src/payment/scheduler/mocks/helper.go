@@ -1,10 +1,10 @@
 package mocks
 
 import (
+	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	"github.com/VlasovArtem/hob/src/scheduler"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
-	"payment/scheduler/model"
-	"scheduler"
-	"test/testhelper"
 )
 
 var (
@@ -36,9 +36,13 @@ func GeneratePaymentScheduler(houseId uuid.UUID, userId uuid.UUID) model.Payment
 }
 
 func GeneratePaymentSchedulerResponse(id uuid.UUID, houseId uuid.UUID, userId uuid.UUID) model.PaymentSchedulerDto {
-	paymentScheduler := GeneratePaymentScheduler(houseId, userId)
-	paymentScheduler.Id = id
 	return model.PaymentSchedulerDto{
-		PaymentScheduler: paymentScheduler,
+		Id:          id,
+		Name:        "Test Payment",
+		Description: "Test Payment Description",
+		HouseId:     houseId,
+		UserId:      userId,
+		Sum:         1000,
+		Spec:        scheduler.DAILY,
 	}
 }

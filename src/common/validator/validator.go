@@ -1,6 +1,6 @@
 package validator
 
-import "common/errors"
+import "github.com/VlasovArtem/hob/src/common/errors"
 
 type Validator struct {
 	errors errors.ErrorResponse

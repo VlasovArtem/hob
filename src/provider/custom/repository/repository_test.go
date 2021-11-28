@@ -1,18 +1,18 @@
 package repository
 
 import (
-	"db"
+	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/provider/custom/mocks"
+	"github.com/VlasovArtem/hob/src/provider/custom/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper/database"
+	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"log"
-	"provider/custom/mocks"
-	"provider/custom/model"
-	"test/testhelper/database"
 	"testing"
-	userMocks "user/mocks"
-	userModel "user/model"
 )
 
 type CustomProviderRepositoryTestSuite struct {

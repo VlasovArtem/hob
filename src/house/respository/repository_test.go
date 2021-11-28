@@ -1,18 +1,18 @@
 package respository
 
 import (
-	"db"
+	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/house/mocks"
+	"github.com/VlasovArtem/hob/src/house/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper/database"
+	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	"house/mocks"
-	"house/model"
 	"log"
-	"test/testhelper/database"
 	"testing"
-	userMocks "user/mocks"
-	userModel "user/model"
 )
 
 type HouseRepositoryTestSuite struct {

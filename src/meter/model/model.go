@@ -2,9 +2,9 @@ package model
 
 import (
 	"encoding/json"
+	houseModel "github.com/VlasovArtem/hob/src/house/model"
+	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/google/uuid"
-	houseModel "house/model"
-	"payment/model"
 )
 
 type Meter struct {
@@ -12,8 +12,8 @@ type Meter struct {
 	Name        string
 	Details     string
 	Description string
-	PaymentId   uuid.UUID     `gorm:"index:idx_payment_id"`
-	Payment     model.Payment `gorm:"foreignKey:PaymentId"`
+	PaymentId   uuid.UUID            `gorm:"index:idx_payment_id"`
+	Payment     paymentModel.Payment `gorm:"foreignKey:PaymentId"`
 	HouseId     uuid.UUID
 	House       houseModel.House `gorm:"foreignKey:HouseId"`
 }

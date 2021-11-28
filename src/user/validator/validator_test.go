@@ -1,10 +1,10 @@
 package validator
 
 import (
-	"common/errors"
+	"github.com/VlasovArtem/hob/src/common/errors"
+	"github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"user/mocks"
 )
 
 func Test_WithCreateUserRequest(t *testing.T) {

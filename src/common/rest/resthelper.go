@@ -1,11 +1,11 @@
 package rest
 
 import (
-	projectErrors "common/errors"
-	"common/service"
 	"encoding/json"
 	"errors"
 	"fmt"
+	projectErrors "github.com/VlasovArtem/hob/src/common/errors"
+	"github.com/VlasovArtem/hob/src/common/service"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"io/ioutil"

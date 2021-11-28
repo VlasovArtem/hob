@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/payment/mocks"
+	"github.com/VlasovArtem/hob/src/payment/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"net/http"
-	"payment/mocks"
-	"payment/model"
-	"test/testhelper"
 	"testing"
 )
 
@@ -41,15 +41,13 @@ func Test_Add(t *testing.T) {
 	json.Unmarshal(responseByteArray, &actual)
 
 	assert.Equal(t, model.PaymentDto{
-		Payment: model.Payment{
-			Id:          actual.Id,
-			Name:        "Test Payment",
-			Description: "Test Payment Description",
-			HouseId:     mocks.HouseId,
-			UserId:      mocks.UserId,
-			Date:        mocks.Date,
-			Sum:         1000,
-		},
+		Id:          actual.Id,
+		Name:        "Test Payment",
+		Description: "Test Payment Description",
+		HouseId:     mocks.HouseId,
+		UserId:      mocks.UserId,
+		Date:        mocks.Date,
+		Sum:         1000,
 	}, actual)
 }
 

@@ -1,9 +1,9 @@
 package app
 
 import (
-	"common/dependency"
-	"common/handler"
-	"db"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/handler"
+	"github.com/VlasovArtem/hob/src/db"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"os"

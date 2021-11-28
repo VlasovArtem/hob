@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"testing"

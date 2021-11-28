@@ -1,10 +1,10 @@
 package validator
 
 import (
-	"common/dependency"
-	"common/errors"
-	baseValidator "common/validator"
-	userModel "user/model"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/errors"
+	baseValidator "github.com/VlasovArtem/hob/src/common/validator"
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 )
 
 type UserRequestValidatorObject struct {

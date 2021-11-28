@@ -1,16 +1,16 @@
 package service
 
 import (
-	"common/dependency"
-	countries "country/service"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	countries "github.com/VlasovArtem/hob/src/country/service"
+	"github.com/VlasovArtem/hob/src/house/model"
+	"github.com/VlasovArtem/hob/src/house/respository"
+	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"house/model"
-	"house/respository"
 	"log"
-	userService "user/service"
 )
 
 type HouseServiceObject struct {

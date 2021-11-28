@@ -1,20 +1,20 @@
 package handler
 
 import (
-	"common/dependency"
-	"common/rest"
 	"encoding/json"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/rest"
+	"github.com/VlasovArtem/hob/src/payment/model"
+	paymentService "github.com/VlasovArtem/hob/src/payment/service"
 	"github.com/gorilla/mux"
 	"net/http"
-	"payment/model"
-	ps "payment/service"
 )
 
 type PaymentHandlerObject struct {
-	paymentService ps.PaymentService
+	paymentService paymentService.PaymentService
 }
 
-func NewPaymentHandler(paymentService ps.PaymentService) PaymentHandler {
+func NewPaymentHandler(paymentService paymentService.PaymentService) PaymentHandler {
 	return &PaymentHandlerObject{
 		paymentService: paymentService,
 	}
@@ -23,7 +23,7 @@ func NewPaymentHandler(paymentService ps.PaymentService) PaymentHandler {
 func (p *PaymentHandlerObject) Initialize(factory dependency.DependenciesFactory) {
 	factory.Add(
 		NewPaymentHandler(
-			factory.FindRequiredByObject(ps.PaymentServiceObject{}).(ps.PaymentService),
+			factory.FindRequiredByObject(paymentService.PaymentServiceObject{}).(paymentService.PaymentService),
 		),
 	)
 }

@@ -3,19 +3,19 @@ package service
 import (
 	"errors"
 	"fmt"
+	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
+	paymentMocks "github.com/VlasovArtem/hob/src/payment/mocks"
+	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/mocks"
+	paymentScheduler "github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	schedulerMocks "github.com/VlasovArtem/hob/src/scheduler/mocks"
+	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/google/uuid"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
-	houseMocks "house/mocks"
-	paymentMocks "payment/mocks"
-	paymentModel "payment/model"
-	"payment/scheduler/mocks"
-	paymentScheduler "payment/scheduler/model"
-	schedulerMocks "scheduler/mocks"
 	"testing"
-	userMocks "user/mocks"
 )
 
 var (

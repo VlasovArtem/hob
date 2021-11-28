@@ -1,16 +1,16 @@
 package repository
 
 import (
-	"db"
+	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/test/testhelper/database"
+	"github.com/VlasovArtem/hob/src/user/mocks"
+	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"log"
-	"test/testhelper/database"
 	"testing"
-	"user/mocks"
-	"user/model"
 )
 
 type UserRepositoryTestSuite struct {

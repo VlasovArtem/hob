@@ -1,8 +1,8 @@
 package mocks
 
 import (
+	"github.com/VlasovArtem/hob/src/income/model"
 	"github.com/google/uuid"
-	"income/model"
 	"time"
 )
 

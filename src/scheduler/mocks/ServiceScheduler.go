@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	cron "github.com/robfig/cron"
+	cron "github.com/robfig/cron/v3"
 
 	mock "github.com/stretchr/testify/mock"
 

@@ -1,10 +1,10 @@
 package model
 
 import (
+	houseModel "github.com/VlasovArtem/hob/src/house/model"
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
-	houseModel "house/model"
 	"time"
-	userModel "user/model"
 )
 
 type Payment struct {

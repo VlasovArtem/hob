@@ -1,15 +1,15 @@
 package repository
 
 import (
-	"db"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/provider/mocks"
+	"github.com/VlasovArtem/hob/src/provider/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	"provider/mocks"
-	"provider/model"
-	"test/testhelper/database"
 	"testing"
 )
 

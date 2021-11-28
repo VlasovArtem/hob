@@ -1,32 +1,32 @@
 package service
 
 import (
-	"common/dependency"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	houseService "github.com/VlasovArtem/hob/src/house/service"
+	"github.com/VlasovArtem/hob/src/meter/model"
+	"github.com/VlasovArtem/hob/src/meter/repository"
+	paymentService "github.com/VlasovArtem/hob/src/payment/service"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	h "house/service"
-	"meter/model"
-	"meter/repository"
-	p "payment/service"
 )
 
 type MeterServiceObject struct {
-	paymentService p.PaymentService
-	houseService   h.HouseService
+	paymentService paymentService.PaymentService
+	houseService   houseService.HouseService
 	repository     repository.MeterRepository
 }
 
-func NewMeterService(paymentService p.PaymentService, houseService h.HouseService, repository repository.MeterRepository) MeterService {
+func NewMeterService(paymentService paymentService.PaymentService, houseService houseService.HouseService, repository repository.MeterRepository) MeterService {
 	return &MeterServiceObject{paymentService, houseService, repository}
 }
 
 func (m *MeterServiceObject) Initialize(factory dependency.DependenciesFactory) {
 	factory.Add(
 		NewMeterService(
-			factory.FindRequiredByObject(p.PaymentServiceObject{}).(p.PaymentService),
-			factory.FindRequiredByObject(h.HouseServiceObject{}).(h.HouseService),
+			factory.FindRequiredByObject(paymentService.PaymentServiceObject{}).(paymentService.PaymentService),
+			factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
 			factory.FindRequiredByObject(repository.MeterRepositoryObject{}).(repository.MeterRepository),
 		),
 	)

@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"common/dependency"
-	"common/rest"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/rest"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/service"
 	"github.com/gorilla/mux"
 	"net/http"
-	"payment/scheduler/model"
-	"payment/scheduler/service"
 )
 
 type PaymentSchedulerHandlerObject struct {

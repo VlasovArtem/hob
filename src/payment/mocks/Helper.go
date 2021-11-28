@@ -1,9 +1,9 @@
 package mocks
 
 import (
+	"github.com/VlasovArtem/hob/src/payment/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
-	"payment/model"
-	"test/testhelper"
 	"time"
 )
 
@@ -38,14 +38,12 @@ func GeneratePayment(houseId uuid.UUID, userId uuid.UUID) model.Payment {
 
 func GeneratePaymentResponse() model.PaymentDto {
 	return model.PaymentDto{
-		Payment: model.Payment{
-			Id:          uuid.New(),
-			Name:        "Test Payment",
-			Description: "Test Payment Description",
-			HouseId:     HouseId,
-			UserId:      UserId,
-			Date:        Date,
-			Sum:         1000,
-		},
+		Id:          uuid.New(),
+		Name:        "Test Payment",
+		Description: "Test Payment Description",
+		HouseId:     HouseId,
+		UserId:      UserId,
+		Date:        Date,
+		Sum:         1000,
 	}
 }

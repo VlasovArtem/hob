@@ -1,14 +1,14 @@
 package service
 
 import (
-	"common/dependency"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/provider/custom/model"
+	"github.com/VlasovArtem/hob/src/provider/custom/repository"
+	userRepository "github.com/VlasovArtem/hob/src/user/repository"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"provider/custom/model"
-	"provider/custom/repository"
-	userRepository "user/repository"
 )
 
 type CustomProviderServiceObject struct {

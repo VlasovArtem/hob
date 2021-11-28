@@ -2,8 +2,8 @@ package mocks
 
 import (
 	"fmt"
+	"github.com/VlasovArtem/hob/src/provider/custom/model"
 	"github.com/google/uuid"
-	"provider/custom/model"
 )
 
 func GenerateCustomProvider(userId uuid.UUID) model.CustomProvider {

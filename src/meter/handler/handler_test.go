@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/meter/mocks"
+	"github.com/VlasovArtem/hob/src/meter/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"meter/mocks"
-	"meter/model"
 	"net/http"
-	"test/testhelper"
 	"testing"
 )
 

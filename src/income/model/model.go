@@ -1,8 +1,8 @@
 package model
 
 import (
+	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/google/uuid"
-	houseModel "house/model"
 	"time"
 )
 

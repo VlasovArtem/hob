@@ -1,16 +1,16 @@
 package handler
 
 import (
-	"common/dependency"
-	projectErrors "common/errors"
-	"common/rest"
 	"encoding/json"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	projectErrors "github.com/VlasovArtem/hob/src/common/errors"
+	"github.com/VlasovArtem/hob/src/common/rest"
+	"github.com/VlasovArtem/hob/src/user/model"
+	"github.com/VlasovArtem/hob/src/user/service"
+	"github.com/VlasovArtem/hob/src/user/validator"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"net/http"
-	"user/model"
-	"user/service"
-	"user/validator"
 )
 
 type UserHandlerObject struct {

@@ -2,8 +2,8 @@ package mocks
 
 import (
 	"fmt"
+	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/google/uuid"
-	"provider/model"
 )
 
 func GenerateProvider() model.Provider {

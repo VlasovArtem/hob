@@ -1,7 +1,7 @@
 package test
 
 import (
-	country "country/model"
+	country "github.com/VlasovArtem/hob/src/country/model"
 )
 
 var CountryObject = &country.Country{

@@ -1,13 +1,13 @@
 package service
 
 import (
-	"common/dependency"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/provider/model"
+	"github.com/VlasovArtem/hob/src/provider/repository"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"provider/model"
-	"provider/repository"
 )
 
 type ProviderServiceObject struct {

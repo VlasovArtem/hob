@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	model "provider/model"
+	model "github.com/VlasovArtem/hob/src/provider/model"
 
 	mock "github.com/stretchr/testify/mock"
 

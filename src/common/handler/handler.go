@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"common/dependency"
+	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/gorilla/mux"
 )
 

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/mocks"
+	paymentScheduler "github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"net/http"
-	"payment/scheduler/mocks"
-	paymentScheduler "payment/scheduler/model"
-	"test/testhelper"
 	"testing"
 )
 

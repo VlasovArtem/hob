@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"country/model"
 	"encoding/json"
+	"github.com/VlasovArtem/hob/src/country/model"
+	testHelperService "github.com/VlasovArtem/hob/src/test"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/stretchr/testify/assert"
 	"net/http"
-	testHelperService "test"
-	"test/testhelper"
 	"testing"
 )
 

@@ -1,20 +1,18 @@
 package service
 
 import (
-	"country/model"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/VlasovArtem/hob/src/country/model"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
-	"os"
 	"reflect"
 	"testing"
 )
 
 var countriesService = func() CountryService {
-	file, err := ioutil.ReadFile(fmt.Sprintf("%s/content/countries.json", os.Getenv("GOPATH")))
+	file, err := ioutil.ReadFile("../../../content/countries.json")
 
 	if err != nil {
 		log.Fatal(err, "countries file not fount")

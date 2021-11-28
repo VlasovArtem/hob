@@ -3,12 +3,12 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/provider/mocks"
+	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
-	"provider/mocks"
-	"provider/model"
 	"testing"
 )
 

@@ -1,12 +1,12 @@
 package scheduler
 
 import (
-	"common/dependency"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/google/uuid"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 )
 
 type SchedulingSpecification string

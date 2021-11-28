@@ -2,11 +2,11 @@ package testhelper
 
 import (
 	"bytes"
-	helperModel "common/errors"
-	"country/model"
-	countries "country/service"
 	"encoding/json"
 	"fmt"
+	helperModel "github.com/VlasovArtem/hob/src/common/errors"
+	"github.com/VlasovArtem/hob/src/country/model"
+	countries "github.com/VlasovArtem/hob/src/country/service"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -14,12 +14,11 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
 func InitCountryService() countries.CountryService {
-	file, err := ioutil.ReadFile(fmt.Sprintf("%s/content/countries.json", os.Getenv("GOPATH")))
+	file, err := ioutil.ReadFile("../../../content/countries.json")
 
 	if err != nil {
 		log.Fatal(err, "countries file not fount")

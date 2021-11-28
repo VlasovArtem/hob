@@ -1,9 +1,9 @@
 package db
 
 import (
-	"common/dependency"
-	helper "common/service"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	helper "github.com/VlasovArtem/hob/src/common/service"
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

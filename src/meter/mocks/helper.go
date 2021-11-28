@@ -2,9 +2,9 @@ package mocks
 
 import (
 	"encoding/json"
+	"github.com/VlasovArtem/hob/src/meter/model"
 	"github.com/google/uuid"
 	"log"
-	"meter/model"
 )
 
 func GenerateMeter(paymentId uuid.UUID, houseId uuid.UUID) model.Meter {

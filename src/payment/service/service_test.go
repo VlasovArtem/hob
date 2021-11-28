@@ -3,15 +3,15 @@ package service
 import (
 	"errors"
 	"fmt"
+	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
+	"github.com/VlasovArtem/hob/src/payment/mocks"
+	"github.com/VlasovArtem/hob/src/payment/model"
+	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
-	houseMocks "house/mocks"
-	"payment/mocks"
-	"payment/model"
 	"testing"
-	userMocks "user/mocks"
 )
 
 var (

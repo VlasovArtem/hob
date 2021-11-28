@@ -1,9 +1,9 @@
 package service
 
 import (
-	"country/model"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/country/model"
 	"github.com/rs/zerolog/log"
 )
 

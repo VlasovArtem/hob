@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"common/dependency"
-	"db"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/income/model"
 	"github.com/google/uuid"
-	"income/model"
 )
 
 type IncomeRepositoryObject struct {

@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"common/dependency"
-	"common/rest"
 	"encoding/json"
+	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/rest"
+	"github.com/VlasovArtem/hob/src/provider/custom/model"
+	"github.com/VlasovArtem/hob/src/provider/custom/service"
 	"github.com/gorilla/mux"
 	"net/http"
-	"provider/custom/model"
-	"provider/custom/service"
 )
 
 type CustomProviderHandlerObject struct {
