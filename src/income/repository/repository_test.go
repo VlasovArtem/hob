@@ -13,49 +13,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	"log"
 	"testing"
 )
 
 type IncomeRepositoryTestSuite struct {
-	suite.Suite
-	database     db.DatabaseService
+	database.DBTestSuite
 	repository   IncomeRepository
 	createdUser  userModel.User
 	createdHouse houseModel.House
 }
 
 func (i *IncomeRepositoryTestSuite) SetupSuite() {
-	config := db.NewDefaultDatabaseConfiguration()
-	config.DBName = "hob_test"
-	i.database = db.NewDatabaseService(config)
-	i.repository = NewIncomeRepository(i.database)
-	err := i.database.D().AutoMigrate(model.Income{})
+	i.InitDBTestSuite()
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	i.CreateRepository(
+		func(service db.DatabaseService) {
+			i.repository = NewIncomeRepository(service)
+		},
+	).
+		AddMigrators(userModel.User{}, houseModel.House{}, model.Income{})
 
 	i.createdUser = userMocks.GenerateUser()
-	err = i.database.Create(&i.createdUser)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	i.CreateEntity(&i.createdUser)
 
 	i.createdHouse = houseMocks.GenerateHouse(i.createdUser.Id)
-
-	err = i.database.Create(&i.createdHouse)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	i.CreateEntity(&i.createdHouse)
 }
 
 func (i *IncomeRepositoryTestSuite) TearDownSuite() {
-	database.DropTable(i.database.D(), houseModel.House{})
-	database.DropTable(i.database.D(), userModel.User{})
-	database.DropTable(i.database.D(), model.Income{})
+	i.TearDown()
 }
 
 func TestIncomeRepositoryTestSuite(t *testing.T) {

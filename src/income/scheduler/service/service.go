@@ -11,7 +11,7 @@ import (
 	incomeService "github.com/VlasovArtem/hob/src/income/service"
 	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/google/uuid"
-	"log"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
@@ -82,7 +82,7 @@ func (i *IncomeSchedulerServiceObject) Remove(id uuid.UUID) error {
 		return errors.New(fmt.Sprintf("income scheduler with id %s not found", id))
 	} else {
 		if err := i.serviceScheduler.Remove(id); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 		i.repository.DeleteById(id)
 	}
@@ -116,9 +116,9 @@ func (i *IncomeSchedulerServiceObject) schedulerFunc(income incomeModel.Income) 
 				HouseId:     income.HouseId,
 			},
 		); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		} else {
-			log.Println(fmt.Sprintf("New income added to the house %s via scheduler %s", income.HouseId, income.Id))
+			log.Info().Msgf("New income added to the house %s via scheduler %s", income.HouseId, income.Id)
 		}
 	}
 }

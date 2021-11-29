@@ -11,39 +11,31 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	"log"
 	"testing"
 )
 
 type CustomProviderRepositoryTestSuite struct {
-	suite.Suite
-	database    db.DatabaseService
+	database.DBTestSuite
 	repository  CustomProviderRepository
 	createdUser userModel.User
 }
 
 func (p *CustomProviderRepositoryTestSuite) SetupSuite() {
-	config := db.NewDefaultDatabaseConfiguration()
-	config.DBName = "hob_test"
-	p.database = db.NewDatabaseService(config)
-	p.repository = NewCustomProviderRepository(p.database)
-	err := p.database.D().AutoMigrate(model.CustomProvider{})
+	p.InitDBTestSuite()
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	p.CreateRepository(
+		func(service db.DatabaseService) {
+			p.repository = NewCustomProviderRepository(service)
+		},
+	).
+		AddMigrators(userModel.User{}, model.CustomProvider{})
 
 	p.createdUser = userMocks.GenerateUser()
-	err = p.database.Create(&p.createdUser)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	p.CreateEntity(&p.createdUser)
 }
 
 func (p *CustomProviderRepositoryTestSuite) TearDownSuite() {
-	database.DropTable(p.database.D(), userModel.User{})
-	database.DropTable(p.database.D(), model.CustomProvider{})
+	p.TearDown()
 }
 
 func TestCustomProviderRepositoryTestSuite(t *testing.T) {
@@ -68,7 +60,7 @@ func (p *CustomProviderRepositoryTestSuite) Test_Create_WithSameNameButDifferent
 	assert.Equal(p.T(), first, actual)
 
 	newUser := userMocks.GenerateUser()
-	err = p.database.Create(&newUser)
+	err = p.Database.Create(&newUser)
 
 	assert.Nil(p.T(), err)
 
@@ -181,11 +173,7 @@ func (p *CustomProviderRepositoryTestSuite) CreateCustomProvider() model.CustomP
 
 func (p *CustomProviderRepositoryTestSuite) CreateCustomProviderWithNewUser() model.CustomProvider {
 	createdUser := userMocks.GenerateUser()
-	err := p.database.Create(createdUser)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	p.CreateEntity(&createdUser)
 
 	provider := mocks.GenerateCustomProvider(createdUser.Id)
 

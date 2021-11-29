@@ -5,7 +5,7 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
 	"github.com/google/uuid"
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
 type PaymentSchedulerRepositoryObject struct {
@@ -51,14 +51,14 @@ func (p *PaymentSchedulerRepositoryObject) FindById(id uuid.UUID) (response mode
 
 func (p *PaymentSchedulerRepositoryObject) FindByHouseId(houseId uuid.UUID) (response []model.PaymentScheduler) {
 	if tx := p.database.D().Find(&response, "house_id = ?", houseId); tx.Error != nil {
-		log.Println(tx.Error)
+		log.Error().Err(tx.Error).Msg("")
 	}
 	return response
 }
 
 func (p *PaymentSchedulerRepositoryObject) FindByUserId(userId uuid.UUID) (response []model.PaymentScheduler) {
 	if tx := p.database.D().Find(&response, "user_id = ?", userId); tx.Error != nil {
-		log.Println(tx.Error)
+		log.Error().Err(tx.Error).Msg("")
 	}
 	return response
 }

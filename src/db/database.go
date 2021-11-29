@@ -5,9 +5,9 @@ import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	helper "github.com/VlasovArtem/hob/src/common/service"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
 	"os"
 )
 
@@ -83,7 +83,7 @@ func (d *DatabaseObject) FindByIdModeled(model interface{}, receiver interface{}
 func (d *DatabaseObject) ExistsById(model interface{}, id uuid.UUID) (exists bool) {
 	tx := d.db.Model(model).Select("count(*) > 0").Where("id = ?", id)
 	if err := tx.Find(&exists).Error; err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 	return exists
 }
@@ -91,7 +91,7 @@ func (d *DatabaseObject) ExistsById(model interface{}, id uuid.UUID) (exists boo
 func (d *DatabaseObject) ExistsByQuery(model interface{}, query interface{}, args ...interface{}) (exists bool) {
 	tx := d.db.Model(model).Select("count(*) > 0").Where(query, args...)
 	if err := tx.Find(&exists).Error; err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("")
 	}
 	return exists
 }

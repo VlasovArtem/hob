@@ -14,21 +14,23 @@ import (
 )
 
 type ProviderRepositoryTestSuite struct {
-	suite.Suite
-	database   db.DatabaseService
+	database.DBTestSuite
 	repository ProviderRepository
 }
 
 func (p *ProviderRepositoryTestSuite) SetupSuite() {
-	config := db.NewDefaultDatabaseConfiguration()
-	config.DBName = "hob_test"
-	p.database = db.NewDatabaseService(config)
-	p.repository = NewProviderRepository(p.database)
-	database.CreateTable(p.database.D(), model.Provider{})
+	p.InitDBTestSuite()
+
+	p.CreateRepository(
+		func(service db.DatabaseService) {
+			p.repository = NewProviderRepository(service)
+		},
+	).
+		AddMigrators(model.Provider{})
 }
 
 func (p *ProviderRepositoryTestSuite) TearDownSuite() {
-	database.DropTable(p.database.D(), model.Provider{})
+	p.TearDown()
 }
 
 func TestProviderRepositoryTestSuite(t *testing.T) {
@@ -96,7 +98,7 @@ func (p *ProviderRepositoryTestSuite) Test_FindByNameLike() {
 
 	assert.Equal(p.T(), expectedProviders[5:], secondPage)
 
-	database.RecreateTable(p.database.D(), model.Provider{})
+	database.RecreateTable(p.Database.D(), model.Provider{})
 }
 
 func (p *ProviderRepositoryTestSuite) Test_FindByNameLike_WithOutMatch() {
@@ -106,7 +108,7 @@ func (p *ProviderRepositoryTestSuite) Test_FindByNameLike_WithOutMatch() {
 }
 
 func (p *ProviderRepositoryTestSuite) Test_FindByNameLike_WithEmptyString() {
-	database.RecreateTable(p.database.D(), model.Provider{})
+	database.RecreateTable(p.Database.D(), model.Provider{})
 
 	var expectedProviders []model.Provider
 
@@ -123,7 +125,7 @@ func (p *ProviderRepositoryTestSuite) Test_FindByNameLike_WithEmptyString() {
 
 	assert.ElementsMatch(p.T(), expectedProviders, page)
 
-	database.RecreateTable(p.database.D(), model.Provider{})
+	database.RecreateTable(p.Database.D(), model.Provider{})
 }
 
 func (p *ProviderRepositoryTestSuite) Test_ExistsById() {

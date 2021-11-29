@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/VlasovArtem/hob/src/country/model"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"log"
 	"reflect"
 	"testing"
 )
@@ -15,7 +15,7 @@ var countriesService = func() CountryService {
 	file, err := ioutil.ReadFile("../../../content/countries.json")
 
 	if err != nil {
-		log.Fatal(err, "countries file not fount")
+		log.Fatal().Err(err).Msg("countries file not fount")
 	}
 
 	var countriesContent []model.Country

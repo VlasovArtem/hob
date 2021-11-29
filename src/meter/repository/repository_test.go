@@ -15,13 +15,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	"log"
 	"testing"
 )
 
 type MeterRepositoryTestSuite struct {
-	suite.Suite
-	database       db.DatabaseService
+	database.DBTestSuite
 	repository     MeterRepository
 	createdPayment paymentModel.Payment
 	createdUser    userModel.User
@@ -29,47 +27,32 @@ type MeterRepositoryTestSuite struct {
 }
 
 func (m *MeterRepositoryTestSuite) SetupSuite() {
-	config := db.NewDefaultDatabaseConfiguration()
-	config.DBName = "hob_test"
-	m.database = db.NewDatabaseService(config)
-	m.repository = NewMeterRepository(m.database)
-	err := m.database.D().AutoMigrate(model.Meter{})
+	m.InitDBTestSuite()
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	m.CreateRepository(
+		func(service db.DatabaseService) {
+			m.repository = NewMeterRepository(service)
+		},
+	).
+		AddMigrators(userModel.User{}, houseModel.House{}, paymentModel.Payment{}, model.Meter{})
 
 	m.createdUser = userMocks.GenerateUser()
-	err = m.database.Create(&m.createdUser)
+	m.CreateEntity(&m.createdUser)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	m.AddBeforeTest(
+		func(service db.DatabaseService) {
+			m.createdHouse = houseMocks.GenerateHouse(m.createdUser.Id)
+			m.CreateEntity(&m.createdHouse)
+		})
+	m.AddBeforeTest(
+		func(service db.DatabaseService) {
+			m.createdPayment = paymentMocks.GeneratePayment(m.createdHouse.Id, m.createdUser.Id)
+			m.CreateEntity(&m.createdPayment)
+		})
 }
 
 func (m *MeterRepositoryTestSuite) TearDownSuite() {
-	database.DropTable(m.database.D(), houseModel.House{})
-	database.DropTable(m.database.D(), userModel.User{})
-	database.DropTable(m.database.D(), paymentModel.Payment{})
-	database.DropTable(m.database.D(), model.Meter{})
-}
-
-func (m *MeterRepositoryTestSuite) BeforeTest(suiteName, testName string) {
-	m.createdHouse = houseMocks.GenerateHouse(m.createdUser.Id)
-
-	err := m.database.Create(&m.createdHouse)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	m.createdPayment = paymentMocks.GeneratePayment(m.createdHouse.Id, m.createdUser.Id)
-
-	err = m.database.Create(&m.createdPayment)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	m.TearDown()
 }
 
 func TestPaymentRepositorySchedulerTestSuite(t *testing.T) {

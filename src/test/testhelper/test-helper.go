@@ -9,9 +9,9 @@ import (
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,7 +21,7 @@ func InitCountryService() countries.CountryService {
 	file, err := ioutil.ReadFile("../../../content/countries.json")
 
 	if err != nil {
-		log.Fatal(err, "countries file not fount")
+		log.Fatal().Err(err).Msg("countries file not fount")
 	}
 
 	var countriesContent []model.Country
@@ -123,7 +123,7 @@ func ReadErrorResponse(content []byte) (response helperModel.ErrorResponseObject
 	errorResponse := helperModel.ErrorResponseObject{}
 
 	if err := json.Unmarshal(content, &errorResponse); err != nil {
-		log.Fatal("Could not parse ErrorResponseObject")
+		log.Fatal().Msg("Could not parse ErrorResponseObject")
 	}
 
 	return errorResponse
@@ -140,7 +140,7 @@ func ReadBytes(response *http.Response) []byte {
 func ParseUUID(id string) uuid.UUID {
 	parse, err := uuid.Parse(id)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("")
 	}
 	return parse
 }

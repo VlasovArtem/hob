@@ -13,7 +13,7 @@ import (
 	"github.com/VlasovArtem/hob/src/scheduler"
 	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
-	"log"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
@@ -93,7 +93,7 @@ func (p *PaymentSchedulerServiceObject) Remove(id uuid.UUID) error {
 		return errors.New(fmt.Sprintf("payment scheduler with id %s not found", id))
 	} else {
 		if err := p.serviceScheduler.Remove(id); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		}
 		p.repository.DeleteById(id)
 	}
@@ -128,9 +128,9 @@ func (p *PaymentSchedulerServiceObject) schedulerFunc(payment model.PaymentSched
 				Sum:         payment.Sum,
 			},
 		); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("")
 		} else {
-			log.Println(fmt.Sprintf("New payment added to the house %s and user %s via scheduler %s", payment.HouseId, payment.UserId, payment.Id))
+			log.Info().Msgf("New payment added to the house %s and user %s via scheduler %s", payment.HouseId, payment.UserId, payment.Id)
 		}
 	}
 }

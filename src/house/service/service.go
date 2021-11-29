@@ -9,8 +9,8 @@ import (
 	"github.com/VlasovArtem/hob/src/house/respository"
 	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
-	"log"
 )
 
 type HouseServiceObject struct {
@@ -25,7 +25,7 @@ func NewHouseService(
 	repository respository.HouseRepository,
 ) HouseService {
 	if countriesService == nil {
-		log.Fatal("Country service is required")
+		log.Fatal().Msg("Country service is required")
 	}
 
 	return &HouseServiceObject{

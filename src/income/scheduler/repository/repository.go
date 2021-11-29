@@ -5,7 +5,7 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/income/scheduler/model"
 	"github.com/google/uuid"
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
 type IncomeSchedulerRepositoryObject struct {
@@ -50,7 +50,7 @@ func (i *IncomeSchedulerRepositoryObject) FindById(id uuid.UUID) (response model
 
 func (i *IncomeSchedulerRepositoryObject) FindByHouseId(houseId uuid.UUID) (response []model.IncomeScheduler) {
 	if tx := i.database.D().Find(&response, "house_id = ?", houseId); tx.Error != nil {
-		log.Println(tx.Error)
+		log.Error().Err(tx.Error).Msg("")
 	}
 	return response
 }

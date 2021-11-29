@@ -9,19 +9,19 @@ import (
 	"net/http"
 )
 
-type countryHandlerObject struct {
+type CountryHandlerObject struct {
 	countryService service.CountryService
 }
 
 func NewCountryHandler(countryService service.CountryService) CountryHandler {
-	return &countryHandlerObject{countryService}
+	return &CountryHandlerObject{countryService}
 }
 
-func CreateCountryHandler(factory dependency.DependenciesFactory) CountryHandler {
-	return NewCountryHandler(factory.FindRequiredByObject(service.CountryServiceObject{}).(service.CountryService))
+func (c *CountryHandlerObject) Initialize(factory dependency.DependenciesFactory) {
+	factory.Add(NewCountryHandler(factory.FindRequiredByObject(service.CountryServiceObject{}).(service.CountryService)))
 }
 
-func (c *countryHandlerObject) Init(router *mux.Router) {
+func (c *CountryHandlerObject) Init(router *mux.Router) {
 	subrouter := router.PathPrefix("/api/v1/country").Subrouter()
 
 	subrouter.Path("/").HandlerFunc(c.FindAll()).Methods("GET")
@@ -33,13 +33,13 @@ type CountryHandler interface {
 	FindByCode() http.HandlerFunc
 }
 
-func (c *countryHandlerObject) FindAll() http.HandlerFunc {
+func (c *CountryHandlerObject) FindAll() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		json.NewEncoder(writer).Encode(c.countryService.FindAllCountries())
 	}
 }
 
-func (c *countryHandlerObject) FindByCode() http.HandlerFunc {
+func (c *CountryHandlerObject) FindByCode() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if parameter, err := rest.GetRequestParameter(request, "code"); err != nil {
 			rest.HandleBadRequestWithError(writer, err)

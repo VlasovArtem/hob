@@ -11,34 +11,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	"log"
 	"testing"
 )
 
 type HouseRepositoryTestSuite struct {
-	suite.Suite
+	database.DBTestSuite
 	createdUser userModel.User
-	database    db.DatabaseService
 	repository  HouseRepository
 }
 
 func (h *HouseRepositoryTestSuite) SetupSuite() {
-	config := db.NewDefaultDatabaseConfiguration()
-	config.DBName = "hob_test"
-	h.database = db.NewDatabaseService(config)
-	h.repository = NewHouseRepository(h.database)
-	err := h.database.D().AutoMigrate(model.House{})
+	h.InitDBTestSuite()
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	h.CreateRepository(
+		func(service db.DatabaseService) {
+			h.repository = NewHouseRepository(service)
+		},
+	).
+		AddMigrators(userModel.User{}, model.House{})
 
 	h.createdUser = userMocks.GenerateUser()
-	err = h.database.Create(&h.createdUser)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	h.CreateEntity(&h.createdUser)
 }
 
 func TestHouseRepositoryTestSuite(t *testing.T) {
@@ -46,8 +39,7 @@ func TestHouseRepositoryTestSuite(t *testing.T) {
 }
 
 func (h *HouseRepositoryTestSuite) TearDownSuite() {
-	database.DropTable(h.database.D(), model.House{})
-	database.DropTable(h.database.D(), userModel.User{})
+	h.TearDown()
 }
 
 func (h *HouseRepositoryTestSuite) Test_Create() {

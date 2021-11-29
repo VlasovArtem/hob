@@ -2,13 +2,12 @@ package app
 
 import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/environment"
 	"github.com/VlasovArtem/hob/src/common/handler"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
-	"os"
 	"reflect"
-	"strconv"
 )
 
 const (
@@ -90,44 +89,15 @@ func (a *ApplicationObject) AddHandler(applicationHandler handler.ApplicationHan
 }
 
 func (a *ApplicationObject) createDatabaseConfiguration() {
-	host := getEnvironmentVariable(hostEnvironmentName, "localhost")
-	port := getEnvironmentIntVariable(portEnvironmentName, 5432)
-	user := getEnvironmentVariable(userEnvironmentName, "postgres")
-	password := getEnvironmentVariable(passwordEnvironmentName, "postgres")
-	dbname := getEnvironmentVariable(dbnameEnvironmentName, "hob")
-
 	configuration := db.DatabaseConfiguration{
-		Host:     host,
-		Port:     port,
-		User:     user,
-		Password: password,
-		DBName:   dbname,
+		Host:     environment.GetEnvironmentVariable(hostEnvironmentName, "localhost"),
+		Port:     environment.GetEnvironmentIntVariable(portEnvironmentName, 5432),
+		User:     environment.GetEnvironmentVariable(userEnvironmentName, "postgres"),
+		Password: environment.GetEnvironmentVariable(passwordEnvironmentName, "postgres"),
+		DBName:   environment.GetEnvironmentVariable(dbnameEnvironmentName, "hob"),
 	}
 
 	a.AddDependency(configuration)
-}
-
-func getEnvironmentVariable(name string, defaultValue string) string {
-	if variable := os.Getenv(name); variable == "" {
-		log.Info().Msgf("Environment variable with name '%s' not found, default used '%s'", name, defaultValue)
-		return defaultValue
-	} else {
-		return variable
-	}
-}
-
-func getEnvironmentIntVariable(name string, defaultValue int) int {
-	if variable := os.Getenv(name); variable == "" {
-		log.Info().Msgf("Environment variable with name '%s' not found, default used '%d'", name, defaultValue)
-		return defaultValue
-	} else {
-		if intVariable, err := strconv.Atoi(variable); err != nil {
-			log.Fatal().Err(err)
-			return 0
-		} else {
-			return intVariable
-		}
-	}
 }
 
 func (a *ApplicationObject) migrate(object dependency.ObjectDatabaseMigrator) {

@@ -9,30 +9,31 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	"log"
 	"testing"
 )
 
 type UserRepositoryTestSuite struct {
-	suite.Suite
-	database   db.DatabaseService
+	database.DBTestSuite
 	repository UserRepository
 }
 
 func (p *UserRepositoryTestSuite) SetupSuite() {
-	config := db.NewDefaultDatabaseConfiguration()
-	config.DBName = "hob_test"
-	p.database = db.NewDatabaseService(config)
-	p.repository = NewUserRepository(p.database)
-	err := p.database.D().AutoMigrate(model.User{})
+	p.InitDBTestSuite()
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	p.CreateRepository(
+		func(service db.DatabaseService) {
+			p.repository = NewUserRepository(service)
+		},
+	).
+		AddMigrators(model.User{})
 }
 
 func (p *UserRepositoryTestSuite) TearDownSuite() {
-	database.DropTable(p.database.D(), model.User{})
+	p.TearDown()
+}
+
+func TestUserRepositoryTestSuite(t *testing.T) {
+	suite.Run(t, new(UserRepositoryTestSuite))
 }
 
 func (p *UserRepositoryTestSuite) Test_Create() {
@@ -96,10 +97,6 @@ func (p *UserRepositoryTestSuite) Test_ExistsByEmail() {
 
 func (p *UserRepositoryTestSuite) Test_ExistsByEmail_WithNotExistsUser() {
 	assert.False(p.T(), p.repository.ExistsByEmail("email@mail.com"))
-}
-
-func TestUserRepositoryTestSuite(t *testing.T) {
-	suite.Run(t, new(UserRepositoryTestSuite))
 }
 
 func (p *UserRepositoryTestSuite) CreateUser() model.User {

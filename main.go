@@ -1,10 +1,12 @@
 package main
 
-import "C"
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/VlasovArtem/hob/src/app"
+	"github.com/VlasovArtem/hob/src/common/environment"
 	helper "github.com/VlasovArtem/hob/src/common/service"
+	"github.com/VlasovArtem/hob/src/country/handler"
 	"github.com/VlasovArtem/hob/src/country/model"
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	houseHandler "github.com/VlasovArtem/hob/src/house/handler"
@@ -44,6 +46,8 @@ import (
 	"os"
 )
 
+const countriesDirVariable = "COUNTRIES_DIR"
+
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -55,10 +59,14 @@ func main() {
 
 	http.Handle("/", router)
 
-	log.Fatal().Err(http.ListenAndServe(":3000", router))
+	err := http.ListenAndServe(":3000", router)
+	log.Fatal().Msg(err.Error())
 }
 
 func addAutoInitializingDependencies(application app.ApplicationService) {
+	application.
+		AddHandler(new(handler.CountryHandlerObject))
+
 	application.
 		AddAutoDependency(new(userRequestValidator.UserRequestValidatorObject)).
 		AddAutoDependency(new(userRepository.UserRepositoryObject)).
@@ -110,7 +118,7 @@ func addAutoInitializingDependencies(application app.ApplicationService) {
 }
 
 func createCountriesService(app app.ApplicationService) {
-	file, err := ioutil.ReadFile("./content/countries.json")
+	file, err := ioutil.ReadFile(fmt.Sprintf("%scontent/countries.json", environment.GetEnvironmentVariable(countriesDirVariable, "./")))
 
 	if helper.LogError(err, "Countries is not found") {
 		os.Exit(1)

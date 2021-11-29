@@ -1,12 +1,11 @@
 package db
 
 import (
-	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
-	"log"
 	"testing"
 )
 
@@ -36,12 +35,16 @@ func (i *DatabaseTestSuite) SetupSuite() {
 	err := i.database.D().AutoMigrate(testEntity{})
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Cannot create new entity")
 	}
 }
 
 func (i *DatabaseTestSuite) TearDownSuite() {
-	database.DropTable(i.database.D(), testEntity{})
+	err := i.database.D().Migrator().DropTable(testEntity{})
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("Cannot drop table")
+	}
 }
 
 func TestDatabaseTestSuite(t *testing.T) {

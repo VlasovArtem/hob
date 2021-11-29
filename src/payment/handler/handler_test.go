@@ -222,7 +222,7 @@ func Test_FindByUserId(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentDto{}
+	var actual []model.PaymentDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -234,7 +234,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []model.PaymentDto{}
+	var paymentResponses []model.PaymentDto
 
 	payments.On("FindByUserId", id).
 		Return(paymentResponses, nil)
@@ -247,7 +247,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []model.PaymentDto{}
+	var actual []model.PaymentDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
