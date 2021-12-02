@@ -22,8 +22,8 @@ func NewMeterService(paymentService paymentService.PaymentService, houseService 
 	return &MeterServiceObject{paymentService, houseService, repository}
 }
 
-func (m *MeterServiceObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (m *MeterServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewMeterService(
 			factory.FindRequiredByObject(paymentService.PaymentServiceObject{}).(paymentService.PaymentService),
 			factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),

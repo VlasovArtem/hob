@@ -17,8 +17,8 @@ func NewPaymentSchedulerHandler(paymentSchedulerService service.PaymentScheduler
 	return &PaymentSchedulerHandlerObject{paymentSchedulerService}
 }
 
-func (p *PaymentSchedulerHandlerObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (p *PaymentSchedulerHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewPaymentSchedulerHandler(factory.FindRequiredByObject(service.PaymentSchedulerServiceObject{}).(service.PaymentSchedulerService)),
 	)
 }

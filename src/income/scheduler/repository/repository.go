@@ -16,8 +16,8 @@ func NewIncomeSchedulerRepository(database db.DatabaseService) IncomeSchedulerRe
 	return &IncomeSchedulerRepositoryObject{database}
 }
 
-func (i *IncomeSchedulerRepositoryObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewIncomeSchedulerRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)))
+func (i *IncomeSchedulerRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(NewIncomeSchedulerRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)))
 }
 
 func (i *IncomeSchedulerRepositoryObject) GetEntity() interface{} {

@@ -17,8 +17,8 @@ func NewIncomeHandler(incomeService service.IncomeService) IncomeHandler {
 	return &IncomeHandlerObject{incomeService}
 }
 
-func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewIncomeHandler(factory.FindRequiredByObject(service.IncomeServiceObject{}).(service.IncomeService)))
+func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(NewIncomeHandler(factory.FindRequiredByObject(service.IncomeServiceObject{}).(service.IncomeService)))
 }
 
 func (i *IncomeHandlerObject) Init(router *mux.Router) {

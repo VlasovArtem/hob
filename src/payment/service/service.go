@@ -26,8 +26,8 @@ func NewPaymentService(userService us.UserService, houseService hs.HouseService,
 	}
 }
 
-func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewPaymentService(
 			factory.FindRequiredByObject(us.UserServiceObject{}).(us.UserService),
 			factory.FindRequiredByObject(hs.HouseServiceObject{}).(hs.HouseService),

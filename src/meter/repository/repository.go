@@ -15,8 +15,8 @@ func NewMeterRepository(database db.DatabaseService) MeterRepository {
 	return &MeterRepositoryObject{database}
 }
 
-func (m *MeterRepositoryObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewMeterRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)))
+func (m *MeterRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(NewMeterRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)))
 }
 
 func (m *MeterRepositoryObject) GetEntity() interface{} {

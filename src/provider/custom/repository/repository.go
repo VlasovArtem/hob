@@ -15,8 +15,8 @@ func NewCustomProviderRepository(database db.DatabaseService) CustomProviderRepo
 	return &CustomProviderRepositoryObject{database}
 }
 
-func (c *CustomProviderRepositoryObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (c *CustomProviderRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewCustomProviderRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)),
 	)
 }

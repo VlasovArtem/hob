@@ -14,4 +14,4 @@ COPY --from=build /hob/execs/hob /bin/hob
 COPY content content
 ENV COUNTRIES_DIR=/
 
-ENTRYPOINT [ "/bin/hob" ]
+ENTRYPOINT [ "/bin/hob", "-v", "a" ]

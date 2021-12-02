@@ -22,8 +22,8 @@ func NewUserHandler(userService service.UserService, userValidator validator.Use
 	return &UserHandlerObject{userService, userValidator}
 }
 
-func (u *UserHandlerObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (u *UserHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewUserHandler(
 			factory.FindRequiredByObject(service.UserServiceObject{}).(service.UserService),
 			factory.FindRequiredByObject(validator.UserRequestValidatorObject{}).(validator.UserRequestValidator),

@@ -11,8 +11,8 @@ type IncomeRepositoryObject struct {
 	database db.DatabaseService
 }
 
-func (i *IncomeRepositoryObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewIncomeRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)))
+func (i *IncomeRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(NewIncomeRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)))
 }
 
 func (i *IncomeRepositoryObject) GetEntity() interface{} {

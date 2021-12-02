@@ -15,8 +15,8 @@ func NewHouseRepository(database db.DatabaseService) HouseRepository {
 	return &HouseRepositoryObject{database}
 }
 
-func (h *HouseRepositoryObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (h *HouseRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewHouseRepository(
 			factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService),
 		),

@@ -18,8 +18,8 @@ func NewProviderService(repository repository.ProviderRepository) ProviderServic
 	return &ProviderServiceObject{repository}
 }
 
-func (p *ProviderServiceObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (p *ProviderServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewProviderService(factory.FindRequiredByObject(repository.ProviderRepositoryObject{}).(repository.ProviderRepository)),
 	)
 }

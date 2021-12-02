@@ -41,8 +41,8 @@ func NewPaymentSchedulerService(
 	}
 }
 
-func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewPaymentSchedulerService(
 			factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),
 			factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),

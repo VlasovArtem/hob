@@ -15,8 +15,8 @@ func NewUserRepository(service db.DatabaseService) UserRepository {
 	return &UserRepositoryObject{service}
 }
 
-func (u *UserRepositoryObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (u *UserRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewUserRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)),
 	)
 }
@@ -30,6 +30,7 @@ type UserRepository interface {
 	FindById(id uuid.UUID) (model.User, error)
 	ExistsById(id uuid.UUID) bool
 	ExistsByEmail(email string) bool
+	FindByEmail(email string) (model.User, error)
 }
 
 func (u *UserRepositoryObject) Create(user model.User) (model.User, error) {
@@ -52,4 +53,8 @@ func (u *UserRepositoryObject) ExistsByEmail(email string) bool {
 
 func (u *UserRepositoryObject) Migrate() interface{} {
 	return model.User{}
+}
+
+func (u *UserRepositoryObject) FindByEmail(email string) (user model.User, err error) {
+	return user, u.database.D().Where("email = ?", email).Find(&user).Error
 }

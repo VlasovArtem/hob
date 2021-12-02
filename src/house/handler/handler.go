@@ -17,8 +17,8 @@ func NewHouseHandler(houseService service.HouseService) HouseHandler {
 	return &HouseHandlerObject{houseService}
 }
 
-func (h *HouseHandlerObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (h *HouseHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewHouseHandler(factory.FindRequiredByObject(service.HouseServiceObject{}).(service.HouseService)),
 	)
 }

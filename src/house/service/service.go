@@ -35,8 +35,8 @@ func NewHouseService(
 	}
 }
 
-func (h *HouseServiceObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (h *HouseServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewHouseService(
 			factory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService),
 			factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),

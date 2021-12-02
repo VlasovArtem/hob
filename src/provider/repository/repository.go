@@ -16,8 +16,8 @@ func NewProviderRepository(database db.DatabaseService) ProviderRepository {
 	return &ProviderRepositoryObject{database}
 }
 
-func (p *ProviderRepositoryObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (p *ProviderRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewProviderRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)),
 	)
 }

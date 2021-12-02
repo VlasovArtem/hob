@@ -33,8 +33,8 @@ type DatabaseObject struct {
 	db *gorm.DB
 }
 
-func (d *DatabaseObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewDatabaseService(factory.FindRequiredByObject(DatabaseConfiguration{}).(DatabaseConfiguration)).(*DatabaseObject))
+func (d *DatabaseObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(NewDatabaseService(factory.FindRequiredByObject(DatabaseConfiguration{}).(DatabaseConfiguration)).(*DatabaseObject))
 }
 
 func NewDatabaseService(config DatabaseConfiguration) DatabaseService {

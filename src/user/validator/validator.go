@@ -11,8 +11,8 @@ type UserRequestValidatorObject struct {
 	baseValidator.BaseValidator
 }
 
-func (u *UserRequestValidatorObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewUserRequestValidator())
+func (u *UserRequestValidatorObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(NewUserRequestValidator())
 }
 
 func NewUserRequestValidator() UserRequestValidator {

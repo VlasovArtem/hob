@@ -20,8 +20,8 @@ func NewCustomProviderService(repository repository.CustomProviderRepository, us
 	return &CustomProviderServiceObject{repository, userRepository}
 }
 
-func (c *CustomProviderServiceObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (c *CustomProviderServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewCustomProviderService(
 			factory.FindRequiredByObject(repository.CustomProviderRepositoryObject{}).(repository.CustomProviderRepository),
 			factory.FindRequiredByObject(userRepository.UserRepositoryObject{}).(userRepository.UserRepository),

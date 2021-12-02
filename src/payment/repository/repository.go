@@ -15,8 +15,8 @@ func NewPaymentRepository(service db.DatabaseService) PaymentRepository {
 	return &PaymentRepositoryObject{service}
 }
 
-func (p *PaymentRepositoryObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
+func (p *PaymentRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+	return factory.Add(
 		NewPaymentRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)),
 	)
 }

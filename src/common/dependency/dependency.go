@@ -5,6 +5,8 @@ import (
 	"reflect"
 )
 
+var initializerType = reflect.TypeOf((*ObjectDependencyInitializer)(nil)).Elem()
+
 type dependencyFactoryObject struct {
 	dependencies map[string]interface{}
 }
@@ -14,7 +16,8 @@ func NewDependenciesFactory() DependenciesFactory {
 }
 
 type DependenciesFactory interface {
-	Add(interface{}) bool
+	Add(interface{}) interface{}
+	AddAutoDependency(initializer ObjectDependencyInitializer) ObjectDependencyInitializer
 	Find(dependencyName string, required bool) interface{}
 	FindByObject(object interface{}) interface{}
 	FindRequired(dependencyName string) interface{}
@@ -22,7 +25,7 @@ type DependenciesFactory interface {
 }
 
 type ObjectDependencyInitializer interface {
-	Initialize(factory DependenciesFactory)
+	Initialize(factory DependenciesFactory) interface{}
 }
 
 type ObjectDatabaseMigrator interface {
@@ -30,16 +33,16 @@ type ObjectDatabaseMigrator interface {
 	GetEntity() interface{}
 }
 
-func (d *dependencyFactoryObject) Add(dependency interface{}) bool {
+func (d *dependencyFactoryObject) Add(dependency interface{}) interface{} {
 	name := findName(dependency)
 
 	if _, exists := d.dependencies[name]; !exists {
 		log.Info().Msgf("dependency with name %s added", name)
 		d.dependencies[name] = dependency
-		return true
+		return dependency
 	}
 	log.Info().Msgf("dependency with name %s already exists", name)
-	return false
+	return dependency
 }
 
 func (d *dependencyFactoryObject) Find(dependencyName string, required bool) interface{} {
@@ -60,6 +63,12 @@ func (d *dependencyFactoryObject) FindRequired(dependencyName string) interface{
 
 func (d *dependencyFactoryObject) FindRequiredByObject(object interface{}) interface{} {
 	return d.FindRequired(findName(object))
+}
+
+func (d *dependencyFactoryObject) AddAutoDependency(initializer ObjectDependencyInitializer) ObjectDependencyInitializer {
+	initializer.Initialize(d)
+
+	return initializer
 }
 
 func findName(dependency interface{}) (name string) {
