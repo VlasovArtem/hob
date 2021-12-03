@@ -18,7 +18,7 @@ func NewMeterHandler(meterService service.MeterService) MeterHandler {
 }
 
 func (m *MeterHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(NewMeterHandler(factory.FindRequiredByObject(service.MeterServiceObject{}).(service.MeterService)))
+	return NewMeterHandler(factory.FindRequiredByObject(service.MeterServiceObject{}).(service.MeterService))
 }
 
 func (m *MeterHandlerObject) Init(router *mux.Router) {

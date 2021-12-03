@@ -42,14 +42,12 @@ func NewPaymentSchedulerService(
 }
 
 func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(
-		NewPaymentSchedulerService(
-			factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),
-			factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
-			factory.FindRequiredByObject(paymentService.PaymentServiceObject{}).(paymentService.PaymentService),
-			factory.FindRequiredByObject(scheduler.SchedulerServiceObject{}).(scheduler.ServiceScheduler),
-			factory.FindRequiredByObject(repository.PaymentSchedulerRepositoryObject{}).(repository.PaymentSchedulerRepository),
-		),
+	return NewPaymentSchedulerService(
+		factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),
+		factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
+		factory.FindRequiredByObject(paymentService.PaymentServiceObject{}).(paymentService.PaymentService),
+		factory.FindRequiredByObject(scheduler.SchedulerServiceObject{}).(scheduler.ServiceScheduler),
+		factory.FindRequiredByObject(repository.PaymentSchedulerRepositoryObject{}).(repository.PaymentSchedulerRepository),
 	)
 }
 

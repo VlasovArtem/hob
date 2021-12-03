@@ -16,9 +16,7 @@ func NewCustomProviderRepository(database db.DatabaseService) CustomProviderRepo
 }
 
 func (c *CustomProviderRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(
-		NewCustomProviderRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)),
-	)
+	return NewCustomProviderRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
 func (c *CustomProviderRepositoryObject) GetEntity() interface{} {

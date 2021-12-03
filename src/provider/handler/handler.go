@@ -27,7 +27,7 @@ func NewProviderHandler(providerService service.ProviderService) ProviderHandler
 }
 
 func (p *ProviderHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(NewProviderHandler(factory.FindRequiredByObject(service.ProviderServiceObject{}).(service.ProviderService)))
+	return NewProviderHandler(factory.FindRequiredByObject(service.ProviderServiceObject{}).(service.ProviderService))
 }
 
 type ProviderHandler interface {

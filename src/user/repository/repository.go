@@ -16,9 +16,7 @@ func NewUserRepository(service db.DatabaseService) UserRepository {
 }
 
 func (u *UserRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(
-		NewUserRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)),
-	)
+	return NewUserRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
 func (u *UserRepositoryObject) GetEntity() interface{} {

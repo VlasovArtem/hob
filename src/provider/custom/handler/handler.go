@@ -27,7 +27,7 @@ func NewCustomProviderHandler(customProviderService service.CustomProviderServic
 }
 
 func (c *CustomProviderHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(NewCustomProviderHandler(factory.FindRequiredByObject(service.CustomProviderServiceObject{}).(service.CustomProviderService)))
+	return NewCustomProviderHandler(factory.FindRequiredByObject(service.CustomProviderServiceObject{}).(service.CustomProviderService))
 }
 
 type CustomProviderHandler interface {

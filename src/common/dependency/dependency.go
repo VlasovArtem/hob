@@ -66,9 +66,7 @@ func (d *dependencyFactoryObject) FindRequiredByObject(object interface{}) inter
 }
 
 func (d *dependencyFactoryObject) AddAutoDependency(initializer ObjectDependencyInitializer) ObjectDependencyInitializer {
-	initializer.Initialize(d)
-
-	return initializer
+	return d.Add(initializer.Initialize(d)).(ObjectDependencyInitializer)
 }
 
 func findName(dependency interface{}) (name string) {

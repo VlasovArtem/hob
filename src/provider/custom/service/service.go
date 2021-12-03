@@ -21,11 +21,9 @@ func NewCustomProviderService(repository repository.CustomProviderRepository, us
 }
 
 func (c *CustomProviderServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(
-		NewCustomProviderService(
-			factory.FindRequiredByObject(repository.CustomProviderRepositoryObject{}).(repository.CustomProviderRepository),
-			factory.FindRequiredByObject(userRepository.UserRepositoryObject{}).(userRepository.UserRepository),
-		),
+	return NewCustomProviderService(
+		factory.FindRequiredByObject(repository.CustomProviderRepositoryObject{}).(repository.CustomProviderRepository),
+		factory.FindRequiredByObject(userRepository.UserRepositoryObject{}).(userRepository.UserRepository),
 	)
 }
 

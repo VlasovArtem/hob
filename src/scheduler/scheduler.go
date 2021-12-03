@@ -35,7 +35,7 @@ func NewSchedulerService() ServiceScheduler {
 }
 
 func (s *SchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(NewSchedulerService())
+	return NewSchedulerService()
 }
 
 type ServiceScheduler interface {

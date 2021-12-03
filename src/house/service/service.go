@@ -36,12 +36,10 @@ func NewHouseService(
 }
 
 func (h *HouseServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(
-		NewHouseService(
-			factory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService),
-			factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),
-			factory.FindRequiredByObject(respository.HouseRepositoryObject{}).(respository.HouseRepository),
-		),
+	return NewHouseService(
+		factory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService),
+		factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),
+		factory.FindRequiredByObject(respository.HouseRepositoryObject{}).(respository.HouseRepository),
 	)
 }
 

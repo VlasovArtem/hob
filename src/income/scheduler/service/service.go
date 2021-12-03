@@ -37,13 +37,11 @@ func NewIncomeSchedulerService(
 }
 
 func (i *IncomeSchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(
-		NewIncomeSchedulerService(
-			factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
-			factory.FindRequiredByObject(incomeService.IncomeServiceObject{}).(incomeService.IncomeService),
-			factory.FindRequiredByObject(scheduler.SchedulerServiceObject{}).(scheduler.ServiceScheduler),
-			factory.FindRequiredByObject(repository.IncomeSchedulerRepositoryObject{}).(repository.IncomeSchedulerRepository),
-		),
+	return NewIncomeSchedulerService(
+		factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
+		factory.FindRequiredByObject(incomeService.IncomeServiceObject{}).(incomeService.IncomeService),
+		factory.FindRequiredByObject(scheduler.SchedulerServiceObject{}).(scheduler.ServiceScheduler),
+		factory.FindRequiredByObject(repository.IncomeSchedulerRepositoryObject{}).(repository.IncomeSchedulerRepository),
 	)
 }
 

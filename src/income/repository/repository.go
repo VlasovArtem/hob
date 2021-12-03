@@ -12,7 +12,7 @@ type IncomeRepositoryObject struct {
 }
 
 func (i *IncomeRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(NewIncomeRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)))
+	return NewIncomeRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
 func (i *IncomeRepositoryObject) GetEntity() interface{} {

@@ -34,7 +34,7 @@ type DatabaseObject struct {
 }
 
 func (d *DatabaseObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(NewDatabaseService(factory.FindRequiredByObject(DatabaseConfiguration{}).(DatabaseConfiguration)).(*DatabaseObject))
+	return NewDatabaseService(factory.FindRequiredByObject(DatabaseConfiguration{}).(DatabaseConfiguration))
 }
 
 func NewDatabaseService(config DatabaseConfiguration) DatabaseService {

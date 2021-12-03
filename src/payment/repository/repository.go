@@ -16,9 +16,7 @@ func NewPaymentRepository(service db.DatabaseService) PaymentRepository {
 }
 
 func (p *PaymentRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	return factory.Add(
-		NewPaymentRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)),
-	)
+	return NewPaymentRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
 func (p *PaymentRepositoryObject) GetEntity() interface{} {

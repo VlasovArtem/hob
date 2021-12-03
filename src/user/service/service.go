@@ -16,9 +16,7 @@ type UserServiceObject struct {
 }
 
 func (u *UserServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
-	userRepository := factory.FindRequiredByObject(repository.UserRepositoryObject{}).(repository.UserRepository)
-
-	return factory.Add(NewUserService(userRepository))
+	return NewUserService(factory.FindRequiredByObject(repository.UserRepositoryObject{}).(repository.UserRepository))
 }
 
 func NewUserService(repository repository.UserRepository) UserService {
