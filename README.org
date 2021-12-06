@@ -67,7 +67,7 @@ app:
 :END:
 
 |Flags                         |Values                         |Description                                                 |
-+------------------------------+-------------------------------+------------------------------------------------------------+
+|+-----------------------------+-------------------------------+-----------------------------------------------------------+|
 |-f, --log-file                |                               |Log file path. Default: Empty for api and temp for terminal.|
 |-l, --log-level               |info, debug, warn, error, fatal|Log level. Default: 'info'                                  |
 |-u, --user-email              |                               |Default user email. Only for terminal view                  |
