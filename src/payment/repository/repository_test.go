@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"github.com/VlasovArtem/hob/src/db"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
@@ -55,6 +56,8 @@ func (p *PaymentRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(p.T(), err)
 	assert.Equal(p.T(), payment, actual)
+
+	p.Delete(payment)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_Creat_WithMissingUser() {
@@ -145,12 +148,58 @@ func (p *PaymentRepositoryTestSuite) Test_ExistsById_WithMissingId() {
 	assert.False(p.T(), p.repository.ExistsById(uuid.New()))
 }
 
-func (p *PaymentRepositoryTestSuite) createPayment() model.Payment {
-	payment := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id)
+func (p *PaymentRepositoryTestSuite) Test_DeleteById() {
+	payment := p.createPayment()
 
-	create, err := p.repository.Create(payment)
+	assert.Nil(p.T(), p.repository.DeleteById(payment.Id))
+}
+
+func (p *PaymentRepositoryTestSuite) Test_DeleteById_WithMissingId() {
+	assert.Nil(p.T(), p.repository.DeleteById(uuid.New()))
+}
+
+func (p *PaymentRepositoryTestSuite) Test_Update() {
+	payment := p.createPayment()
+
+	updatedIncome := model.Payment{
+		Id:          payment.Id,
+		Name:        fmt.Sprintf("%s-new", payment.Name),
+		Description: fmt.Sprintf("%s-new", payment.Description),
+		Date:        mocks.Date,
+		Sum:         payment.Sum + 100.0,
+		HouseId:     payment.HouseId,
+		House:       payment.House,
+		User:        payment.User,
+		UserId:      payment.UserId,
+	}
+
+	err := p.repository.Update(updatedIncome)
 
 	assert.Nil(p.T(), err)
 
-	return create
+	response, err := p.repository.FindById(payment.Id)
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), model.Payment{
+		Id:          payment.Id,
+		Name:        "Test Payment-new",
+		Description: "Test Payment Description-new",
+		Date:        updatedIncome.Date,
+		Sum:         1100.0,
+		HouseId:     payment.HouseId,
+		House:       payment.House,
+		User:        payment.User,
+		UserId:      payment.UserId,
+	}, response)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_Update_WithMissingId() {
+	assert.Nil(p.T(), p.repository.Update(model.Payment{Id: uuid.New()}))
+}
+
+func (p *PaymentRepositoryTestSuite) createPayment() model.Payment {
+	payment := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id)
+
+	p.CreateEntity(payment)
+
+	return payment
 }

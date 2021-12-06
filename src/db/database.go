@@ -55,6 +55,8 @@ type DatabaseService interface {
 	FindByIdModeled(model interface{}, receiver interface{}, id uuid.UUID) error
 	ExistsById(model interface{}, id uuid.UUID) (exists bool)
 	ExistsByQuery(model interface{}, query interface{}, args ...interface{}) (exists bool)
+	DeleteById(model interface{}, id uuid.UUID) error
+	UpdateById(model interface{}, id uuid.UUID, entity interface{}, omit ...string) error
 	D() *gorm.DB
 	DM(model interface{}) *gorm.DB
 }
@@ -94,6 +96,17 @@ func (d *DatabaseObject) ExistsByQuery(model interface{}, query interface{}, arg
 		log.Error().Err(err).Msg("")
 	}
 	return exists
+}
+
+func (d *DatabaseObject) DeleteById(model interface{}, id uuid.UUID) error {
+	return d.db.Delete(model, id).Error
+}
+
+func (d *DatabaseObject) UpdateById(model interface{}, id uuid.UUID, entity interface{}, omit ...string) error {
+	omitColumns := []string{"Id"}
+	omitColumns = append(omitColumns, omit...)
+
+	return d.db.Model(model).Where("id = ?", id).Omit(omitColumns...).Updates(entity).Error
 }
 
 func (d *DatabaseObject) D() *gorm.DB {

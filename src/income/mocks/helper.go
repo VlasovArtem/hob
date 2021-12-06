@@ -29,8 +29,18 @@ func GenerateCreateIncomeRequest() model.CreateIncomeRequest {
 	}
 }
 
-func GenerateIncomeResponse() model.IncomeResponse {
-	return model.IncomeResponse{
+func GenerateUpdateIncomeRequest() model.UpdateIncomeRequest {
+	return model.UpdateIncomeRequest{
+		Id:          uuid.New(),
+		Name:        "Name",
+		Date:        Date,
+		Description: "Description",
+		Sum:         100.1,
+	}
+}
+
+func GenerateIncomeResponse() model.IncomeDto {
+	return model.IncomeDto{
 		Id:          uuid.New(),
 		Name:        "Name",
 		Date:        Date,

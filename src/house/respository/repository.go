@@ -25,16 +25,18 @@ func (h *HouseRepositoryObject) GetEntity() interface{} {
 
 type HouseRepository interface {
 	Create(entity model.House) (model.House, error)
-	FindResponseById(id uuid.UUID) (model.HouseDto, error)
+	FindDtoById(id uuid.UUID) (model.HouseDto, error)
 	FindResponseByUserId(id uuid.UUID) []model.HouseDto
 	ExistsById(id uuid.UUID) bool
+	DeleteById(id uuid.UUID) error
+	Update(entity model.House) error
 }
 
 func (h *HouseRepositoryObject) Create(entity model.House) (model.House, error) {
 	return entity, h.database.Create(&entity)
 }
 
-func (h *HouseRepositoryObject) FindResponseById(id uuid.UUID) (response model.HouseDto, err error) {
+func (h *HouseRepositoryObject) FindDtoById(id uuid.UUID) (response model.HouseDto, err error) {
 	return response, h.database.FindByIdModeled(model.House{}, &response, id)
 }
 
@@ -46,4 +48,12 @@ func (h *HouseRepositoryObject) FindResponseByUserId(id uuid.UUID) (response []m
 
 func (h *HouseRepositoryObject) ExistsById(id uuid.UUID) bool {
 	return h.database.ExistsById(model.House{}, id)
+}
+
+func (h *HouseRepositoryObject) DeleteById(id uuid.UUID) error {
+	return h.database.DeleteById(model.House{}, id)
+}
+
+func (h *HouseRepositoryObject) Update(entity model.House) error {
+	return h.database.UpdateById(model.House{}, entity.Id, entity, "UserId", "User")
 }

@@ -49,6 +49,8 @@ func (p *CustomProviderRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(p.T(), err)
 	assert.Equal(p.T(), entity, actual)
+
+	p.Delete(entity)
 }
 
 func (p *CustomProviderRepositoryTestSuite) Test_Create_WithSameNameButDifferentUsers() {
@@ -71,6 +73,9 @@ func (p *CustomProviderRepositoryTestSuite) Test_Create_WithSameNameButDifferent
 
 	assert.Nil(p.T(), err)
 	assert.Equal(p.T(), second, actual)
+
+	p.Delete(first)
+	p.Delete(second)
 }
 
 func (p *CustomProviderRepositoryTestSuite) Test_Create_WithSameNameButSameUser() {
@@ -88,6 +93,8 @@ func (p *CustomProviderRepositoryTestSuite) Test_Create_WithSameNameButSameUser(
 
 	assert.NotNil(p.T(), err)
 	assert.Equal(p.T(), second, actual)
+
+	p.Delete(first)
 }
 
 func (p *CustomProviderRepositoryTestSuite) Test_Creat_WithMissingUser() {
@@ -164,11 +171,9 @@ func (p *CustomProviderRepositoryTestSuite) Test_ExistsByNameAndUserId_WithNotMa
 func (p *CustomProviderRepositoryTestSuite) CreateCustomProvider() model.CustomProvider {
 	provider := mocks.GenerateCustomProvider(p.createdUser.Id)
 
-	saved, err := p.repository.Create(provider)
+	p.CreateEntity(provider)
 
-	assert.Nil(p.T(), err)
-
-	return saved
+	return provider
 }
 
 func (p *CustomProviderRepositoryTestSuite) CreateCustomProviderWithNewUser() model.CustomProvider {
@@ -177,9 +182,7 @@ func (p *CustomProviderRepositoryTestSuite) CreateCustomProviderWithNewUser() mo
 
 	provider := mocks.GenerateCustomProvider(createdUser.Id)
 
-	saved, err := p.repository.Create(provider)
+	p.CreateEntity(provider)
 
-	assert.Nil(p.T(), err)
-
-	return saved
+	return provider
 }

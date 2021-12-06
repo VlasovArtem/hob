@@ -50,15 +50,15 @@ var migratorType = reflect.TypeOf((*dependency.ObjectDatabaseMigrator)(nil)).Ele
 type RootApplication struct {
 	DependenciesFactory dependency.DependenciesFactory
 	databaseService     db.DatabaseService
-	XDGConfig           *config.XDGConfig
+	Config              *config.Config
 }
 
 // NewRootApplication initializers is a list of auto initializing objects. Order is required.
 // The application creates db.DatabaseConfiguration automatically
-func NewRootApplication() *RootApplication {
+func NewRootApplication(config *config.Config) *RootApplication {
 	applicationService := &RootApplication{
 		DependenciesFactory: dependency.NewDependenciesFactory(),
-		XDGConfig:           config.ReadXDGConfig(),
+		Config:              config,
 	}
 
 	applicationService.createDatabaseConfiguration()

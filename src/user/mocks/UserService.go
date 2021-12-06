@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/user/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -64,6 +63,27 @@ func (_m *UserService) FindById(id uuid.UUID) (model.UserResponse, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func(uuid.UUID) error); ok {
 		r1 = rf(id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// VerifyUser provides a mock function with given fields: email, password
+func (_m *UserService) VerifyUser(email string, password string) (model.UserResponse, error) {
+	ret := _m.Called(email, password)
+
+	var r0 model.UserResponse
+	if rf, ok := ret.Get(0).(func(string, string) model.UserResponse); ok {
+		r0 = rf(email, password)
+	} else {
+		r0 = ret.Get(0).(model.UserResponse)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(email, password)
 	} else {
 		r1 = ret.Error(1)
 	}

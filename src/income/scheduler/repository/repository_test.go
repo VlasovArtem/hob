@@ -58,6 +58,8 @@ func (i *IncomeSchedulerRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), incomeScheduler, actual)
+
+	i.Delete(incomeScheduler)
 }
 
 func (i *IncomeSchedulerRepositoryTestSuite) Test_Creat_WithMissingHouse() {
@@ -126,9 +128,7 @@ func (i *IncomeSchedulerRepositoryTestSuite) Test_DeleteById_WithMissingId() {
 func (i *IncomeSchedulerRepositoryTestSuite) createIncomeScheduler() model.IncomeScheduler {
 	payment := mocks.GenerateIncomeScheduler(i.createdHouse.Id)
 
-	create, err := i.repository.Create(payment)
+	i.CreateEntity(payment)
 
-	assert.Nil(i.T(), err)
-
-	return create
+	return payment
 }

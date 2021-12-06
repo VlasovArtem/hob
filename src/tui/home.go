@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/gdamore/tcell/v2"
@@ -11,84 +12,98 @@ import (
 
 const HomePageName = "home"
 
+var homePaymentFields = []*TableHeader{
+	NewIndexHeader(),
+	NewTableHeader("Name"),
+	NewTableHeader("Date").SetContentModifier(AlignCenterExpansion()),
+	NewTableHeader("Sum").SetContentModifier(AlignCenterExpansion())}
+var homeIncomeFields = []*TableHeader{
+	NewIndexHeader(),
+	NewTableHeader("Name"),
+	NewTableHeader("Date").SetContentModifier(AlignCenterExpansion()),
+	NewTableHeader("Sum").SetContentModifier(AlignCenterExpansion())}
+
 type Home struct {
-	*tview.Flex
+	*FlexApp
 	*Navigation
-	*Keyboard
-	currentHouse *CurrentHouse
+	payments *TableFiller
+	incomes  *TableFiller
 }
 
-func (h *Home) my(app *TerminalApp, parent *NavigationInfo) *NavigationInfo {
+func (h *Home) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
 	return NewNavigationInfo(HomePageName, func() tview.Primitive { return NewHome(app) })
 }
 
-func (h *Home) enrichNavigation(app *TerminalApp, parent *NavigationInfo) {
+func (h *Home) enrichNavigation(app *TerminalApp, ctx context.Context) {
 	h.MyNavigation = interface{}(h).(MyNavigation)
-	h.enrich(app, parent).
-		addCustomPageToMe(app, &CreateHouse{}).
-		addCustomPageToMe(app, &CreateIncome{}).
-		addCustomPageToMe(app, &CreatePayment{}).
-		addCustomPage(app, nil, &Payments{})
+	h.enrich(app, ctx).
+		addCustomPage(ctx, &CreateHouse{}).
+		addCustomPage(ctx, &CreateIncome{}).
+		addCustomPage(ctx, &CreatePayment{}).
+		addCustomPage(ctx, &Payments{}).
+		addCustomPage(ctx, &Houses{}).
+		addCustomPage(ctx, &Incomes{})
 }
 
 func NewHome(app *TerminalApp) *Home {
-
 	h := &Home{
-		Flex:         tview.NewFlex(),
-		Navigation:   NewNavigation(),
-		Keyboard:     NewKeyboard(),
-		currentHouse: NewCurrentHouse(app.House),
+		Navigation: NewNavigation(),
+		FlexApp:    NewFlexApp(),
+		payments:   NewTableFiller(homePaymentFields),
+		incomes:    NewTableFiller(homeIncomeFields),
 	}
-	h.enrichNavigation(app, nil)
 
+	h.Init(app)
+
+	return h
+}
+
+func (h *Home) Init(app *TerminalApp) {
 	h.bindKeys()
 
+	h.InitFlexApp(app)
+
+	h.enrichNavigation(app, nil)
+
 	houseList := tview.NewList().ShowSecondaryText(false)
-	houseList.SetTitle("Houses").SetBorder(true)
-	paymentsInfo := tview.NewTextView()
-	paymentsInfo.SetTitle("Payments").SetBorder(true)
-	incomesInfo := tview.NewTextView()
-	incomesInfo.SetTitle("Incomes").SetBorder(true)
+	houseList.
+		SetBorderPadding(1, 1, 1, 1).
+		SetTitle("Houses").
+		SetBorder(true)
+
+	h.payments.
+		SetSelectable(false, false).
+		SetTitle("Payments for Current Month").
+		SetBorder(true)
+	h.incomes.
+		SetSelectable(false, false).
+		SetTitle("Incomes for Current Month").
+		SetBorder(true)
 
 	info := tview.NewFlex().
 		AddItem(houseList, 0, 1, true).
-		AddItem(paymentsInfo, 0, 2, false).
-		AddItem(incomesInfo, 0, 2, false)
+		AddItem(h.fillPaymentsTable(), 0, 2, false).
+		AddItem(h.fillIncomesTable(), 0, 2, false)
 
-	flex := h.
-		SetDirection(tview.FlexRow).
-		AddItem(NewMenuBlock(h.Keyboard), 0, 1, false)
-
-	h.currentHouse.enrich(flex)
-
-	flex.AddItem(info, 0, 6, true)
+	h.AddItem(info, 0, 8, true)
 
 	h.showHouses(houseList, func(dto houseModel.HouseDto) {
-		paymentsInfo.Clear()
-		incomesInfo.Clear()
-
-		h.showPayments(paymentsInfo, dto.Id)
-		h.showIncomes(incomesInfo, dto.Id)
-		h.currentHouse.Clear()
-		h.currentHouse.house = dto
-		h.currentHouse.setText()
+		h.fillPaymentsTable()
+		h.fillIncomesTable()
+		h.menu.refreshSessionInfo()
 	})
 
 	h.SetInputCapture(h.KeyboardFunc)
-
-	return h
 }
 
 func (h *Home) showHouses(houseList *tview.List, onSelect func(dto houseModel.HouseDto)) {
 	housesData := h.app.GetHouseService().FindByUserId(h.app.AuthorizedUser.Id)
 
-	hasCurrentHouse := h.app.House != houseModel.HouseDto{}
+	hasCurrentHouse := h.app.House != nil
 
-	var currentIndex int
-
-	for index, house := range housesData {
+	for _, house := range housesData {
 		if hasCurrentHouse && h.app.House.Id == house.Id {
-			currentIndex = index
+			onSelect(house)
 		}
 		houseList.AddItem(house.Name, house.Id.String(), 0, nil)
 	}
@@ -98,10 +113,6 @@ func (h *Home) showHouses(houseList *tview.List, onSelect func(dto houseModel.Ho
 	})
 
 	houseList.SetSelectedFunc(h.setHouse(onSelect))
-	houseList.SetChangedFunc(h.setHouse(onSelect))
-
-	houseList.SetCurrentItem(1)
-	houseList.SetCurrentItem(currentIndex)
 }
 
 func (h *Home) setHouse(onSelect func(dto houseModel.HouseDto)) func(index int, mainText string, secondaryText string, shortcut rune) {
@@ -114,32 +125,9 @@ func (h *Home) setHouse(onSelect func(dto houseModel.HouseDto)) func(index int, 
 			if houseDto, err := h.app.GetHouseService().FindById(id); err != nil {
 				h.ShowErrorTo(err)
 			} else {
-				h.app.House = houseDto
-				h.currentHouse.house = houseDto
+				h.app.House = &houseDto
 				onSelect(houseDto)
 			}
-		}
-	}
-}
-
-func (h *Home) showPayments(paymentsInfo *tview.TextView, houseId uuid.UUID) {
-	payments := h.app.GetPaymentService().FindByHouseId(houseId)
-	if len(payments) == 0 {
-		fmt.Fprintf(paymentsInfo, "No payments")
-	} else {
-		for _, paymentDto := range payments {
-			fmt.Fprintf(paymentsInfo, "%s - %v\n", paymentDto.Name, paymentDto.Sum)
-		}
-	}
-}
-
-func (h *Home) showIncomes(incomesInfo *tview.TextView, houseId uuid.UUID) {
-	incomes := h.app.GetIncomeService().FindByHouseId(houseId)
-	if len(incomes) == 0 {
-		fmt.Fprintf(incomesInfo, "No incomes")
-	} else {
-		for _, incomeDto := range incomes {
-			fmt.Fprintf(incomesInfo, "%s - %v\n", incomeDto.Name, incomeDto.Sum)
 		}
 	}
 }
@@ -154,6 +142,8 @@ func (h *Home) bindKeys() {
 		tcell.KeyCtrlP: NewKeyAction("Create Payment", h.createPayment),
 		tcell.KeyCtrlJ: NewKeyAction("Create Income", h.createIncome),
 		tcell.KeyCtrlA: NewKeyAction("Show Payments", h.paymentsPage),
+		tcell.KeyCtrlE: NewKeyAction("Show Houses", h.housesPage),
+		tcell.KeyCtrlF: NewKeyAction("Show Incomes", h.incomesPage),
 	}
 }
 
@@ -170,4 +160,44 @@ func (h *Home) createPayment(key *tcell.EventKey) *tcell.EventKey {
 func (h *Home) paymentsPage(key *tcell.EventKey) *tcell.EventKey {
 	h.NavigateTo(PaymentsPageName)
 	return key
+}
+
+func (h *Home) housesPage(key *tcell.EventKey) *tcell.EventKey {
+	h.NavigateTo(HousesPageName)
+	return key
+}
+
+func (h *Home) incomesPage(key *tcell.EventKey) *tcell.EventKey {
+	h.NavigateTo(IncomesPageName)
+	return key
+}
+
+func (h *Home) fillPaymentsTable() *TableFiller {
+	if h.app.House == nil {
+		return h.payments
+	}
+	payments := h.app.GetPaymentService().FindByHouseId(h.app.House.Id)
+
+	h.payments.fill(payments)
+	var sum float64
+	for _, payment := range payments {
+		sum += float64(payment.Sum)
+	}
+	h.payments.addResultRow(fmt.Sprintf("%v", sum))
+	return h.payments
+}
+
+func (h *Home) fillIncomesTable() *TableFiller {
+	if h.app.House == nil {
+		return h.incomes
+	}
+	incomes := h.app.GetIncomeService().FindByHouseId(h.app.House.Id)
+
+	h.incomes.fill(incomes)
+	var sum float64
+	for _, income := range incomes {
+		sum += float64(income.Sum)
+	}
+	h.incomes.addResultRow(fmt.Sprintf("%v", sum))
+	return h.incomes
 }

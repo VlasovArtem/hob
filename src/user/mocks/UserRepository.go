@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/user/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -62,6 +61,27 @@ func (_m *UserRepository) ExistsById(id uuid.UUID) bool {
 	}
 
 	return r0
+}
+
+// FindByEmail provides a mock function with given fields: email
+func (_m *UserRepository) FindByEmail(email string) (model.User, error) {
+	ret := _m.Called(email)
+
+	var r0 model.User
+	if rf, ok := ret.Get(0).(func(string) model.User); ok {
+		r0 = rf(email)
+	} else {
+		r0 = ret.Get(0).(model.User)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(email)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // FindById provides a mock function with given fields: id

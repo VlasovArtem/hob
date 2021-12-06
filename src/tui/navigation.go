@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
@@ -13,7 +14,6 @@ type NavigationRules struct {
 	home       *NavigationInfo
 	onError    *NavigationInfo
 	refresh    *NavigationInfo
-	back       *NavigationInfo
 	additional map[PageName]*NavigationInfo
 }
 
@@ -31,8 +31,8 @@ func NewNavigationRules(app *TerminalApp, my *NavigationInfo) *NavigationRules {
 }
 
 type MyNavigation interface {
-	my(app *TerminalApp, parent *NavigationInfo) *NavigationInfo
-	enrichNavigation(app *TerminalApp, parent *NavigationInfo)
+	my(app *TerminalApp, ctx context.Context) *NavigationInfo
+	enrichNavigation(app *TerminalApp, ctx context.Context)
 }
 
 type Navigation struct {
@@ -45,26 +45,14 @@ func NewNavigation() *Navigation {
 	return &Navigation{}
 }
 
-func (n *Navigation) enrich(app *TerminalApp, parent *NavigationInfo) *Navigation {
-	n.enrichMe(app, n.MyNavigation.my(app, nil))
-	n.NavigationRules.back = parent
-	return n
-}
-
-func (n *Navigation) enrichMe(app *TerminalApp, my *NavigationInfo) *Navigation {
+func (n *Navigation) enrich(app *TerminalApp, ctx context.Context) *Navigation {
 	n.app = app
-	n.NavigationRules = NewNavigationRules(app, my)
+	n.NavigationRules = NewNavigationRules(app, n.MyNavigation.my(app, ctx))
 	return n
 }
 
-func (n *Navigation) addCustomPage(app *TerminalApp, parent *NavigationInfo, nav MyNavigation) *Navigation {
-	navInfo := nav.my(app, parent)
-	n.NavigationRules.additional[navInfo.pageName] = navInfo
-	return n
-}
-
-func (n *Navigation) addCustomPageToMe(app *TerminalApp, nav MyNavigation) *Navigation {
-	navInfo := nav.my(app, n.MyNavigation.my(app, nil))
+func (n *Navigation) addCustomPage(ctx context.Context, nav MyNavigation) *Navigation {
+	navInfo := nav.my(n.app, ctx)
 	n.NavigationRules.additional[navInfo.pageName] = navInfo
 	return n
 }
@@ -78,7 +66,7 @@ func (n *Navigation) Refresh() {
 }
 
 func (n *Navigation) Back() {
-	n.Navigate(n.NavigationRules.back)
+	n.app.Main.RemovePage(n.owner.String())
 }
 
 func (n *Navigation) NavigateTo(name PageName) {
@@ -139,12 +127,18 @@ func (n *Navigation) NavigateToMe() {
 	n.Navigate(n.NavigationRules.refresh)
 }
 
+func (n *Navigation) BackFunc() func() {
+	return func() {
+		n.Back()
+	}
+}
+
 func (n *Navigation) DoneFuncRefresh(key tcell.Key) {
 	n.Navigate(n.NavigationRules.refresh)
 }
 
 func (n *Navigation) DoneFuncBack(key tcell.Key) {
-	n.Navigate(n.NavigationRules.back)
+	n.Back()
 }
 
 func (n *Navigation) DoneFuncHome(key tcell.Key) {
@@ -168,31 +162,4 @@ type NavigationInfo struct {
 
 func NewNavigationInfo(pageName PageName, provider func() tview.Primitive) *NavigationInfo {
 	return &NavigationInfo{pageName: pageName, provider: provider}
-}
-
-type NavigationBack struct {
-	*Navigation
-	*Keyboard
-}
-
-func NewNavigationBack(navigation *Navigation) *NavigationBack {
-	back := &NavigationBack{
-		Keyboard:   NewKeyboard(),
-		Navigation: navigation,
-	}
-
-	back.bindKeys()
-
-	return back
-}
-
-func (c *NavigationBack) bindKeys() {
-	c.Actions = KeyActions{
-		tcell.KeyEscape: NewKeyAction("Back", c.backToParent),
-	}
-}
-
-func (c *NavigationBack) backToParent(key *tcell.EventKey) *tcell.EventKey {
-	c.Back()
-	return key
 }

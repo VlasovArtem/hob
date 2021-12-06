@@ -55,6 +55,8 @@ func (p *PaymentRepositorySchedulerTestSuite) Test_Create() {
 
 	assert.Nil(p.T(), err)
 	assert.Equal(p.T(), paymentScheduler, actual)
+
+	p.Delete(paymentScheduler)
 }
 
 func (p *PaymentRepositorySchedulerTestSuite) Test_Creat_WithMissingUser() {
@@ -162,9 +164,7 @@ func (p *PaymentRepositorySchedulerTestSuite) Test_DeleteById_WithMissingId() {
 func (p *PaymentRepositorySchedulerTestSuite) createPaymentScheduler() model.PaymentScheduler {
 	payment := mocks.GeneratePaymentScheduler(p.createdHouse.Id, p.createdUser.Id)
 
-	create, err := p.repository.Create(payment)
+	p.CreateEntity(payment)
 
-	assert.Nil(p.T(), err)
-
-	return create
+	return payment
 }

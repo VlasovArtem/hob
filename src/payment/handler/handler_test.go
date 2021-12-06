@@ -26,7 +26,7 @@ func Test_Add(t *testing.T) {
 
 	request := mocks.GenerateCreatePaymentRequest()
 
-	payments.On("Add", request).Return(request.ToEntity().ToDto(), nil)
+	payments.On("Add", request).Return(request.CreateToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").

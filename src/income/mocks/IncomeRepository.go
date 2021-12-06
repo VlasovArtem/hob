@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/income/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -36,31 +35,43 @@ func (_m *IncomeRepository) Create(entity model.Income) (model.Income, error) {
 	return r0, r1
 }
 
-// FindResponseByHouseId provides a mock function with given fields: id
-func (_m *IncomeRepository) FindResponseByHouseId(id uuid.UUID) []model.IncomeResponse {
+// DeleteById provides a mock function with given fields: id
+func (_m *IncomeRepository) DeleteById(id uuid.UUID) error {
 	ret := _m.Called(id)
 
-	var r0 []model.IncomeResponse
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.IncomeResponse); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
 		r0 = rf(id)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.IncomeResponse)
-		}
+		r0 = ret.Error(0)
 	}
 
 	return r0
 }
 
-// FindResponseById provides a mock function with given fields: id
-func (_m *IncomeRepository) FindResponseById(id uuid.UUID) (model.IncomeResponse, error) {
+// ExistsById provides a mock function with given fields: id
+func (_m *IncomeRepository) ExistsById(id uuid.UUID) bool {
 	ret := _m.Called(id)
 
-	var r0 model.IncomeResponse
-	if rf, ok := ret.Get(0).(func(uuid.UUID) model.IncomeResponse); ok {
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(uuid.UUID) bool); ok {
 		r0 = rf(id)
 	} else {
-		r0 = ret.Get(0).(model.IncomeResponse)
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// FindDtoById provides a mock function with given fields: id
+func (_m *IncomeRepository) FindDtoById(id uuid.UUID) (model.IncomeDto, error) {
+	ret := _m.Called(id)
+
+	var r0 model.IncomeDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) model.IncomeDto); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Get(0).(model.IncomeDto)
 	}
 
 	var r1 error
@@ -71,4 +82,34 @@ func (_m *IncomeRepository) FindResponseById(id uuid.UUID) (model.IncomeResponse
 	}
 
 	return r0, r1
+}
+
+// FindResponseByHouseId provides a mock function with given fields: id
+func (_m *IncomeRepository) FindResponseByHouseId(id uuid.UUID) []model.IncomeDto {
+	ret := _m.Called(id)
+
+	var r0 []model.IncomeDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.IncomeDto); ok {
+		r0 = rf(id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.IncomeDto)
+		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields: entity
+func (_m *IncomeRepository) Update(entity model.Income) error {
+	ret := _m.Called(entity)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(model.Income) error); ok {
+		r0 = rf(entity)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }

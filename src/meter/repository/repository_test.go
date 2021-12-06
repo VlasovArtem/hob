@@ -66,6 +66,8 @@ func (m *MeterRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(m.T(), err)
 	assert.Equal(m.T(), meter, actual)
+
+	m.Delete(meter)
 }
 
 func (m *MeterRepositoryTestSuite) Test_Creat_WithMissingPayment() {
@@ -145,9 +147,7 @@ func (m *MeterRepositoryTestSuite) Test_FindByHouseId_WithMissingRecords() {
 func (m *MeterRepositoryTestSuite) createMeter() model.Meter {
 	meter := meterMocks.GenerateMeter(m.createdPayment.Id, m.createdHouse.Id)
 
-	create, err := m.repository.Create(meter)
+	m.CreateEntity(meter)
 
-	assert.Nil(m.T(), err)
-
-	return create
+	return meter
 }

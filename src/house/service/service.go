@@ -48,6 +48,8 @@ type HouseService interface {
 	FindById(id uuid.UUID) (model.HouseDto, error)
 	FindByUserId(userId uuid.UUID) []model.HouseDto
 	ExistsById(id uuid.UUID) bool
+	DeleteById(id uuid.UUID) error
+	Update(house model.UpdateHouseRequest) error
 }
 
 func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response model.HouseDto, err error) {
@@ -67,7 +69,7 @@ func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response mod
 }
 
 func (h *HouseServiceObject) FindById(id uuid.UUID) (response model.HouseDto, err error) {
-	if response, err = h.repository.FindResponseById(id); err != nil {
+	if response, err = h.repository.FindDtoById(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return response, errors.New(fmt.Sprintf("house with id %s not found", id))
 		}
@@ -83,4 +85,22 @@ func (h *HouseServiceObject) FindByUserId(userId uuid.UUID) []model.HouseDto {
 
 func (h *HouseServiceObject) ExistsById(id uuid.UUID) bool {
 	return h.repository.ExistsById(id)
+}
+
+func (h *HouseServiceObject) DeleteById(id uuid.UUID) error {
+	if !h.ExistsById(id) {
+		return errors.New(fmt.Sprintf("house with id %s not found", id))
+	}
+	return h.repository.DeleteById(id)
+}
+
+func (h *HouseServiceObject) Update(request model.UpdateHouseRequest) error {
+	if !h.ExistsById(request.Id) {
+		return errors.New(fmt.Sprintf("house with id %s not found", request.Id))
+	}
+	if err, country := h.countriesService.FindCountryByCode(request.Country); err != nil {
+		return err
+	} else {
+		return h.repository.Update(request.UpdateToEntity(&country))
+	}
 }

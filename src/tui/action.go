@@ -46,21 +46,19 @@ func (a KeyActions) Delete(kk ...tcell.Key) {
 }
 
 func (a KeyActions) Hints() MenuHints {
-	menuHints := make(MenuHints, 0)
-	var keys []tcell.Key
-	for key, _ := range a {
-		keys = append(keys, key)
+	kk := make([]int, 0, len(a))
+	for k := range a {
+		kk = append(kk, int(k))
 	}
-	sort.Slice(keys, func(i, j int) bool {
-		return i < j
-	})
+	sort.Ints(kk)
 
-	for _, key := range keys {
-		if name, ok := tcell.KeyNames[key]; ok {
+	menuHints := make(MenuHints, 0, len(kk))
+	for _, key := range kk {
+		if name, ok := tcell.KeyNames[tcell.Key(key)]; ok {
 			menuHints = append(menuHints,
 				MenuHint{
 					Mnemonic:    name,
-					Description: a[key].Description,
+					Description: a[tcell.Key(key)].Description,
 				},
 			)
 		} else {

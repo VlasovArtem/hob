@@ -44,6 +44,8 @@ func (p *ProviderRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(p.T(), err)
 	assert.Equal(p.T(), provider, create)
+
+	p.Delete(provider)
 }
 
 func (p *ProviderRepositoryTestSuite) Test_CreateWithMatchingName() {
@@ -58,6 +60,8 @@ func (p *ProviderRepositoryTestSuite) Test_CreateWithMatchingName() {
 
 	assert.Equal(p.T(), expected, actual)
 	assert.NotNil(p.T(), err)
+
+	p.Delete(expected)
 }
 
 func (p *ProviderRepositoryTestSuite) Test_FindById() {
@@ -85,9 +89,9 @@ func (p *ProviderRepositoryTestSuite) Test_FindByNameLike() {
 		provider := mocks.GenerateProvider()
 		provider.Name = fmt.Sprintf("findByName-%d", i)
 
-		created, _ := p.repository.Create(provider)
+		p.CreateEntity(&provider)
 
-		expectedProviders = append(expectedProviders, created)
+		expectedProviders = append(expectedProviders, provider)
 	}
 
 	firstPage := p.repository.FindByNameLike("findByName", 0, 5)
@@ -116,9 +120,9 @@ func (p *ProviderRepositoryTestSuite) Test_FindByNameLike_WithEmptyString() {
 		provider := mocks.GenerateProvider()
 		provider.Name = fmt.Sprintf("%d", i)
 
-		created, _ := p.repository.Create(provider)
+		p.CreateEntity(&provider)
 
-		expectedProviders = append(expectedProviders, created)
+		expectedProviders = append(expectedProviders, provider)
 	}
 
 	page := p.repository.FindByNameLike("", 0, len(expectedProviders))
@@ -153,9 +157,7 @@ func (p *ProviderRepositoryTestSuite) Test_ExistsByName_WithNotExistsRecord() {
 func (p *ProviderRepositoryTestSuite) CreateProvider() model.Provider {
 	provider := mocks.GenerateProvider()
 
-	saved, err := p.repository.Create(provider)
+	p.CreateEntity(provider)
 
-	assert.Nil(p.T(), err)
-
-	return saved
+	return provider
 }

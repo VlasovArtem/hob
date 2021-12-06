@@ -24,6 +24,16 @@ func GenerateCreatePaymentRequest() model.CreatePaymentRequest {
 	}
 }
 
+func GenerateUpdatePaymentRequest() model.UpdatePaymentRequest {
+	return model.UpdatePaymentRequest{
+		Id:          uuid.New(),
+		Name:        "Test Payment",
+		Description: "Test Payment Description",
+		Date:        Date,
+		Sum:         1000,
+	}
+}
+
 func GeneratePayment(houseId uuid.UUID, userId uuid.UUID) model.Payment {
 	return model.Payment{
 		Id:          uuid.New(),

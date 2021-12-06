@@ -18,8 +18,8 @@ type TerminalApp struct {
 	*tview.Application
 	Main           *tview.Pages
 	root           *app.RootApplication
-	AuthorizedUser userModel.UserResponse
-	House          houseModel.HouseDto
+	AuthorizedUser *userModel.UserResponse
+	House          *houseModel.HouseDto
 	CountriesCodes []string
 	actions        KeyActions
 }
@@ -31,6 +31,8 @@ func NewTApp(rootApplication *app.RootApplication) *TerminalApp {
 		Main:        tview.NewPages(),
 	}
 
+	tapp.SetUpBorders()
+
 	for _, country := range tapp.getCountryService().FindAllCountries() {
 		tapp.CountriesCodes = append(tapp.CountriesCodes, country.Code)
 	}
@@ -41,7 +43,7 @@ func NewTApp(rootApplication *app.RootApplication) *TerminalApp {
 func (t *TerminalApp) Init() {
 	log.Info().Msg("Initializing Terminal UI")
 
-	config := t.root.XDGConfig
+	config := t.root.Config
 	if config != nil && config.User.Email != "" {
 		user := config.User
 		userResponse, err := t.GetUserService().VerifyUser(user.Email, user.Password)
@@ -49,13 +51,11 @@ func (t *TerminalApp) Init() {
 		if err != nil {
 			log.Error().Err(err).Msg("XDG user configuration is not valid")
 		} else {
-			t.AuthorizedUser = userResponse
+			t.AuthorizedUser = &userResponse
 		}
 	}
 
-	var defaultUserModel userModel.UserResponse
-
-	if t.AuthorizedUser == defaultUserModel {
+	if t.AuthorizedUser == nil {
 		t.Main.AddAndSwitchToPage(SignInPageName, NewSignIn(t), true)
 	} else {
 		t.Main.AddAndSwitchToPage(HomePageName, NewHome(t), true)
@@ -95,14 +95,52 @@ func AsKey(evt *tcell.EventKey) tcell.Key {
 	return key
 }
 
-func (t *TerminalApp) CreateInfoAndToParent(pageName, msg string, doneFunc func(key tcell.Key)) {
-
-}
-
 func (t *TerminalApp) CreateErrAndToParent(pageName string, err error, doneFunc func(key tcell.Key)) {
 	t.Main.AddAndSwitchToPage(pageName, NewInfoWithError(err, doneFunc), true)
 }
 
 func (t *TerminalApp) AddToPage(pageName string, primitive tview.Primitive) {
 	t.Main.AddAndSwitchToPage(pageName, primitive, true)
+}
+
+func (t *TerminalApp) SetUpBorders() {
+	tview.Borders = struct {
+		Horizontal       rune
+		Vertical         rune
+		TopLeft          rune
+		TopRight         rune
+		BottomLeft       rune
+		BottomRight      rune
+		LeftT            rune
+		RightT           rune
+		TopT             rune
+		BottomT          rune
+		Cross            rune
+		HorizontalFocus  rune
+		VerticalFocus    rune
+		TopLeftFocus     rune
+		TopRightFocus    rune
+		BottomLeftFocus  rune
+		BottomRightFocus rune
+	}{
+		Horizontal:  tview.BoxDrawingsLightHorizontal,
+		Vertical:    tview.BoxDrawingsLightVertical,
+		TopLeft:     tview.BoxDrawingsLightDownAndRight,
+		TopRight:    tview.BoxDrawingsLightDownAndLeft,
+		BottomLeft:  tview.BoxDrawingsLightUpAndRight,
+		BottomRight: tview.BoxDrawingsLightUpAndLeft,
+
+		LeftT:   tview.BoxDrawingsLightVerticalAndRight,
+		RightT:  tview.BoxDrawingsLightVerticalAndLeft,
+		TopT:    tview.BoxDrawingsLightDownAndHorizontal,
+		BottomT: tview.BoxDrawingsLightUpAndHorizontal,
+		Cross:   tview.BoxDrawingsLightVerticalAndHorizontal,
+
+		HorizontalFocus:  tview.BoxDrawingsLightHorizontal,
+		VerticalFocus:    tview.BoxDrawingsLightVertical,
+		TopLeftFocus:     tview.BoxDrawingsLightDownAndRight,
+		TopRightFocus:    tview.BoxDrawingsLightDownAndLeft,
+		BottomLeftFocus:  tview.BoxDrawingsLightUpAndRight,
+		BottomRightFocus: tview.BoxDrawingsLightUpAndLeft,
+	}
 }

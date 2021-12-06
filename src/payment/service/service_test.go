@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
 	"testing"
+	"time"
 )
 
 var (
@@ -42,7 +43,7 @@ func Test_Add(t *testing.T) {
 
 	payment, err := paymentService.Add(request)
 
-	expectedEntity := request.ToEntity()
+	expectedEntity := request.CreateToEntity()
 	expectedEntity.Id = payment.Id
 	expectedResponse := expectedEntity.ToDto()
 
@@ -187,4 +188,85 @@ func Test_ExistsById_WithNotExists(t *testing.T) {
 	paymentRepository.On("ExistsById", id).Return(false)
 
 	assert.False(t, paymentService.ExistsById(id))
+}
+
+func Test_DeleteById(t *testing.T) {
+	paymentService := serviceGenerator()
+
+	id := uuid.New()
+
+	paymentRepository.On("ExistsById", id).Return(true)
+	paymentRepository.On("DeleteById", id).Return(nil)
+
+	assert.Nil(t, paymentService.DeleteById(id))
+}
+
+func Test_DeleteById_WithNotExists(t *testing.T) {
+	paymentService := serviceGenerator()
+
+	id := uuid.New()
+
+	paymentRepository.On("ExistsById", id).Return(false)
+
+	assert.Equal(t, errors.New(fmt.Sprintf("payment with id %s not found", id)), paymentService.DeleteById(id))
+
+	paymentRepository.AssertNotCalled(t, "DeleteById", id)
+}
+
+func Test_Update(t *testing.T) {
+	houseService := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentRequest()
+
+	paymentRepository.On("ExistsById", request.Id).Return(true)
+	paymentRepository.On("Update", mock.Anything).Return(nil)
+
+	assert.Nil(t, houseService.Update(request))
+
+	paymentRepository.AssertCalled(t, "Update", model.Payment{
+		Id:          request.Id,
+		Name:        request.Name,
+		Description: request.Description,
+		Date:        request.Date,
+		Sum:         request.Sum,
+	})
+}
+
+func Test_Update_WithErrorFromDatabase(t *testing.T) {
+	houseService := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentRequest()
+
+	paymentRepository.On("ExistsById", request.Id).Return(true)
+	paymentRepository.On("Update", mock.Anything).Return(errors.New("test"))
+
+	err := houseService.Update(request)
+	assert.Equal(t, errors.New("test"), err)
+}
+
+func Test_Update_WithNotExists(t *testing.T) {
+	houseService := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentRequest()
+
+	paymentRepository.On("ExistsById", request.Id).Return(false)
+
+	err := houseService.Update(request)
+	assert.Equal(t, errors.New(fmt.Sprintf("payment with id %s not found", request.Id)), err)
+
+	paymentRepository.AssertNotCalled(t, "Update", mock.Anything)
+}
+
+func Test_Update_WithDateAfterCurrentDate(t *testing.T) {
+	houseService := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentRequest()
+	request.Date = time.Now().Add(time.Hour)
+
+	paymentRepository.On("ExistsById", request.Id).Return(true)
+
+	err := houseService.Update(request)
+	assert.Equal(t, errors.New("date should not be after current date"), err)
+
+	paymentRepository.AssertNotCalled(t, "Update", mock.Anything)
 }

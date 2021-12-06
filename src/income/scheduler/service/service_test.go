@@ -57,7 +57,7 @@ func Test_Add(t *testing.T) {
 	assert.Equal(t, expectedResponse, payment)
 	schedulers.AssertCalled(t, "Add", expectedEntity.Id, "@daily", mock.Anything)
 
-	incomes.On("Add", mock.Anything).Return(incomeModel.IncomeResponse{}, nil)
+	incomes.On("Add", mock.Anything).Return(incomeModel.IncomeDto{}, nil)
 
 	function := schedulers.Calls[0].Arguments.Get(2).(func())
 	function()

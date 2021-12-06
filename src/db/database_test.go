@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,13 @@ type testEntityDto struct {
 	Id          uuid.UUID
 	Name        string
 	Description string
+}
+
+type testEntityUpdateDto struct {
+	Id          uuid.UUID
+	Name        string
+	Description string
+	Value       int
 }
 
 type DatabaseTestSuite struct {
@@ -145,6 +153,82 @@ func (i *DatabaseTestSuite) Test_ExistsByQuery_WithNotExists() {
 	exists := i.database.ExistsByQuery(testEntity{}, "name = ?", "name match")
 
 	assert.False(i.T(), exists)
+}
+
+func (i *DatabaseTestSuite) Test_DeleteById() {
+	entity := i.createTestEntity()
+
+	err := i.database.DeleteById(entity, entity.Id)
+
+	assert.Nil(i.T(), err)
+	assert.False(i.T(), i.database.ExistsById(testEntity{}, entity.Id))
+}
+
+func (i *DatabaseTestSuite) Test_DeleteById_WithNotExists() {
+	err := i.database.DeleteById(testEntity{}, uuid.New())
+
+	assert.Nil(i.T(), err)
+}
+
+func (i *DatabaseTestSuite) Test_UpdateById() {
+	entity := i.createTestEntity()
+
+	err := i.database.UpdateById(testEntity{}, entity.Id, testEntityUpdateDto{
+		Id:          entity.Id,
+		Name:        fmt.Sprintf("%s-new", entity.Name),
+		Description: fmt.Sprintf("%s-new", entity.Description),
+		Value:       entity.Value + 100,
+	})
+
+	assert.Nil(i.T(), err)
+
+	newEntity := testEntity{}
+
+	err = i.database.FindById(&newEntity, entity.Id)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), testEntity{
+		Id:          entity.Id,
+		Name:        "Name-new",
+		Description: "Description-new",
+		Value:       200,
+	}, newEntity)
+}
+
+func (i *DatabaseTestSuite) Test_UpdateById_WithOmitColumns() {
+	entity := i.createTestEntity()
+
+	err := i.database.UpdateById(testEntity{}, entity.Id, testEntityUpdateDto{
+		Id:          entity.Id,
+		Name:        fmt.Sprintf("%s-new", entity.Name),
+		Description: fmt.Sprintf("%s-new", entity.Description),
+		Value:       entity.Value + 100,
+	}, "Value")
+
+	assert.Nil(i.T(), err)
+
+	newEntity := testEntity{}
+
+	err = i.database.FindById(&newEntity, entity.Id)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), testEntity{
+		Id:          entity.Id,
+		Name:        "Name-new",
+		Description: "Description-new",
+		Value:       100,
+	}, newEntity)
+}
+
+func (i *DatabaseTestSuite) Test_UpdateById_WithNotExists() {
+	err := i.database.UpdateById(testEntity{}, uuid.New(), testEntityUpdateDto{
+		Id:          uuid.New(),
+		Name:        "new name",
+		Description: "new description",
+		Value:       100,
+	})
+
+	assert.Nil(i.T(), err)
 }
 
 func (i *DatabaseTestSuite) Test_DM() {

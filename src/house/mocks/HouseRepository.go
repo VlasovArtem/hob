@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/house/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -36,6 +35,20 @@ func (_m *HouseRepository) Create(entity model.House) (model.House, error) {
 	return r0, r1
 }
 
+// DeleteById provides a mock function with given fields: id
+func (_m *HouseRepository) DeleteById(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ExistsById provides a mock function with given fields: id
 func (_m *HouseRepository) ExistsById(id uuid.UUID) bool {
 	ret := _m.Called(id)
@@ -50,8 +63,8 @@ func (_m *HouseRepository) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindResponseById provides a mock function with given fields: id
-func (_m *HouseRepository) FindResponseById(id uuid.UUID) (model.HouseDto, error) {
+// FindDtoById provides a mock function with given fields: id
+func (_m *HouseRepository) FindDtoById(id uuid.UUID) (model.HouseDto, error) {
 	ret := _m.Called(id)
 
 	var r0 model.HouseDto
@@ -82,6 +95,20 @@ func (_m *HouseRepository) FindResponseByUserId(id uuid.UUID) []model.HouseDto {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.HouseDto)
 		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields: entity
+func (_m *HouseRepository) Update(entity model.House) error {
+	ret := _m.Called(entity)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(model.House) error); ok {
+		r0 = rf(entity)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

@@ -10,6 +10,7 @@ import (
 	"github.com/VlasovArtem/hob/src/payment/repository"
 	us "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
+	"time"
 )
 
 type PaymentServiceObject struct {
@@ -40,6 +41,8 @@ type PaymentService interface {
 	FindByHouseId(houseId uuid.UUID) []model.PaymentDto
 	FindByUserId(userId uuid.UUID) []model.PaymentDto
 	ExistsById(id uuid.UUID) bool
+	DeleteById(id uuid.UUID) error
+	Update(request model.UpdatePaymentRequest) error
 }
 
 func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentDto, err error) {
@@ -52,7 +55,7 @@ func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response
 		return response, err
 	}
 
-	payment, err := p.paymentRepository.Create(request.ToEntity())
+	payment, err := p.paymentRepository.Create(request.CreateToEntity())
 
 	return payment.ToDto(), err
 }
@@ -75,6 +78,23 @@ func (p *PaymentServiceObject) FindByUserId(userId uuid.UUID) []model.PaymentDto
 
 func (p *PaymentServiceObject) ExistsById(id uuid.UUID) bool {
 	return p.paymentRepository.ExistsById(id)
+}
+
+func (p *PaymentServiceObject) DeleteById(id uuid.UUID) error {
+	if !p.ExistsById(id) {
+		return errors.New(fmt.Sprintf("payment with id %s not found", id))
+	}
+	return p.paymentRepository.DeleteById(id)
+}
+
+func (p *PaymentServiceObject) Update(request model.UpdatePaymentRequest) error {
+	if !p.ExistsById(request.Id) {
+		return errors.New(fmt.Sprintf("payment with id %s not found", request.Id))
+	}
+	if request.Date.After(time.Now()) {
+		return errors.New("date should not be after current date")
+	}
+	return p.paymentRepository.Update(request.UpdateToEntity())
 }
 
 func convert(payments []model.Payment) []model.PaymentDto {

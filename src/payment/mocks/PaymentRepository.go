@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/payment/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -15,7 +14,7 @@ type PaymentRepository struct {
 	mock.Mock
 }
 
-// Add provides a mock function with given fields: entity
+// Create provides a mock function with given fields: entity
 func (_m *PaymentRepository) Create(entity model.Payment) (model.Payment, error) {
 	ret := _m.Called(entity)
 
@@ -36,6 +35,20 @@ func (_m *PaymentRepository) Create(entity model.Payment) (model.Payment, error)
 	return r0, r1
 }
 
+// DeleteById provides a mock function with given fields: id
+func (_m *PaymentRepository) DeleteById(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ExistsById provides a mock function with given fields: id
 func (_m *PaymentRepository) ExistsById(id uuid.UUID) bool {
 	ret := _m.Called(id)
@@ -50,7 +63,7 @@ func (_m *PaymentRepository) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindByHouseId provides a mock function with given fields: HouseId
+// FindByHouseId provides a mock function with given fields: houseId
 func (_m *PaymentRepository) FindByHouseId(houseId uuid.UUID) []model.Payment {
 	ret := _m.Called(houseId)
 
@@ -87,7 +100,7 @@ func (_m *PaymentRepository) FindById(id uuid.UUID) (model.Payment, error) {
 	return r0, r1
 }
 
-// FindByUserId provides a mock function with given fields: UserId
+// FindByUserId provides a mock function with given fields: userId
 func (_m *PaymentRepository) FindByUserId(userId uuid.UUID) []model.Payment {
 	ret := _m.Called(userId)
 
@@ -98,6 +111,20 @@ func (_m *PaymentRepository) FindByUserId(userId uuid.UUID) []model.Payment {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.Payment)
 		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields: entity
+func (_m *PaymentRepository) Update(entity model.Payment) error {
+	ret := _m.Called(entity)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(model.Payment) error); ok {
+		r0 = rf(entity)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

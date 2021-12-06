@@ -28,6 +28,14 @@ type CreatePaymentRequest struct {
 	Sum         float32
 }
 
+type UpdatePaymentRequest struct {
+	Id          uuid.UUID
+	Name        string
+	Description string
+	Date        time.Time
+	Sum         float32
+}
+
 type PaymentDto struct {
 	Id          uuid.UUID
 	Name        string
@@ -50,7 +58,7 @@ func (p Payment) ToDto() PaymentDto {
 	}
 }
 
-func (c CreatePaymentRequest) ToEntity() Payment {
+func (c CreatePaymentRequest) CreateToEntity() Payment {
 	return Payment{
 		Id:          uuid.New(),
 		Name:        c.Name,
@@ -59,5 +67,15 @@ func (c CreatePaymentRequest) ToEntity() Payment {
 		UserId:      c.UserId,
 		Date:        c.Date,
 		Sum:         c.Sum,
+	}
+}
+
+func (u UpdatePaymentRequest) UpdateToEntity() Payment {
+	return Payment{
+		Id:          u.Id,
+		Name:        u.Name,
+		Description: u.Description,
+		Date:        u.Date,
+		Sum:         u.Sum,
 	}
 }

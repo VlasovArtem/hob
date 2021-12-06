@@ -28,7 +28,7 @@ func Test_AddIncome(t *testing.T) {
 
 	request := mocks.GenerateCreateIncomeRequest()
 
-	incomes.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
+	incomes.On("Add", request).Return(request.CreateToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income").
@@ -38,11 +38,11 @@ func Test_AddIncome(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusCreated)
 
-	actual := model.IncomeResponse{}
+	actual := model.IncomeDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, model.IncomeResponse{
+	assert.Equal(t, model.IncomeDto{
 		Id:          actual.Id,
 		Name:        "Name",
 		Date:        mocks.Date,
@@ -69,7 +69,7 @@ func Test_AddIncome_WithErrorFromService(t *testing.T) {
 	request := mocks.GenerateCreateIncomeRequest()
 
 	err := errors.New("error")
-	incomes.On("Add", request).Return(model.IncomeResponse{}, err)
+	incomes.On("Add", request).Return(model.IncomeDto{}, err)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income").
@@ -98,7 +98,7 @@ func Test_FindById(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := model.IncomeResponse{}
+	actual := model.IncomeDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -113,7 +113,7 @@ func Test_FindById_WithError(t *testing.T) {
 	expected := errors.New("error")
 
 	incomes.On("FindById", id).
-		Return(model.IncomeResponse{}, expected)
+		Return(model.IncomeDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income/{id}").
@@ -143,7 +143,7 @@ func Test_FindById_WithInvalidParameter(t *testing.T) {
 func Test_FindByHouseId(t *testing.T) {
 	handler := handlerGenerator()
 
-	response := []model.IncomeResponse{mocks.GenerateIncomeResponse()}
+	response := []model.IncomeDto{mocks.GenerateIncomeResponse()}
 
 	incomes.On("FindByHouseId", response[0].HouseId).
 		Return(response, nil)
@@ -156,7 +156,7 @@ func Test_FindByHouseId(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	var actual []model.IncomeResponse
+	var actual []model.IncomeDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -169,7 +169,7 @@ func Test_FindByHouseId_WithEmptyResult(t *testing.T) {
 	id := uuid.New()
 
 	incomes.On("FindByHouseId", id).
-		Return([]model.IncomeResponse{})
+		Return([]model.IncomeDto{})
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/meter/house/{id}").
@@ -179,11 +179,11 @@ func Test_FindByHouseId_WithEmptyResult(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	var actual []model.IncomeResponse
+	var actual []model.IncomeDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, []model.IncomeResponse{}, actual)
+	assert.Equal(t, []model.IncomeDto{}, actual)
 }
 
 func Test_FindByHouseId_WithInvalidParameter(t *testing.T) {

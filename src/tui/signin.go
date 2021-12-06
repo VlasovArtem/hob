@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"github.com/rivo/tview"
 )
@@ -15,13 +16,13 @@ type SignInForm struct {
 	password string
 }
 
-func (s *SignInForm) my(app *TerminalApp, parent *NavigationInfo) *NavigationInfo {
+func (s *SignInForm) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
 	return NewNavigationInfo(SignInPageName, func() tview.Primitive { return NewSignIn(app) })
 }
 
-func (s *SignInForm) enrichNavigation(app *TerminalApp, parent *NavigationInfo) {
+func (s *SignInForm) enrichNavigation(app *TerminalApp, ctx context.Context) {
 	s.MyNavigation = interface{}(s).(MyNavigation)
-	s.enrich(app, parent).addCustomPage(app, nil, &SignUp{})
+	s.enrich(app, ctx).addCustomPage(ctx, &SignUp{})
 }
 
 func NewSignIn(app *TerminalApp) *SignInForm {
@@ -42,7 +43,7 @@ func NewSignIn(app *TerminalApp) *SignInForm {
 			if err != nil {
 				f.ShowErrorTo(err)
 			} else {
-				app.AuthorizedUser = user
+				app.AuthorizedUser = &user
 				f.ShowInfoReturnHome(fmt.Sprintf("Welcome, %s %s to 'House of Bills'!", user.LastName, user.FirstName))
 			}
 		}).

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"github.com/VlasovArtem/hob/src/db"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
@@ -55,6 +56,8 @@ func (i *IncomeRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), income, actual)
+
+	i.Delete(income)
 }
 
 func (i *IncomeRepositoryTestSuite) Test_Creat_WithMissingHouse() {
@@ -69,17 +72,17 @@ func (i *IncomeRepositoryTestSuite) Test_Creat_WithMissingHouse() {
 func (i *IncomeRepositoryTestSuite) Test_FindResponseById() {
 	income := i.createIncome()
 
-	actual, err := i.repository.FindResponseById(income.Id)
+	actual, err := i.repository.FindDtoById(income.Id)
 
 	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), income.ToResponse(), actual)
+	assert.Equal(i.T(), income.ToDto(), actual)
 }
 
 func (i *IncomeRepositoryTestSuite) Test_FindResponseById_WithMissingId() {
-	actual, err := i.repository.FindResponseById(uuid.New())
+	actual, err := i.repository.FindDtoById(uuid.New())
 
 	assert.ErrorIs(i.T(), err, gorm.ErrRecordNotFound)
-	assert.Equal(i.T(), model.IncomeResponse{}, actual)
+	assert.Equal(i.T(), model.IncomeDto{}, actual)
 }
 
 func (i *IncomeRepositoryTestSuite) Test_FindResponseByHouseId() {
@@ -87,7 +90,7 @@ func (i *IncomeRepositoryTestSuite) Test_FindResponseByHouseId() {
 
 	actual := i.repository.FindResponseByHouseId(income.HouseId)
 
-	var actualResponse model.IncomeResponse
+	var actualResponse model.IncomeDto
 
 	for _, response := range actual {
 		if response.Id == income.Id {
@@ -95,21 +98,72 @@ func (i *IncomeRepositoryTestSuite) Test_FindResponseByHouseId() {
 			break
 		}
 	}
-	assert.Equal(i.T(), income.ToResponse(), actualResponse)
+	assert.Equal(i.T(), income.ToDto(), actualResponse)
 }
 
 func (i *IncomeRepositoryTestSuite) Test_FindResponseByHouseId_WithMissingId() {
 	actual := i.repository.FindResponseByHouseId(uuid.New())
 
-	assert.Equal(i.T(), []model.IncomeResponse{}, actual)
+	assert.Equal(i.T(), []model.IncomeDto{}, actual)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_ExistsById() {
+	income := i.createIncome()
+
+	assert.True(i.T(), i.repository.ExistsById(income.Id))
+}
+
+func (i *IncomeRepositoryTestSuite) Test_ExistsById_WithMissingId() {
+	assert.False(i.T(), i.repository.ExistsById(uuid.New()))
+}
+
+func (i *IncomeRepositoryTestSuite) Test_DeleteById() {
+	income := i.createIncome()
+
+	assert.Nil(i.T(), i.repository.DeleteById(income.Id))
+}
+
+func (i *IncomeRepositoryTestSuite) Test_DeleteById_WithMissingId() {
+	assert.Nil(i.T(), i.repository.DeleteById(uuid.New()))
+}
+
+func (i *IncomeRepositoryTestSuite) Test_Update() {
+	income := i.createIncome()
+
+	updatedIncome := model.Income{
+		Id:          income.Id,
+		Name:        fmt.Sprintf("%s-new", income.Name),
+		Description: fmt.Sprintf("%s-new", income.Description),
+		Date:        mocks.Date,
+		Sum:         income.Sum + 100.0,
+		HouseId:     income.HouseId,
+		House:       income.House,
+	}
+
+	err := i.repository.Update(updatedIncome)
+
+	assert.Nil(i.T(), err)
+
+	response, err := i.repository.FindDtoById(income.Id)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), model.IncomeDto{
+		Id:          income.Id,
+		Name:        "Name-new",
+		Description: "Description-new",
+		Date:        updatedIncome.Date,
+		Sum:         200.1,
+		HouseId:     income.HouseId,
+	}, response)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_Update_WithMissingId() {
+	assert.Nil(i.T(), i.repository.Update(model.Income{Id: uuid.New()}))
 }
 
 func (i *IncomeRepositoryTestSuite) createIncome() model.Income {
 	income := mocks.GenerateIncome(i.createdHouse.Id)
 
-	create, err := i.repository.Create(income)
+	i.CreateEntity(income)
 
-	assert.Nil(i.T(), err)
-
-	return create
+	return income
 }

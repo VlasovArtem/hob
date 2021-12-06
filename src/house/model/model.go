@@ -13,7 +13,6 @@ type House struct {
 	City        string
 	StreetLine1 string
 	StreetLine2 string
-	Deleted     bool
 	UserId      uuid.UUID
 	User        userModel.User `gorm:"foreignKey:UserId"`
 }
@@ -37,6 +36,15 @@ type CreateHouseRequest struct {
 	UserId      uuid.UUID
 }
 
+type UpdateHouseRequest struct {
+	Id          uuid.UUID
+	Name        string
+	Country     string
+	City        string
+	StreetLine1 string
+	StreetLine2 string
+}
+
 func (h House) ToDto() HouseDto {
 	return HouseDto{
 		Id:          h.Id,
@@ -58,6 +66,16 @@ func (c CreateHouseRequest) ToEntity(country *model.Country) House {
 		StreetLine1: c.StreetLine1,
 		StreetLine2: c.StreetLine2,
 		UserId:      c.UserId,
-		Deleted:     false,
+	}
+}
+
+func (u UpdateHouseRequest) UpdateToEntity(country *model.Country) House {
+	return House{
+		Id:          u.Id,
+		Name:        u.Name,
+		CountryCode: country.Code,
+		City:        u.City,
+		StreetLine1: u.StreetLine1,
+		StreetLine2: u.StreetLine2,
 	}
 }

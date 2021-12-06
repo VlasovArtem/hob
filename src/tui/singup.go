@@ -1,8 +1,10 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -10,25 +12,27 @@ const SingUpPageName = "signup"
 
 type SignUp struct {
 	*tview.Form
-	*NavigationBack
+	*Navigation
+	*Keyboard
 	request userModel.CreateUserRequest
 }
 
-func (s *SignUp) my(app *TerminalApp, parent *NavigationInfo) *NavigationInfo {
-	return NewNavigationInfo(SingUpPageName, func() tview.Primitive { return NewSignUp(app, parent) })
+func (s *SignUp) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
+	return NewNavigationInfo(SingUpPageName, func() tview.Primitive { return NewSignUp(app) })
 }
 
-func (s *SignUp) enrichNavigation(app *TerminalApp, parent *NavigationInfo) {
+func (s *SignUp) enrichNavigation(app *TerminalApp, ctx context.Context) {
 	s.MyNavigation = interface{}(s).(MyNavigation)
-	s.enrich(app, parent)
+	s.enrich(app, ctx)
 }
 
-func NewSignUp(app *TerminalApp, parent *NavigationInfo) *SignUp {
+func NewSignUp(app *TerminalApp) *SignUp {
 	f := &SignUp{
-		Form:           tview.NewForm(),
-		NavigationBack: NewNavigationBack(NewNavigation()),
+		Form:       tview.NewForm(),
+		Navigation: NewNavigation(),
 	}
-	f.enrichNavigation(app, parent)
+	f.bindKeys()
+	f.enrichNavigation(app, nil)
 
 	f.
 		AddInputField("Email", "", 20, nil, func(text string) { f.request.Email = text }).
@@ -39,7 +43,7 @@ func NewSignUp(app *TerminalApp, parent *NavigationInfo) *SignUp {
 			if userResponse, err := app.GetUserService().Add(f.request); err != nil {
 				f.ShowErrorTo(err)
 			} else {
-				app.AuthorizedUser = userResponse
+				app.AuthorizedUser = &userResponse
 				f.ShowInfoReturnHome(fmt.Sprintf("Welcome, %s %s to 'House of Bills'!", userResponse.LastName, userResponse.FirstName))
 			}
 		}).
@@ -52,4 +56,15 @@ func NewSignUp(app *TerminalApp, parent *NavigationInfo) *SignUp {
 	f.SetInputCapture(f.KeyboardFunc)
 
 	return f
+}
+
+func (s *SignUp) bindKeys() {
+	s.Actions = KeyActions{
+		tcell.KeyEscape: NewKeyAction("Back", s.backToParent),
+	}
+}
+
+func (s *SignUp) backToParent(key *tcell.EventKey) *tcell.EventKey {
+	s.Back()
+	return key
 }

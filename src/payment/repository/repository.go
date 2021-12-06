@@ -29,6 +29,8 @@ type PaymentRepository interface {
 	FindByHouseId(houseId uuid.UUID) []model.Payment
 	FindByUserId(userId uuid.UUID) []model.Payment
 	ExistsById(id uuid.UUID) bool
+	DeleteById(id uuid.UUID) error
+	Update(entity model.Payment) error
 }
 
 func (p *PaymentRepositoryObject) Create(entity model.Payment) (model.Payment, error) {
@@ -53,4 +55,12 @@ func (p *PaymentRepositoryObject) FindByUserId(userId uuid.UUID) (response []mod
 
 func (p *PaymentRepositoryObject) ExistsById(id uuid.UUID) bool {
 	return p.database.ExistsById(model.Payment{}, id)
+}
+
+func (p *PaymentRepositoryObject) DeleteById(id uuid.UUID) error {
+	return p.database.D().Delete(model.Payment{}, id).Error
+}
+
+func (p *PaymentRepositoryObject) Update(entity model.Payment) error {
+	return p.database.UpdateById(model.Payment{}, entity.Id, entity, "HouseId", "House", "UserId", "User")
 }

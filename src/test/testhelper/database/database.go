@@ -1,10 +1,13 @@
 package database
 
 import (
+	"fmt"
 	database "github.com/VlasovArtem/hob/src/db"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
+	"reflect"
 )
 
 func DropTable(db *gorm.DB, model interface{}) {
@@ -67,8 +70,8 @@ func (db *DBTestSuite) CreateEntity(entity interface{}) {
 }
 
 func (db *DBTestSuite) TearDown() {
-	for _, entity := range db.createdEntities {
-		db.Database.D().Delete(entity)
+	for i := len(db.createdEntities) - 1; i >= 0; i-- {
+		db.Database.D().Delete(db.createdEntities[i])
 	}
 }
 
@@ -81,5 +84,18 @@ func (db *DBTestSuite) AddBeforeTest(beforeTest func(service database.DatabaseSe
 func (db *DBTestSuite) BeforeTest(suiteName, testName string) {
 	for _, beforeTestFunction := range db.beforeTest {
 		beforeTestFunction(db.Database)
+	}
+}
+
+func (db *DBTestSuite) Delete(entity interface{}) {
+	entityValue := reflect.Indirect(reflect.ValueOf(entity))
+	idValue := entityValue.FieldByName("Id")
+	valueId := fmt.Sprintf("%v", idValue)
+	if parse, err := uuid.Parse(valueId); err != nil {
+		log.Fatal().Err(err)
+	} else {
+		if err = db.Database.DeleteById(entity, parse); err != nil {
+			log.Fatal().Err(err)
+		}
 	}
 }
