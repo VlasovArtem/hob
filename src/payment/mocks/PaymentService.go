@@ -63,13 +63,13 @@ func (_m *PaymentService) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindByHouseId provides a mock function with given fields: houseId
-func (_m *PaymentService) FindByHouseId(houseId uuid.UUID) []model.PaymentDto {
-	ret := _m.Called(houseId)
+// FindByHouseId provides a mock function with given fields: id
+func (_m *PaymentService) FindByHouseId(id uuid.UUID) []model.PaymentDto {
+	ret := _m.Called(id)
 
 	var r0 []model.PaymentDto
 	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
-		r0 = rf(houseId)
+		r0 = rf(id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.PaymentDto)
@@ -100,13 +100,13 @@ func (_m *PaymentService) FindById(id uuid.UUID) (model.PaymentDto, error) {
 	return r0, r1
 }
 
-// FindByUserId provides a mock function with given fields: userId
-func (_m *PaymentService) FindByUserId(userId uuid.UUID) []model.PaymentDto {
-	ret := _m.Called(userId)
+// FindByProviderId provides a mock function with given fields: id
+func (_m *PaymentService) FindByProviderId(id uuid.UUID) []model.PaymentDto {
+	ret := _m.Called(id)
 
 	var r0 []model.PaymentDto
 	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
-		r0 = rf(userId)
+		r0 = rf(id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.PaymentDto)
@@ -116,13 +116,29 @@ func (_m *PaymentService) FindByUserId(userId uuid.UUID) []model.PaymentDto {
 	return r0
 }
 
-// Update provides a mock function with given fields: request
-func (_m *PaymentService) Update(request model.UpdatePaymentRequest) error {
-	ret := _m.Called(request)
+// FindByUserId provides a mock function with given fields: id
+func (_m *PaymentService) FindByUserId(id uuid.UUID) []model.PaymentDto {
+	ret := _m.Called(id)
+
+	var r0 []model.PaymentDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
+		r0 = rf(id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.PaymentDto)
+		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields: id, request
+func (_m *PaymentService) Update(id uuid.UUID, request model.UpdatePaymentRequest) error {
+	ret := _m.Called(id, request)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(model.UpdatePaymentRequest) error); ok {
-		r0 = rf(request)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdatePaymentRequest) error); ok {
+		r0 = rf(id, request)
 	} else {
 		r0 = ret.Error(0)
 	}

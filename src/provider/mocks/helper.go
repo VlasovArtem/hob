@@ -6,17 +6,26 @@ import (
 	"github.com/google/uuid"
 )
 
-func GenerateProvider() model.Provider {
+func GenerateProvider(userId uuid.UUID) model.Provider {
 	id := uuid.New()
 	return model.Provider{
 		Id:      id,
 		Name:    fmt.Sprintf("%s-Provider", id),
 		Details: "Details",
+		UserId:  userId,
 	}
 }
 
 func GenerateCreateProviderRequest() model.CreateProviderRequest {
 	return model.CreateProviderRequest{
+		Name:    "Name",
+		Details: "Details",
+		UserId:  uuid.New(),
+	}
+}
+
+func GenerateUpdateProviderRequest() model.UpdateProviderRequest {
+	return model.UpdateProviderRequest{
 		Name:    "Name",
 		Details: "Details",
 	}
@@ -27,5 +36,6 @@ func GenerateProviderDto() model.ProviderDto {
 		Id:      uuid.New(),
 		Name:    "Name",
 		Details: "Details",
+		UserId:  uuid.New(),
 	}
 }

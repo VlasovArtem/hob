@@ -28,10 +28,6 @@ func (p *UserRepositoryTestSuite) SetupSuite() {
 		AddMigrators(model.User{})
 }
 
-func (p *UserRepositoryTestSuite) TearDownSuite() {
-	p.TearDown()
-}
-
 func TestUserRepositoryTestSuite(t *testing.T) {
 	suite.Run(t, new(UserRepositoryTestSuite))
 }
@@ -60,7 +56,7 @@ func (p *UserRepositoryTestSuite) Test_CreateWithMatchingEmail() {
 }
 
 func (p *UserRepositoryTestSuite) Test_FindById() {
-	user := p.CreateUser()
+	user := p.createUser()
 
 	actual, err := p.repository.FindById(user.Id)
 
@@ -78,7 +74,7 @@ func (p *UserRepositoryTestSuite) Test_FindById_WithNotExistsUser() {
 }
 
 func (p *UserRepositoryTestSuite) Test_ExistsById() {
-	user := p.CreateUser()
+	user := p.createUser()
 
 	assert.True(p.T(), p.repository.ExistsById(user.Id))
 }
@@ -90,7 +86,7 @@ func (p *UserRepositoryTestSuite) Test_ExistsById_WithNotExistsUser() {
 }
 
 func (p *UserRepositoryTestSuite) Test_ExistsByEmail() {
-	user := p.CreateUser()
+	user := p.createUser()
 
 	assert.True(p.T(), p.repository.ExistsByEmail(user.Email))
 }
@@ -99,12 +95,37 @@ func (p *UserRepositoryTestSuite) Test_ExistsByEmail_WithNotExistsUser() {
 	assert.False(p.T(), p.repository.ExistsByEmail("email@mail.com"))
 }
 
-func (p *UserRepositoryTestSuite) CreateUser() model.User {
-	user := mocks.GenerateUser()
+func (p *UserRepositoryTestSuite) Test_Delete() {
+	provider := p.createUser()
 
-	savedUser, err := p.repository.Create(user)
+	err := p.repository.Delete(provider.Id)
 
 	assert.Nil(p.T(), err)
+	assert.False(p.T(), p.repository.ExistsById(provider.Id))
+}
 
-	return savedUser
+func (p *UserRepositoryTestSuite) Test_Update() {
+	provider := p.createUser()
+
+	updated := model.User{
+		Id:        provider.Id,
+		FirstName: "New First Name",
+		LastName:  "New Last Name",
+		Password:  []byte("new"),
+		Email:     provider.Email,
+	}
+	err := p.repository.Update(updated)
+
+	assert.Nil(p.T(), err)
+	user, err := p.repository.FindById(provider.Id)
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), updated, user)
+}
+
+func (p *UserRepositoryTestSuite) createUser() model.User {
+	user := mocks.GenerateUser()
+
+	p.CreateEntity(&user)
+
+	return user
 }

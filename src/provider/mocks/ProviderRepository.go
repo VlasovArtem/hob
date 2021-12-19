@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/provider/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -36,6 +35,20 @@ func (_m *ProviderRepository) Create(provider model.Provider) (model.Provider, e
 	return r0, r1
 }
 
+// Delete provides a mock function with given fields: id
+func (_m *ProviderRepository) Delete(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ExistsById provides a mock function with given fields: id
 func (_m *ProviderRepository) ExistsById(id uuid.UUID) bool {
 	ret := _m.Called(id)
@@ -50,13 +63,13 @@ func (_m *ProviderRepository) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// ExistsByName provides a mock function with given fields: name
-func (_m *ProviderRepository) ExistsByName(name string) bool {
-	ret := _m.Called(name)
+// ExistsByNameAndUserId provides a mock function with given fields: name, userId
+func (_m *ProviderRepository) ExistsByNameAndUserId(name string, userId uuid.UUID) bool {
+	ret := _m.Called(name, userId)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(name)
+	if rf, ok := ret.Get(0).(func(string, uuid.UUID) bool); ok {
+		r0 = rf(name, userId)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
@@ -85,17 +98,47 @@ func (_m *ProviderRepository) FindById(id uuid.UUID) (model.Provider, error) {
 	return r0, r1
 }
 
-// FindByNameLike provides a mock function with given fields: namePattern, page, limit
-func (_m *ProviderRepository) FindByNameLike(namePattern string, page int, limit int) []model.Provider {
-	ret := _m.Called(namePattern, page, limit)
+// FindByNameLikeAndUserId provides a mock function with given fields: namePattern, page, limit, userId
+func (_m *ProviderRepository) FindByNameLikeAndUserId(namePattern string, page int, limit int, userId uuid.UUID) []model.ProviderDto {
+	ret := _m.Called(namePattern, page, limit, userId)
 
-	var r0 []model.Provider
-	if rf, ok := ret.Get(0).(func(string, int, int) []model.Provider); ok {
-		r0 = rf(namePattern, page, limit)
+	var r0 []model.ProviderDto
+	if rf, ok := ret.Get(0).(func(string, int, int, uuid.UUID) []model.ProviderDto); ok {
+		r0 = rf(namePattern, page, limit, userId)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.Provider)
+			r0 = ret.Get(0).([]model.ProviderDto)
 		}
+	}
+
+	return r0
+}
+
+// FindByUserId provides a mock function with given fields: id
+func (_m *ProviderRepository) FindByUserId(id uuid.UUID) []model.ProviderDto {
+	ret := _m.Called(id)
+
+	var r0 []model.ProviderDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.ProviderDto); ok {
+		r0 = rf(id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.ProviderDto)
+		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields: entity
+func (_m *ProviderRepository) Update(entity model.Provider) error {
+	ret := _m.Called(entity)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(model.Provider) error); ok {
+		r0 = rf(entity)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

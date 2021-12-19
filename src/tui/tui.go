@@ -18,7 +18,7 @@ type TerminalApp struct {
 	*tview.Application
 	Main           *tview.Pages
 	root           *app.RootApplication
-	AuthorizedUser *userModel.UserResponse
+	AuthorizedUser *userModel.UserDto
 	House          *houseModel.HouseDto
 	CountriesCodes []string
 	actions        KeyActions

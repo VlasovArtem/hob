@@ -8,6 +8,7 @@ import (
 	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/mocks"
 	paymentScheduler "github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	providerMocks "github.com/VlasovArtem/hob/src/provider/mocks"
 	schedulerMocks "github.com/VlasovArtem/hob/src/scheduler/mocks"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/google/uuid"
@@ -19,38 +20,42 @@ import (
 )
 
 var (
-	users                      *userMocks.UserService
-	houses                     *houseMocks.HouseService
-	payments                   *paymentMocks.PaymentService
-	schedulers                 *schedulerMocks.ServiceScheduler
+	userService                *userMocks.UserService
+	houseService               *houseMocks.HouseService
+	paymentService             *paymentMocks.PaymentService
+	serviceScheduler           *schedulerMocks.ServiceScheduler
+	providerService            *providerMocks.ProviderService
 	paymentSchedulerRepository *mocks.PaymentSchedulerRepository
 )
 
 func serviceGenerator() PaymentSchedulerService {
-	users = new(userMocks.UserService)
-	houses = new(houseMocks.HouseService)
-	payments = new(paymentMocks.PaymentService)
-	schedulers = new(schedulerMocks.ServiceScheduler)
+	userService = new(userMocks.UserService)
+	houseService = new(houseMocks.HouseService)
+	paymentService = new(paymentMocks.PaymentService)
+	serviceScheduler = new(schedulerMocks.ServiceScheduler)
+	providerService = new(providerMocks.ProviderService)
 	paymentSchedulerRepository = new(mocks.PaymentSchedulerRepository)
 
-	return NewPaymentSchedulerService(users, houses, payments, schedulers, paymentSchedulerRepository)
+	return NewPaymentSchedulerService(userService, houseService, paymentService, providerService, serviceScheduler, paymentSchedulerRepository)
 }
 
 func Test_Add(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 
-	users.On("ExistsById", mocks.UserId).
+	userService.On("ExistsById", mocks.UserId).
 		Return(true)
-	houses.On("ExistsById", mocks.HouseId).
+	houseService.On("ExistsById", mocks.HouseId).
+		Return(true)
+	providerService.On("ExistsById", mocks.ProviderId).
 		Return(true)
 	paymentSchedulerRepository.On("Create", mock.Anything).
 		Return(
 			func(model paymentScheduler.PaymentScheduler) paymentScheduler.PaymentScheduler {
 				return model
 			}, nil)
-	schedulers.On("Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
+	serviceScheduler.On("Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
 		Return(cron.EntryID(0), nil)
 
 	payment, err := service.Add(request)
@@ -61,20 +66,21 @@ func Test_Add(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedResponse, payment)
-	schedulers.AssertCalled(t, "Add", expectedEntity.Id, "@daily", mock.Anything)
+	serviceScheduler.AssertCalled(t, "Add", expectedEntity.Id, "@daily", mock.Anything)
 
-	payments.On("Add", mock.Anything).Return(paymentModel.PaymentDto{}, nil)
+	paymentService.On("Add", mock.Anything).Return(paymentModel.PaymentDto{}, nil)
 
-	function := schedulers.Calls[0].Arguments.Get(2).(func())
+	function := serviceScheduler.Calls[0].Arguments.Get(2).(func())
 	function()
 
-	createPaymentRequest := payments.Calls[0].Arguments.Get(0).(paymentModel.CreatePaymentRequest)
+	createPaymentRequest := paymentService.Calls[0].Arguments.Get(0).(paymentModel.CreatePaymentRequest)
 
 	assert.Equal(t, paymentModel.CreatePaymentRequest{
 		Name:        "Test Payment",
 		Description: "Test Payment Description",
 		HouseId:     mocks.HouseId,
 		UserId:      mocks.UserId,
+		ProviderId:  mocks.ProviderId,
 		Date:        createPaymentRequest.Date,
 		Sum:         1000,
 	}, createPaymentRequest)
@@ -83,35 +89,35 @@ func Test_Add(t *testing.T) {
 func Test_Add_WithNegativeSum(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 	request.Sum = -1000
 
 	payment, err := service.Add(request)
 
 	assert.Equal(t, errors.New("sum should not be zero of negative"), err)
 	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, payment)
-	schedulers.AssertNotCalled(t, "Create", mock.Anything, mock.Anything, mock.Anything)
+	serviceScheduler.AssertNotCalled(t, "Create", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func Test_Add_WithZeroSum(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 	request.Sum = 0
 
 	payment, err := service.Add(request)
 
 	assert.Equal(t, errors.New("sum should not be zero of negative"), err)
 	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, payment)
-	schedulers.AssertNotCalled(t, "Create", mock.Anything, mock.Anything, mock.Anything)
+	serviceScheduler.AssertNotCalled(t, "Create", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func Test_Add_WithUserNotExists(t *testing.T) {
 	service := serviceGenerator()
 
-	users.On("ExistsById", mocks.UserId).Return(false)
+	userService.On("ExistsById", mocks.UserId).Return(false)
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 
 	payment, err := service.Add(request)
 
@@ -122,10 +128,10 @@ func Test_Add_WithUserNotExists(t *testing.T) {
 func Test_Add_WithHouseNotExists(t *testing.T) {
 	service := serviceGenerator()
 
-	users.On("ExistsById", mocks.UserId).Return(true)
-	houses.On("ExistsById", mocks.HouseId).Return(false)
+	userService.On("ExistsById", mocks.UserId).Return(true)
+	houseService.On("ExistsById", mocks.HouseId).Return(false)
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 
 	payment, err := service.Add(request)
 
@@ -133,17 +139,33 @@ func Test_Add_WithHouseNotExists(t *testing.T) {
 	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, payment)
 }
 
+func Test_Add_WithProviderNotExists(t *testing.T) {
+	service := serviceGenerator()
+
+	userService.On("ExistsById", mocks.UserId).Return(true)
+	houseService.On("ExistsById", mocks.HouseId).Return(true)
+	providerService.On("ExistsById", mocks.ProviderId).Return(false)
+
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
+
+	payment, err := service.Add(request)
+
+	assert.Equal(t, errors.New(fmt.Sprintf("provider with id %s in not exists", request.ProviderId)), err)
+	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, payment)
+}
+
 func Test_Add_WithInvalidSpec(t *testing.T) {
 	service := serviceGenerator()
 
-	users.On("ExistsById", mocks.UserId).
+	userService.On("ExistsById", mocks.UserId).
 		Return(true)
-	houses.On("ExistsById", mocks.HouseId).
+	houseService.On("ExistsById", mocks.HouseId).
 		Return(true)
-	schedulers.On("Create", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
+	providerService.On("ExistsById", mocks.ProviderId).Return(true)
+	serviceScheduler.On("Create", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
 		Return(cron.EntryID(0), nil)
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 	request.Spec = ""
 
 	payment, err := service.Add(request)
@@ -155,20 +177,21 @@ func Test_Add_WithInvalidSpec(t *testing.T) {
 func Test_Add_WithErrorDuringScheduling(t *testing.T) {
 	service := serviceGenerator()
 
-	users.On("ExistsById", mocks.UserId).
+	userService.On("ExistsById", mocks.UserId).
 		Return(true)
-	houses.On("ExistsById", mocks.HouseId).
+	houseService.On("ExistsById", mocks.HouseId).
 		Return(true)
+	providerService.On("ExistsById", mocks.ProviderId).Return(true)
 	paymentSchedulerRepository.On("Create", mock.Anything).
 		Return(
 			func(model paymentScheduler.PaymentScheduler) paymentScheduler.PaymentScheduler {
 				return model
 			}, nil)
-	schedulers.On("Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
+	serviceScheduler.On("Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything).
 		Return(cron.EntryID(0), errors.New("error"))
 	paymentSchedulerRepository.On("DeleteById", mock.AnythingOfType("uuid.UUID")).Return()
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 
 	payment, err := service.Add(request)
 
@@ -181,22 +204,23 @@ func Test_Add_WithErrorDuringScheduling(t *testing.T) {
 func Test_Add_WithErrorDuringCreateScheduleEntity(t *testing.T) {
 	service := serviceGenerator()
 
-	users.On("ExistsById", mocks.UserId).
+	userService.On("ExistsById", mocks.UserId).
 		Return(true)
-	houses.On("ExistsById", mocks.HouseId).
+	houseService.On("ExistsById", mocks.HouseId).
 		Return(true)
+	providerService.On("ExistsById", mocks.ProviderId).Return(true)
 	paymentSchedulerRepository.On("Create", mock.Anything).
 		Return(
 			func(model paymentScheduler.PaymentScheduler) paymentScheduler.PaymentScheduler {
 				return model
 			}, errors.New("error"))
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 
 	payment, err := service.Add(request)
 
 	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.AnythingOfType("uuid.UUID"))
-	schedulers.AssertNotCalled(t, "Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything)
+	serviceScheduler.AssertNotCalled(t, "Add", mock.AnythingOfType("uuid.UUID"), "@daily", mock.Anything)
 
 	assert.Equal(t, errors.New("error"), err)
 	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, payment)
@@ -209,7 +233,7 @@ func Test_Remove(t *testing.T) {
 
 	paymentSchedulerRepository.On("ExistsById", id).Return(true)
 	paymentSchedulerRepository.On("DeleteById", id).Return()
-	schedulers.On("Remove", id).Return(nil)
+	serviceScheduler.On("Remove", id).Return(nil)
 
 	err := service.Remove(id)
 
@@ -226,7 +250,7 @@ func Test_Remove_WithErrorFromScheduler(t *testing.T) {
 	paymentSchedulerRepository.On("ExistsById", id).Return(true)
 	paymentSchedulerRepository.On("DeleteById", id).Return()
 
-	schedulers.On("Remove", id).Return(errors.New("error"))
+	serviceScheduler.On("Remove", id).Return(errors.New("error"))
 
 	err := service.Remove(id)
 
@@ -252,7 +276,7 @@ func Test_Remove_WithMissingRecord(t *testing.T) {
 func Test_FindById(t *testing.T) {
 	service := serviceGenerator()
 
-	scheduler := mocks.GeneratePaymentScheduler(mocks.HouseId, mocks.UserId)
+	scheduler := mocks.GeneratePaymentScheduler(mocks.HouseId, mocks.UserId, mocks.ProviderId)
 
 	paymentSchedulerRepository.On("FindById", scheduler.Id).Return(scheduler, nil)
 
@@ -292,13 +316,14 @@ func Test_FindById_WithError(t *testing.T) {
 func Test_FindByHouseId(t *testing.T) {
 	service := serviceGenerator()
 
-	scheduler := mocks.GeneratePaymentScheduler(mocks.HouseId, mocks.UserId)
+	scheduler := mocks.GeneratePaymentScheduler(mocks.HouseId, mocks.UserId, mocks.ProviderId)
+	dto := scheduler.ToDto()
 
-	paymentSchedulerRepository.On("FindByHouseId", scheduler.HouseId).Return([]paymentScheduler.PaymentScheduler{scheduler})
+	paymentSchedulerRepository.On("FindByHouseId", scheduler.HouseId).Return([]paymentScheduler.PaymentSchedulerDto{dto})
 
 	actual := service.FindByHouseId(scheduler.HouseId)
 
-	assert.Equal(t, []paymentScheduler.PaymentSchedulerDto{scheduler.ToDto()}, actual)
+	assert.Equal(t, []paymentScheduler.PaymentSchedulerDto{dto}, actual)
 }
 
 func Test_FindByHouseId_WithNotExistingRecords(t *testing.T) {
@@ -306,7 +331,7 @@ func Test_FindByHouseId_WithNotExistingRecords(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentSchedulerRepository.On("FindByHouseId", id).Return([]paymentScheduler.PaymentScheduler{})
+	paymentSchedulerRepository.On("FindByHouseId", id).Return([]paymentScheduler.PaymentSchedulerDto{})
 
 	actual := paymentService.FindByHouseId(id)
 
@@ -316,23 +341,199 @@ func Test_FindByHouseId_WithNotExistingRecords(t *testing.T) {
 func Test_FindByUserId(t *testing.T) {
 	service := serviceGenerator()
 
-	scheduler := mocks.GeneratePaymentScheduler(mocks.HouseId, mocks.UserId)
+	scheduler := mocks.GeneratePaymentScheduler(mocks.HouseId, mocks.UserId, mocks.ProviderId)
+	dto := scheduler.ToDto()
 
-	paymentSchedulerRepository.On("FindByUserId", scheduler.UserId).Return([]paymentScheduler.PaymentScheduler{scheduler})
+	paymentSchedulerRepository.On("FindByUserId", scheduler.UserId).Return([]paymentScheduler.PaymentSchedulerDto{dto})
 
 	actual := service.FindByUserId(scheduler.UserId)
 
-	assert.Equal(t, []paymentScheduler.PaymentSchedulerDto{scheduler.ToDto()}, actual)
+	assert.Equal(t, []paymentScheduler.PaymentSchedulerDto{dto}, actual)
 }
 
-func Test_FindPaymentByUserId_WithNotExistingRecords(t *testing.T) {
+func Test_FindByUserId_WithNotExistingRecords(t *testing.T) {
 	service := serviceGenerator()
 
 	id := uuid.New()
 
-	paymentSchedulerRepository.On("FindByUserId", id).Return([]paymentScheduler.PaymentScheduler{})
+	paymentSchedulerRepository.On("FindByUserId", id).Return([]paymentScheduler.PaymentSchedulerDto{})
 
 	actual := service.FindByUserId(id)
 
 	assert.Equal(t, []paymentScheduler.PaymentSchedulerDto{}, actual)
+}
+
+func Test_FindByProviderId(t *testing.T) {
+	service := serviceGenerator()
+
+	scheduler := mocks.GeneratePaymentScheduler(mocks.HouseId, mocks.UserId, mocks.ProviderId)
+	dto := scheduler.ToDto()
+
+	paymentSchedulerRepository.On("FindByProviderId", scheduler.ProviderId).Return([]paymentScheduler.PaymentSchedulerDto{dto})
+
+	actual := service.FindByProviderId(scheduler.ProviderId)
+
+	assert.Equal(t, []paymentScheduler.PaymentSchedulerDto{dto}, actual)
+}
+
+func Test_FindByProviderId_WithNotExistingRecords(t *testing.T) {
+	service := serviceGenerator()
+
+	id := uuid.New()
+
+	paymentSchedulerRepository.On("FindByProviderId", id).Return([]paymentScheduler.PaymentSchedulerDto{})
+
+	actual := service.FindByProviderId(id)
+
+	assert.Equal(t, []paymentScheduler.PaymentSchedulerDto{}, actual)
+}
+
+func Test_Update(t *testing.T) {
+	service := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	schedulerId := uuid.New()
+
+	paymentSchedulerRepository.On("ExistsById", schedulerId).Return(true)
+	providerService.On("ExistsById", request.ProviderId).Return(true)
+	paymentSchedulerRepository.On("Update", mock.Anything).Return(nil)
+	serviceScheduler.On("Update", mock.AnythingOfType("uuid.UUID"), string(request.Spec), mock.Anything).
+		Return(cron.EntryID(0), nil)
+
+	entity := request.ToEntity(schedulerId)
+	entity.HouseId = mocks.HouseId
+	entity.UserId = mocks.UserId
+
+	paymentSchedulerRepository.On("FindById", schedulerId).Return(entity, nil)
+
+	err := service.Update(schedulerId, request)
+
+	assert.Nil(t, err)
+	paymentSchedulerRepository.AssertCalled(t, "Update", request.ToEntity(schedulerId))
+	serviceScheduler.AssertCalled(t, "Update", schedulerId, string(request.Spec), mock.Anything)
+
+	paymentService.On("Add", mock.Anything).Return(paymentModel.PaymentDto{}, nil)
+
+	function := serviceScheduler.Calls[0].Arguments.Get(2).(func())
+	function()
+
+	createPaymentRequest := paymentService.Calls[0].Arguments.Get(0).(paymentModel.CreatePaymentRequest)
+
+	assert.Equal(t, paymentModel.CreatePaymentRequest{
+		Name:        "Test Payment Updated",
+		Description: "Test Payment Description Updated",
+		HouseId:     mocks.HouseId,
+		UserId:      mocks.UserId,
+		ProviderId:  request.ProviderId,
+		Date:        createPaymentRequest.Date,
+		Sum:         1000,
+	}, createPaymentRequest)
+
+	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
+}
+
+func Test_Update_WithMissingScheduler(t *testing.T) {
+	service := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	request.Sum = 0
+	schedulerId := uuid.New()
+
+	paymentSchedulerRepository.On("ExistsById", schedulerId).Return(false)
+
+	err := service.Update(schedulerId, request)
+
+	assert.Equal(t, errors.New(fmt.Sprintf("payment schedule with id %s not found", schedulerId)), err)
+
+	paymentSchedulerRepository.AssertNotCalled(t, "Update", mock.Anything)
+	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
+}
+
+func Test_Update_WithInvalidSum(t *testing.T) {
+	service := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	request.Sum = 0
+
+	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
+
+	err := service.Update(uuid.New(), request)
+
+	assert.Equal(t, errors.New("sum should not be zero of negative"), err)
+
+	paymentSchedulerRepository.AssertNotCalled(t, "Update", mock.Anything)
+	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
+}
+
+func Test_Update_WithNotExistsProvider(t *testing.T) {
+	service := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+
+	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
+	providerService.On("ExistsById", request.ProviderId).Return(false)
+
+	err := service.Update(uuid.New(), request)
+
+	assert.Equal(t, errors.New(fmt.Sprintf("provider with id %s not found", request.ProviderId)), err)
+
+	paymentSchedulerRepository.AssertNotCalled(t, "Update", mock.Anything)
+	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
+}
+
+func Test_Update_WithNotSchedulerSpec(t *testing.T) {
+	service := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	request.Spec = ""
+
+	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
+	providerService.On("ExistsById", request.ProviderId).Return(true)
+
+	err := service.Update(uuid.New(), request)
+
+	assert.Equal(t, errors.New("scheduler configuration not provided"), err)
+
+	paymentSchedulerRepository.AssertNotCalled(t, "Update", mock.Anything)
+	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
+}
+
+func Test_Update_WithErrorFromUpdate(t *testing.T) {
+	service := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+
+	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
+	providerService.On("ExistsById", request.ProviderId).Return(true)
+	paymentSchedulerRepository.On("Update", mock.Anything).Return(errors.New("error"))
+
+	err := service.Update(uuid.New(), request)
+
+	assert.Equal(t, errors.New("error"), err)
+
+	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
+}
+
+func Test_Update_WithErrorFromScheduler(t *testing.T) {
+	service := serviceGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	providerId := uuid.New()
+
+	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
+	providerService.On("ExistsById", request.ProviderId).Return(true)
+	paymentSchedulerRepository.On("Update", mock.Anything).Return(nil)
+	serviceScheduler.On("Update", mock.AnythingOfType("uuid.UUID"), string(request.Spec), mock.Anything).
+		Return(cron.EntryID(0), errors.New("error"))
+	paymentSchedulerRepository.On("DeleteById", providerId).Return()
+
+	entity := request.ToEntity(providerId)
+	entity.HouseId = mocks.HouseId
+	entity.UserId = mocks.UserId
+
+	paymentSchedulerRepository.On("FindById", providerId).Return(entity, nil)
+
+	err := service.Update(providerId, request)
+
+	assert.Equal(t, errors.New("error"), err)
 }

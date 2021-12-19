@@ -5,23 +5,31 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
+	"reflect"
 )
 
+var PaymentSchedulerRepositoryType = reflect.TypeOf(PaymentSchedulerRepositoryObject{})
+var entity = model.PaymentScheduler{}
+
 type PaymentSchedulerRepositoryObject struct {
-	database db.DatabaseService
+	database db.ModeledDatabase
 }
 
 func NewPaymentSchedulerRepository(database db.DatabaseService) PaymentSchedulerRepository {
-	return &PaymentSchedulerRepositoryObject{database}
+	return &PaymentSchedulerRepositoryObject{
+		db.ModeledDatabase{
+			DatabaseService: database,
+			Model:           entity,
+		},
+	}
 }
 
-func (p *PaymentSchedulerRepositoryObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (p *PaymentSchedulerRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewPaymentSchedulerRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
 func (p *PaymentSchedulerRepositoryObject) GetEntity() interface{} {
-	return model.PaymentScheduler{}
+	return entity
 }
 
 type PaymentSchedulerRepository interface {
@@ -29,8 +37,10 @@ type PaymentSchedulerRepository interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID)
 	FindById(id uuid.UUID) (model.PaymentScheduler, error)
-	FindByHouseId(houseId uuid.UUID) []model.PaymentScheduler
-	FindByUserId(userId uuid.UUID) []model.PaymentScheduler
+	FindByHouseId(houseId uuid.UUID) []model.PaymentSchedulerDto
+	FindByUserId(userId uuid.UUID) []model.PaymentSchedulerDto
+	FindByProviderId(providerId uuid.UUID) []model.PaymentSchedulerDto
+	Update(entity model.PaymentScheduler) error
 }
 
 func (p *PaymentSchedulerRepositoryObject) Create(scheduler model.PaymentScheduler) (model.PaymentScheduler, error) {
@@ -38,27 +48,34 @@ func (p *PaymentSchedulerRepositoryObject) Create(scheduler model.PaymentSchedul
 }
 
 func (p *PaymentSchedulerRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return p.database.ExistsById(model.PaymentScheduler{}, id)
+	return p.database.Exists(id)
 }
 
 func (p *PaymentSchedulerRepositoryObject) DeleteById(id uuid.UUID) {
-	p.database.D().Delete(model.PaymentScheduler{}, id)
+	_ = p.database.Delete(id)
 }
 
 func (p *PaymentSchedulerRepositoryObject) FindById(id uuid.UUID) (response model.PaymentScheduler, err error) {
 	return response, p.database.FindById(&response, id)
 }
 
-func (p *PaymentSchedulerRepositoryObject) FindByHouseId(houseId uuid.UUID) (response []model.PaymentScheduler) {
-	if tx := p.database.D().Find(&response, "house_id = ?", houseId); tx.Error != nil {
-		log.Error().Err(tx.Error).Msg("")
-	}
+func (p *PaymentSchedulerRepositoryObject) FindByHouseId(houseId uuid.UUID) (response []model.PaymentSchedulerDto) {
+	return p.findBy("house_id = ?", houseId)
+}
+
+func (p *PaymentSchedulerRepositoryObject) FindByUserId(userId uuid.UUID) (response []model.PaymentSchedulerDto) {
+	return p.findBy("user_id = ?", userId)
+}
+
+func (p *PaymentSchedulerRepositoryObject) FindByProviderId(providerId uuid.UUID) (response []model.PaymentSchedulerDto) {
+	return p.findBy("provider_id = ?", providerId)
+}
+
+func (p *PaymentSchedulerRepositoryObject) findBy(query interface{}, conditions ...interface{}) (response []model.PaymentSchedulerDto) {
+	_ = p.database.FindBy(&response, query, conditions...)
 	return response
 }
 
-func (p *PaymentSchedulerRepositoryObject) FindByUserId(userId uuid.UUID) (response []model.PaymentScheduler) {
-	if tx := p.database.D().Find(&response, "user_id = ?", userId); tx.Error != nil {
-		log.Error().Err(tx.Error).Msg("")
-	}
-	return response
+func (p *PaymentSchedulerRepositoryObject) Update(entity model.PaymentScheduler) error {
+	return p.database.Update(entity.Id, entity, "HouseId", "House", "UserId", "User", "Provider")
 }

@@ -24,7 +24,7 @@ func NewIncomeService(houseService houseService.HouseService, repository reposit
 	}
 }
 
-func (i *IncomeServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (i *IncomeServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewIncomeService(
 		factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
 		factory.FindRequiredByObject(repository.IncomeRepositoryObject{}).(repository.IncomeRepository),

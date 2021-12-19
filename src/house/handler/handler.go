@@ -17,7 +17,7 @@ func NewHouseHandler(houseService service.HouseService) HouseHandler {
 	return &HouseHandlerObject{houseService}
 }
 
-func (h *HouseHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (h *HouseHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewHouseHandler(factory.FindRequiredByObject(service.HouseServiceObject{}).(service.HouseService))
 }
 
@@ -40,7 +40,7 @@ func (h *HouseHandlerObject) Add() http.HandlerFunc {
 		requestEntity := model.CreateHouseRequest{}
 
 		if err := rest.PerformRequest(&requestEntity, writer, request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			response, err := h.houseService.Add(requestEntity)
 
@@ -52,7 +52,7 @@ func (h *HouseHandlerObject) Add() http.HandlerFunc {
 func (h *HouseHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			if house, err := h.houseService.FindById(id); err != nil {
 				rest.HandleErrorResponseWithError(writer, http.StatusNotFound, err)
@@ -66,7 +66,7 @@ func (h *HouseHandlerObject) FindById() http.HandlerFunc {
 func (h *HouseHandlerObject) FindByUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			responses := h.houseService.FindByUserId(id)
 

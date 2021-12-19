@@ -35,6 +35,20 @@ func (_m *PaymentRepository) Create(entity model.Payment) (model.Payment, error)
 	return r0, r1
 }
 
+// Delete provides a mock function with given fields: id
+func (_m *PaymentRepository) Delete(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DeleteById provides a mock function with given fields: id
 func (_m *PaymentRepository) DeleteById(id uuid.UUID) error {
 	ret := _m.Called(id)
@@ -64,15 +78,15 @@ func (_m *PaymentRepository) ExistsById(id uuid.UUID) bool {
 }
 
 // FindByHouseId provides a mock function with given fields: houseId
-func (_m *PaymentRepository) FindByHouseId(houseId uuid.UUID) []model.Payment {
+func (_m *PaymentRepository) FindByHouseId(houseId uuid.UUID) []model.PaymentDto {
 	ret := _m.Called(houseId)
 
-	var r0 []model.Payment
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.Payment); ok {
+	var r0 []model.PaymentDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
 		r0 = rf(houseId)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.Payment)
+			r0 = ret.Get(0).([]model.PaymentDto)
 		}
 	}
 
@@ -100,16 +114,32 @@ func (_m *PaymentRepository) FindById(id uuid.UUID) (model.Payment, error) {
 	return r0, r1
 }
 
+// FindByProviderId provides a mock function with given fields: providerId
+func (_m *PaymentRepository) FindByProviderId(providerId uuid.UUID) []model.PaymentDto {
+	ret := _m.Called(providerId)
+
+	var r0 []model.PaymentDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
+		r0 = rf(providerId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.PaymentDto)
+		}
+	}
+
+	return r0
+}
+
 // FindByUserId provides a mock function with given fields: userId
-func (_m *PaymentRepository) FindByUserId(userId uuid.UUID) []model.Payment {
+func (_m *PaymentRepository) FindByUserId(userId uuid.UUID) []model.PaymentDto {
 	ret := _m.Called(userId)
 
-	var r0 []model.Payment
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.Payment); ok {
+	var r0 []model.PaymentDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
 		r0 = rf(userId)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.Payment)
+			r0 = ret.Get(0).([]model.PaymentDto)
 		}
 	}
 

@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/payment/scheduler/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -56,15 +55,15 @@ func (_m *PaymentSchedulerRepository) ExistsById(id uuid.UUID) bool {
 }
 
 // FindByHouseId provides a mock function with given fields: houseId
-func (_m *PaymentSchedulerRepository) FindByHouseId(houseId uuid.UUID) []model.PaymentScheduler {
+func (_m *PaymentSchedulerRepository) FindByHouseId(houseId uuid.UUID) []model.PaymentSchedulerDto {
 	ret := _m.Called(houseId)
 
-	var r0 []model.PaymentScheduler
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentScheduler); ok {
+	var r0 []model.PaymentSchedulerDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentSchedulerDto); ok {
 		r0 = rf(houseId)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.PaymentScheduler)
+			r0 = ret.Get(0).([]model.PaymentSchedulerDto)
 		}
 	}
 
@@ -92,17 +91,47 @@ func (_m *PaymentSchedulerRepository) FindById(id uuid.UUID) (model.PaymentSched
 	return r0, r1
 }
 
+// FindByProviderId provides a mock function with given fields: providerId
+func (_m *PaymentSchedulerRepository) FindByProviderId(providerId uuid.UUID) []model.PaymentSchedulerDto {
+	ret := _m.Called(providerId)
+
+	var r0 []model.PaymentSchedulerDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentSchedulerDto); ok {
+		r0 = rf(providerId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.PaymentSchedulerDto)
+		}
+	}
+
+	return r0
+}
+
 // FindByUserId provides a mock function with given fields: userId
-func (_m *PaymentSchedulerRepository) FindByUserId(userId uuid.UUID) []model.PaymentScheduler {
+func (_m *PaymentSchedulerRepository) FindByUserId(userId uuid.UUID) []model.PaymentSchedulerDto {
 	ret := _m.Called(userId)
 
-	var r0 []model.PaymentScheduler
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentScheduler); ok {
+	var r0 []model.PaymentSchedulerDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentSchedulerDto); ok {
 		r0 = rf(userId)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.PaymentScheduler)
+			r0 = ret.Get(0).([]model.PaymentSchedulerDto)
 		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields: entity
+func (_m *PaymentSchedulerRepository) Update(entity model.PaymentScheduler) error {
+	ret := _m.Called(entity)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(model.PaymentScheduler) error); ok {
+		r0 = rf(entity)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

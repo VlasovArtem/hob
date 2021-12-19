@@ -2,11 +2,14 @@ package repository
 
 import (
 	"fmt"
+	dependencyMocks "github.com/VlasovArtem/hob/src/common/dependency/mocks"
 	"github.com/VlasovArtem/hob/src/db"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/payment/mocks"
 	"github.com/VlasovArtem/hob/src/payment/model"
+	providerMocks "github.com/VlasovArtem/hob/src/provider/mocks"
+	providerModel "github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -17,11 +20,30 @@ import (
 	"testing"
 )
 
+func Test_Initialize(t *testing.T) {
+	provider := new(dependencyMocks.DependenciesProvider)
+	object := db.DatabaseObject{}
+
+	provider.On("FindRequiredByObject", object).Return(&object)
+
+	repository := PaymentRepositoryObject{}
+
+	newObject := repository.Initialize(provider)
+
+	assert.Equal(t, db.ModeledDatabase{DatabaseService: &object, Model: model.Payment{}}, newObject.(*PaymentRepositoryObject).database)
+}
+
+func Test_GetEntity(t *testing.T) {
+	object := PaymentRepositoryObject{}
+	assert.Equal(t, model.Payment{}, object.GetEntity())
+}
+
 type PaymentRepositoryTestSuite struct {
 	database.DBTestSuite
-	repository   PaymentRepository
-	createdUser  userModel.User
-	createdHouse houseModel.House
+	repository      PaymentRepository
+	createdUser     userModel.User
+	createdHouse    houseModel.House
+	createdProvider providerModel.Provider
 }
 
 func (p *PaymentRepositoryTestSuite) SetupSuite() {
@@ -32,17 +54,16 @@ func (p *PaymentRepositoryTestSuite) SetupSuite() {
 			p.repository = NewPaymentRepository(service)
 		},
 	).
-		AddMigrators(userModel.User{}, houseModel.House{}, model.Payment{})
+		AddMigrators(userModel.User{}, houseModel.House{}, providerModel.Provider{}, model.Payment{})
 
 	p.createdUser = userMocks.GenerateUser()
-	p.CreateEntity(&p.createdUser)
+	p.CreateConstantEntity(&p.createdUser)
 
 	p.createdHouse = houseMocks.GenerateHouse(p.createdUser.Id)
-	p.CreateEntity(&p.createdHouse)
-}
+	p.CreateConstantEntity(&p.createdHouse)
 
-func (p *PaymentRepositoryTestSuite) TearDownSuite() {
-	p.TearDown()
+	p.createdProvider = providerMocks.GenerateProvider(p.createdUser.Id)
+	p.CreateConstantEntity(&p.createdProvider)
 }
 
 func TestPaymentRepositoryTestSuite(t *testing.T) {
@@ -50,7 +71,7 @@ func TestPaymentRepositoryTestSuite(t *testing.T) {
 }
 
 func (p *PaymentRepositoryTestSuite) Test_Create() {
-	payment := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id)
+	payment := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
 
 	actual, err := p.repository.Create(payment)
 
@@ -61,7 +82,7 @@ func (p *PaymentRepositoryTestSuite) Test_Create() {
 }
 
 func (p *PaymentRepositoryTestSuite) Test_Creat_WithMissingUser() {
-	payment := mocks.GeneratePayment(p.createdHouse.Id, uuid.New())
+	payment := mocks.GeneratePayment(p.createdHouse.Id, uuid.New(), p.createdProvider.Id)
 
 	actual, err := p.repository.Create(payment)
 
@@ -70,7 +91,16 @@ func (p *PaymentRepositoryTestSuite) Test_Creat_WithMissingUser() {
 }
 
 func (p *PaymentRepositoryTestSuite) Test_Creat_WithMissingHouse() {
-	payment := mocks.GeneratePayment(uuid.New(), p.createdUser.Id)
+	payment := mocks.GeneratePayment(uuid.New(), p.createdUser.Id, p.createdProvider.Id)
+
+	actual, err := p.repository.Create(payment)
+
+	assert.NotNil(p.T(), err)
+	assert.Equal(p.T(), payment, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_Creat_WithMissingProvider() {
+	payment := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, uuid.New())
 
 	actual, err := p.repository.Create(payment)
 
@@ -99,21 +129,13 @@ func (p *PaymentRepositoryTestSuite) Test_FindByUserId() {
 
 	actual := p.repository.FindByUserId(payment.UserId)
 
-	var actualResponse model.Payment
-
-	for _, response := range actual {
-		if response.Id == payment.Id {
-			actualResponse = response
-			break
-		}
-	}
-	assert.Equal(p.T(), payment, actualResponse)
+	assert.Equal(p.T(), []model.PaymentDto{payment.ToDto()}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindByUserId_WithMissingUserId() {
 	actual := p.repository.FindByUserId(uuid.New())
 
-	assert.Equal(p.T(), []model.Payment{}, actual)
+	assert.Equal(p.T(), []model.PaymentDto{}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindByHouseId() {
@@ -121,21 +143,27 @@ func (p *PaymentRepositoryTestSuite) Test_FindByHouseId() {
 
 	actual := p.repository.FindByHouseId(payment.HouseId)
 
-	var actualResponse model.Payment
-
-	for _, response := range actual {
-		if response.Id == payment.Id {
-			actualResponse = response
-			break
-		}
-	}
-	assert.Equal(p.T(), payment, actualResponse)
+	assert.Equal(p.T(), []model.PaymentDto{payment.ToDto()}, actual)
 }
 
-func (p *PaymentRepositoryTestSuite) Test_FindByHouseId_WithMissingUserId() {
+func (p *PaymentRepositoryTestSuite) Test_FindByHouseId_WithMissingId() {
 	actual := p.repository.FindByHouseId(uuid.New())
 
-	assert.Equal(p.T(), []model.Payment{}, actual)
+	assert.Equal(p.T(), []model.PaymentDto{}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByProviderId() {
+	payment := p.createPayment()
+
+	actual := p.repository.FindByProviderId(payment.ProviderId)
+
+	assert.Equal(p.T(), []model.PaymentDto{payment.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByProviderId_WithMissingId() {
+	actual := p.repository.FindByProviderId(uuid.New())
+
+	assert.Equal(p.T(), []model.PaymentDto{}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_ExistsById() {
@@ -159,6 +187,9 @@ func (p *PaymentRepositoryTestSuite) Test_DeleteById_WithMissingId() {
 }
 
 func (p *PaymentRepositoryTestSuite) Test_Update() {
+	p.createdProvider = providerMocks.GenerateProvider(p.createdUser.Id)
+	p.CreateEntity(&p.createdProvider)
+
 	payment := p.createPayment()
 
 	updatedIncome := model.Payment{
@@ -168,9 +199,8 @@ func (p *PaymentRepositoryTestSuite) Test_Update() {
 		Date:        mocks.Date,
 		Sum:         payment.Sum + 100.0,
 		HouseId:     payment.HouseId,
-		House:       payment.House,
-		User:        payment.User,
 		UserId:      payment.UserId,
+		ProviderId:  payment.ProviderId,
 	}
 
 	err := p.repository.Update(updatedIncome)
@@ -189,6 +219,8 @@ func (p *PaymentRepositoryTestSuite) Test_Update() {
 		House:       payment.House,
 		User:        payment.User,
 		UserId:      payment.UserId,
+		ProviderId:  payment.ProviderId,
+		Provider:    payment.Provider,
 	}, response)
 }
 
@@ -196,8 +228,18 @@ func (p *PaymentRepositoryTestSuite) Test_Update_WithMissingId() {
 	assert.Nil(p.T(), p.repository.Update(model.Payment{Id: uuid.New()}))
 }
 
+func (p *PaymentRepositoryTestSuite) Test_Delete() {
+	payment := p.createPayment()
+
+	assert.Nil(p.T(), p.repository.Delete(payment.Id))
+}
+
+func (p *PaymentRepositoryTestSuite) Test_Delete_WithMissingEntity() {
+	assert.Nil(p.T(), p.repository.Delete(uuid.New()))
+}
+
 func (p *PaymentRepositoryTestSuite) createPayment() model.Payment {
-	payment := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id)
+	payment := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
 
 	p.CreateEntity(payment)
 

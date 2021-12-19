@@ -17,7 +17,7 @@ func NewIncomeHandler(incomeService service.IncomeService) IncomeHandler {
 	return &IncomeHandlerObject{incomeService}
 }
 
-func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewIncomeHandler(factory.FindRequiredByObject(service.IncomeServiceObject{}).(service.IncomeService))
 }
 
@@ -52,7 +52,7 @@ func (i *IncomeHandlerObject) Add() http.HandlerFunc {
 func (i *IncomeHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			meterResponse, err := i.incomeService.FindById(id)
 
@@ -64,7 +64,7 @@ func (i *IncomeHandlerObject) FindById() http.HandlerFunc {
 func (i *IncomeHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			rest.PerformResponse(writer, i.incomeService.FindByHouseId(id), err)
 		}

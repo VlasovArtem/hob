@@ -15,14 +15,14 @@ type UserService struct {
 }
 
 // Add provides a mock function with given fields: request
-func (_m *UserService) Add(request model.CreateUserRequest) (model.UserResponse, error) {
+func (_m *UserService) Add(request model.CreateUserRequest) (model.UserDto, error) {
 	ret := _m.Called(request)
 
-	var r0 model.UserResponse
-	if rf, ok := ret.Get(0).(func(model.CreateUserRequest) model.UserResponse); ok {
+	var r0 model.UserDto
+	if rf, ok := ret.Get(0).(func(model.CreateUserRequest) model.UserDto); ok {
 		r0 = rf(request)
 	} else {
-		r0 = ret.Get(0).(model.UserResponse)
+		r0 = ret.Get(0).(model.UserDto)
 	}
 
 	var r1 error
@@ -33,6 +33,20 @@ func (_m *UserService) Add(request model.CreateUserRequest) (model.UserResponse,
 	}
 
 	return r0, r1
+}
+
+// Delete provides a mock function with given fields: id
+func (_m *UserService) Delete(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // ExistsById provides a mock function with given fields: id
@@ -50,14 +64,14 @@ func (_m *UserService) ExistsById(id uuid.UUID) bool {
 }
 
 // FindById provides a mock function with given fields: id
-func (_m *UserService) FindById(id uuid.UUID) (model.UserResponse, error) {
+func (_m *UserService) FindById(id uuid.UUID) (model.UserDto, error) {
 	ret := _m.Called(id)
 
-	var r0 model.UserResponse
-	if rf, ok := ret.Get(0).(func(uuid.UUID) model.UserResponse); ok {
+	var r0 model.UserDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) model.UserDto); ok {
 		r0 = rf(id)
 	} else {
-		r0 = ret.Get(0).(model.UserResponse)
+		r0 = ret.Get(0).(model.UserDto)
 	}
 
 	var r1 error
@@ -70,15 +84,29 @@ func (_m *UserService) FindById(id uuid.UUID) (model.UserResponse, error) {
 	return r0, r1
 }
 
+// Update provides a mock function with given fields: id, request
+func (_m *UserService) Update(id uuid.UUID, request model.UpdateUserRequest) error {
+	ret := _m.Called(id, request)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateUserRequest) error); ok {
+		r0 = rf(id, request)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // VerifyUser provides a mock function with given fields: email, password
-func (_m *UserService) VerifyUser(email string, password string) (model.UserResponse, error) {
+func (_m *UserService) VerifyUser(email string, password string) (model.UserDto, error) {
 	ret := _m.Called(email, password)
 
-	var r0 model.UserResponse
-	if rf, ok := ret.Get(0).(func(string, string) model.UserResponse); ok {
+	var r0 model.UserDto
+	if rf, ok := ret.Get(0).(func(string, string) model.UserDto); ok {
 		r0 = rf(email, password)
 	} else {
-		r0 = ret.Get(0).(model.UserResponse)
+		r0 = ret.Get(0).(model.UserDto)
 	}
 
 	var r1 error

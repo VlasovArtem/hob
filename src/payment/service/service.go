@@ -5,44 +5,56 @@ import (
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	hs "github.com/VlasovArtem/hob/src/house/service"
+	houses "github.com/VlasovArtem/hob/src/house/service"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/repository"
-	us "github.com/VlasovArtem/hob/src/user/service"
+	providers "github.com/VlasovArtem/hob/src/provider/service"
+	users "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
+	"reflect"
 	"time"
 )
 
+var PaymentServiceType = reflect.TypeOf(PaymentServiceObject{})
+
 type PaymentServiceObject struct {
-	userService       us.UserService
-	houseService      hs.HouseService
+	userService       users.UserService
+	houseService      houses.HouseService
+	providerService   providers.ProviderService
 	paymentRepository repository.PaymentRepository
 }
 
-func NewPaymentService(userService us.UserService, houseService hs.HouseService, paymentRepository repository.PaymentRepository) PaymentService {
+func NewPaymentService(
+	userService users.UserService,
+	houseService houses.HouseService,
+	providerService providers.ProviderService,
+	paymentRepository repository.PaymentRepository) PaymentService {
 	return &PaymentServiceObject{
 		userService:       userService,
 		houseService:      houseService,
+		providerService:   providerService,
 		paymentRepository: paymentRepository,
 	}
 }
 
-func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewPaymentService(
-		factory.FindRequiredByObject(us.UserServiceObject{}).(us.UserService),
-		factory.FindRequiredByObject(hs.HouseServiceObject{}).(hs.HouseService),
-		factory.FindRequiredByObject(repository.PaymentRepositoryObject{}).(repository.PaymentRepository),
+		factory.FindRequiredByType(users.UserServiceType).(users.UserService),
+		factory.FindRequiredByType(houses.HouseServiceType).(houses.HouseService),
+		factory.FindRequiredByType(providers.ProviderServiceType).(providers.ProviderService),
+		factory.FindRequiredByType(repository.PaymentRepositoryType).(repository.PaymentRepository),
 	)
 }
 
 type PaymentService interface {
 	Add(request model.CreatePaymentRequest) (model.PaymentDto, error)
 	FindById(id uuid.UUID) (model.PaymentDto, error)
-	FindByHouseId(houseId uuid.UUID) []model.PaymentDto
-	FindByUserId(userId uuid.UUID) []model.PaymentDto
+	FindByHouseId(id uuid.UUID) []model.PaymentDto
+	FindByUserId(id uuid.UUID) []model.PaymentDto
+	FindByProviderId(id uuid.UUID) []model.PaymentDto
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
-	Update(request model.UpdatePaymentRequest) error
+	Update(id uuid.UUID, request model.UpdatePaymentRequest) error
 }
 
 func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentDto, err error) {
@@ -51,8 +63,9 @@ func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response
 	}
 	if !p.houseService.ExistsById(request.HouseId) {
 		return response, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId))
-	} else if err != nil {
-		return response, err
+	}
+	if !p.providerService.ExistsById(request.ProviderId) {
+		return response, errors.New(fmt.Sprintf("provider with id %s in not exists", request.ProviderId))
 	}
 
 	payment, err := p.paymentRepository.Create(request.CreateToEntity())
@@ -69,11 +82,15 @@ func (p *PaymentServiceObject) FindById(id uuid.UUID) (model.PaymentDto, error) 
 }
 
 func (p *PaymentServiceObject) FindByHouseId(houseId uuid.UUID) []model.PaymentDto {
-	return convert(p.paymentRepository.FindByHouseId(houseId))
+	return p.paymentRepository.FindByHouseId(houseId)
 }
 
 func (p *PaymentServiceObject) FindByUserId(userId uuid.UUID) []model.PaymentDto {
-	return convert(p.paymentRepository.FindByUserId(userId))
+	return p.paymentRepository.FindByUserId(userId)
+}
+
+func (p *PaymentServiceObject) FindByProviderId(id uuid.UUID) []model.PaymentDto {
+	return p.paymentRepository.FindByProviderId(id)
 }
 
 func (p *PaymentServiceObject) ExistsById(id uuid.UUID) bool {
@@ -87,26 +104,15 @@ func (p *PaymentServiceObject) DeleteById(id uuid.UUID) error {
 	return p.paymentRepository.DeleteById(id)
 }
 
-func (p *PaymentServiceObject) Update(request model.UpdatePaymentRequest) error {
-	if !p.ExistsById(request.Id) {
-		return errors.New(fmt.Sprintf("payment with id %s not found", request.Id))
+func (p *PaymentServiceObject) Update(id uuid.UUID, request model.UpdatePaymentRequest) error {
+	if !p.ExistsById(id) {
+		return errors.New(fmt.Sprintf("payment with id %s not found", id))
+	}
+	if !p.providerService.ExistsById(request.ProviderId) {
+		return errors.New(fmt.Sprintf("provider with id %s not found", request.ProviderId))
 	}
 	if request.Date.After(time.Now()) {
 		return errors.New("date should not be after current date")
 	}
-	return p.paymentRepository.Update(request.UpdateToEntity())
-}
-
-func convert(payments []model.Payment) []model.PaymentDto {
-	if len(payments) == 0 {
-		return make([]model.PaymentDto, 0)
-	}
-
-	var paymentsResponse []model.PaymentDto
-
-	for _, payment := range payments {
-		paymentsResponse = append(paymentsResponse, payment.ToDto())
-	}
-
-	return paymentsResponse
+	return p.paymentRepository.Update(request.UpdateToEntity(id))
 }

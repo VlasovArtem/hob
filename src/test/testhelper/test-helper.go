@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	helperModel "github.com/VlasovArtem/hob/src/common/errors"
+	helperModel "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/country/model"
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	"github.com/google/uuid"

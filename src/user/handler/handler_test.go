@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	helperModel "github.com/VlasovArtem/hob/src/common/errors"
+	helperModel "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/VlasovArtem/hob/src/user/model"
@@ -42,15 +42,15 @@ func Test_AddUser(t *testing.T) {
 
 	content := testRequest.Verify(t, http.StatusCreated)
 
-	actualResponse := model.UserResponse{}
+	actualResponse := model.UserDto{}
 
 	json.Unmarshal(content, &actualResponse)
 
-	assert.Equal(t, model.UserResponse{
+	assert.Equal(t, model.UserDto{
 		Id:        actualResponse.Id,
 		FirstName: "First Name",
 		LastName:  "Last Name",
-		Email:     "mail@mai.com",
+		Email:     "mail@mail.com",
 	}, actualResponse)
 }
 
@@ -93,7 +93,7 @@ func Test_Add_WithErrorFromService(t *testing.T) {
 
 	err := errors.New("error")
 
-	userService.On("Add", request).Return(model.UserResponse{}, err)
+	userService.On("Add", request).Return(model.UserDto{}, err)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
@@ -110,7 +110,7 @@ func Test_FindById(t *testing.T) {
 	handler := generateHandler()
 
 	request := mocks.GenerateCreateUserRequest()
-	expected := request.ToEntity().ToResponse()
+	expected := request.ToEntity().ToDto()
 
 	userService.On("FindById", expected.Id).Return(expected, nil)
 
@@ -122,7 +122,7 @@ func Test_FindById(t *testing.T) {
 
 	content := testRequest.Verify(t, http.StatusOK)
 
-	actual := model.UserResponse{}
+	actual := model.UserDto{}
 
 	err := json.Unmarshal(content, &actual)
 
@@ -134,7 +134,7 @@ func Test_FindById(t *testing.T) {
 func Test_FindById_WithErrorFromService(t *testing.T) {
 	handler := generateHandler()
 
-	userService.On("FindById", mock.Anything).Return(model.UserResponse{}, errors.New("test"))
+	userService.On("FindById", mock.Anything).Return(model.UserDto{}, errors.New("test"))
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
@@ -142,7 +142,7 @@ func Test_FindById_WithErrorFromService(t *testing.T) {
 		WithHandler(handler.FindById()).
 		WithVar("id", uuid.New().String())
 
-	content := testRequest.Verify(t, http.StatusNotFound)
+	content := testRequest.Verify(t, http.StatusBadRequest)
 
 	assert.Equal(t, "test\n", string(content))
 }
@@ -172,4 +172,109 @@ func Test_FindById_WithInvalidUUID(t *testing.T) {
 	content := testRequest.Verify(t, http.StatusBadRequest)
 
 	assert.Equal(t, "invalid UUID length: 2\n", string(content))
+}
+
+func Test_Update(t *testing.T) {
+	handler := generateHandler()
+
+	request := mocks.GenerateUpdateUserRequest()
+	id := uuid.New()
+
+	userValidator.On("ValidateUpdateRequest", request).Return(nil)
+	userService.On("Update", id, request).Return(nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/user/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithBody(request).
+		WithVar("id", id.String())
+
+	testRequest.Verify(t, http.StatusOK)
+}
+
+func Test_Update_WithInvalidRequest(t *testing.T) {
+	handler := generateHandler()
+
+	id := uuid.New()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/user/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithVar("id", id.String())
+
+	testRequest.Verify(t, http.StatusBadRequest)
+
+	userService.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+}
+
+func Test_Update_WithInvalidUUID(t *testing.T) {
+	handler := generateHandler()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/user/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithVar("id", "id")
+
+	testRequest.Verify(t, http.StatusBadRequest)
+
+	userService.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+}
+
+func Test_Update_WithMissingIdParameter(t *testing.T) {
+	handler := generateHandler()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/user/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update())
+
+	testRequest.Verify(t, http.StatusBadRequest)
+
+	userService.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+}
+
+func Test_Update_WithMissingDetails(t *testing.T) {
+	handler := generateHandler()
+
+	request := mocks.GenerateUpdateUserRequest()
+
+	errorResponse := helperModel.NewWithDetails("error", "details")
+	userValidator.On("ValidateUpdateRequest", request).Return(errorResponse)
+	id := uuid.New()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/user/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithBody(request).
+		WithVar("id", id.String())
+
+	response := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, *errorResponse.(*helperModel.ErrorResponseObject), testhelper.ReadErrorResponse(response))
+	userService.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+}
+
+func Test_Update_WithErrorFromService(t *testing.T) {
+	handler := generateHandler()
+
+	request := mocks.GenerateUpdateUserRequest()
+	id := uuid.New()
+
+	userValidator.On("ValidateUpdateRequest", request).Return(nil)
+	userService.On("Update", id, request).Return(errors.New("error"))
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/user/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithBody(request).
+		WithVar("id", id.String())
+
+	response := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, helperModel.ErrorResponseObject{Error: "error"}, testhelper.ReadErrorResponse(response))
 }

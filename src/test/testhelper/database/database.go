@@ -33,10 +33,11 @@ func RecreateTable(db *gorm.DB, model interface{}) {
 
 type DBTestSuite struct {
 	suite.Suite
-	Database        database.DatabaseService
-	migrators       []interface{}
-	beforeTest      []func(service database.DatabaseService)
-	createdEntities []interface{}
+	Database         database.DatabaseService
+	migrators        []interface{}
+	beforeTest       []func(service database.DatabaseService)
+	createdEntities  []interface{}
+	constantEntities []interface{}
 }
 
 func (db *DBTestSuite) InitDBTestSuite() {
@@ -66,13 +67,15 @@ func (db *DBTestSuite) CreateEntity(entity interface{}) {
 		log.Fatal().Err(err).Msg("Cannot create entity")
 	}
 
-	db.createdEntities = append(db.createdEntities, entity)
+	db.createdEntities = append(db.createdEntities, reflect.Indirect(reflect.ValueOf(entity)).Interface())
 }
 
-func (db *DBTestSuite) TearDown() {
-	for i := len(db.createdEntities) - 1; i >= 0; i-- {
-		db.Database.D().Delete(db.createdEntities[i])
+func (db *DBTestSuite) CreateConstantEntity(entity interface{}) {
+	if err := db.Database.Create(entity); err != nil {
+		log.Fatal().Err(err).Msg("Cannot create entity")
 	}
+
+	db.constantEntities = append(db.constantEntities, reflect.Indirect(reflect.ValueOf(entity)).Interface())
 }
 
 func (db *DBTestSuite) AddBeforeTest(beforeTest func(service database.DatabaseService)) *DBTestSuite {
@@ -82,9 +85,17 @@ func (db *DBTestSuite) AddBeforeTest(beforeTest func(service database.DatabaseSe
 }
 
 func (db *DBTestSuite) BeforeTest(suiteName, testName string) {
-	for _, beforeTestFunction := range db.beforeTest {
-		beforeTestFunction(db.Database)
+	for _, function := range db.beforeTest {
+		function(db.Database)
 	}
+}
+
+func (db *DBTestSuite) TearDownSuite() {
+	db.deleteConstant()
+}
+
+func (db *DBTestSuite) TearDownTest() {
+	db.deleteCreated()
 }
 
 func (db *DBTestSuite) Delete(entity interface{}) {
@@ -97,5 +108,17 @@ func (db *DBTestSuite) Delete(entity interface{}) {
 		if err = db.Database.DeleteById(entity, parse); err != nil {
 			log.Fatal().Err(err)
 		}
+	}
+}
+
+func (db *DBTestSuite) deleteCreated() {
+	for i := len(db.createdEntities) - 1; i >= 0; i-- {
+		db.Delete(db.createdEntities[i])
+	}
+}
+
+func (db *DBTestSuite) deleteConstant() {
+	for i := len(db.constantEntities) - 1; i >= 0; i-- {
+		db.Delete(db.constantEntities[i])
 	}
 }

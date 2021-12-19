@@ -1,7 +1,7 @@
 package validator
 
 import (
-	"github.com/VlasovArtem/hob/src/common/errors"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -21,7 +21,7 @@ func Test_WithCreateUserRequest_WithEmptyEmail(t *testing.T) {
 	createUserRequest := mocks.GenerateCreateUserRequest()
 	createUserRequest.Email = ""
 
-	result := validator.ValidateCreateRequest(createUserRequest).(*errors.ErrorResponseObject)
+	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrorResponseObject)
 
 	assert.NotNil(t, result)
 	assert.Equal(t, "Create User Request Validation Error", result.Error)
@@ -34,7 +34,7 @@ func Test_WithCreateUserRequest_WithEmptyPassword(t *testing.T) {
 	createUserRequest := mocks.GenerateCreateUserRequest()
 	createUserRequest.Password = ""
 
-	result := validator.ValidateCreateRequest(createUserRequest).(*errors.ErrorResponseObject)
+	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrorResponseObject)
 
 	assert.NotNil(t, result)
 	assert.Equal(t, "Create User Request Validation Error", result.Error)
@@ -48,7 +48,7 @@ func Test_WithCreateUserRequest_WithAllErrors(t *testing.T) {
 	createUserRequest.Email = ""
 	createUserRequest.Password = ""
 
-	result := validator.ValidateCreateRequest(createUserRequest).(*errors.ErrorResponseObject)
+	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrorResponseObject)
 
 	assert.NotNil(t, result)
 	assert.Equal(t, "Create User Request Validation Error", result.Error)

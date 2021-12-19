@@ -48,7 +48,7 @@ const (
 var migratorType = reflect.TypeOf((*dependency.ObjectDatabaseMigrator)(nil)).Elem()
 
 type RootApplication struct {
-	DependenciesFactory dependency.DependenciesFactory
+	DependenciesFactory dependency.DependenciesProvider
 	databaseService     db.DatabaseService
 	Config              *config.Config
 }
@@ -57,7 +57,7 @@ type RootApplication struct {
 // The application creates db.DatabaseConfiguration automatically
 func NewRootApplication(config *config.Config) *RootApplication {
 	applicationService := &RootApplication{
-		DependenciesFactory: dependency.NewDependenciesFactory(),
+		DependenciesFactory: dependency.NewDependenciesProvider(),
 		Config:              config,
 	}
 

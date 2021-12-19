@@ -5,30 +5,33 @@ import (
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	houseService "github.com/VlasovArtem/hob/src/house/service"
+	houses "github.com/VlasovArtem/hob/src/house/service"
 	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/repository"
-	paymentService "github.com/VlasovArtem/hob/src/payment/service"
+	payments "github.com/VlasovArtem/hob/src/payment/service"
+	providers "github.com/VlasovArtem/hob/src/provider/service"
 	"github.com/VlasovArtem/hob/src/scheduler"
-	userService "github.com/VlasovArtem/hob/src/user/service"
+	users "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"time"
 )
 
 type PaymentSchedulerServiceObject struct {
-	userService      userService.UserService
-	houseService     houseService.HouseService
-	paymentService   paymentService.PaymentService
+	userService      users.UserService
+	houseService     houses.HouseService
+	paymentService   payments.PaymentService
+	providerService  providers.ProviderService
 	serviceScheduler scheduler.ServiceScheduler
 	repository       repository.PaymentSchedulerRepository
 }
 
 func NewPaymentSchedulerService(
-	userService userService.UserService,
-	houseService houseService.HouseService,
-	paymentService paymentService.PaymentService,
+	userService users.UserService,
+	houseService houses.HouseService,
+	paymentService payments.PaymentService,
+	providerService providers.ProviderService,
 	serviceScheduler scheduler.ServiceScheduler,
 	repository repository.PaymentSchedulerRepository,
 ) PaymentSchedulerService {
@@ -36,18 +39,20 @@ func NewPaymentSchedulerService(
 		userService:      userService,
 		houseService:     houseService,
 		paymentService:   paymentService,
+		providerService:  providerService,
 		serviceScheduler: serviceScheduler,
 		repository:       repository,
 	}
 }
 
-func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewPaymentSchedulerService(
-		factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),
-		factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
-		factory.FindRequiredByObject(paymentService.PaymentServiceObject{}).(paymentService.PaymentService),
-		factory.FindRequiredByObject(scheduler.SchedulerServiceObject{}).(scheduler.ServiceScheduler),
-		factory.FindRequiredByObject(repository.PaymentSchedulerRepositoryObject{}).(repository.PaymentSchedulerRepository),
+		factory.FindRequiredByType(users.UserServiceType).(users.UserService),
+		factory.FindRequiredByType(houses.HouseServiceType).(houses.HouseService),
+		factory.FindRequiredByType(payments.PaymentServiceType).(payments.PaymentService),
+		factory.FindRequiredByType(providers.ProviderServiceType).(providers.ProviderService),
+		factory.FindRequiredByType(scheduler.SchedulerServiceType).(scheduler.ServiceScheduler),
+		factory.FindRequiredByType(repository.PaymentSchedulerRepositoryType).(repository.PaymentSchedulerRepository),
 	)
 }
 
@@ -57,6 +62,8 @@ type PaymentSchedulerService interface {
 	FindById(id uuid.UUID) (model.PaymentSchedulerDto, error)
 	FindByHouseId(houseId uuid.UUID) []model.PaymentSchedulerDto
 	FindByUserId(userId uuid.UUID) []model.PaymentSchedulerDto
+	FindByProviderId(providerId uuid.UUID) []model.PaymentSchedulerDto
+	Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) error
 }
 
 func (p *PaymentSchedulerServiceObject) Add(request model.CreatePaymentSchedulerRequest) (response model.PaymentSchedulerDto, err error) {
@@ -68,6 +75,9 @@ func (p *PaymentSchedulerServiceObject) Add(request model.CreatePaymentScheduler
 	}
 	if !p.houseService.ExistsById(request.HouseId) {
 		return response, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId))
+	}
+	if !p.providerService.ExistsById(request.ProviderId) {
+		return response, errors.New(fmt.Sprintf("provider with id %s in not exists", request.ProviderId))
 	}
 	if request.Spec == "" {
 		return response, errors.New("scheduler configuration not provided")
@@ -107,11 +117,40 @@ func (p *PaymentSchedulerServiceObject) FindById(id uuid.UUID) (response model.P
 }
 
 func (p *PaymentSchedulerServiceObject) FindByHouseId(houseId uuid.UUID) []model.PaymentSchedulerDto {
-	return convert(p.repository.FindByHouseId(houseId))
+	return p.repository.FindByHouseId(houseId)
 }
 
 func (p *PaymentSchedulerServiceObject) FindByUserId(userId uuid.UUID) []model.PaymentSchedulerDto {
-	return convert(p.repository.FindByUserId(userId))
+	return p.repository.FindByUserId(userId)
+}
+
+func (p *PaymentSchedulerServiceObject) FindByProviderId(providerId uuid.UUID) []model.PaymentSchedulerDto {
+	return p.repository.FindByProviderId(providerId)
+}
+
+func (p *PaymentSchedulerServiceObject) Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) error {
+	if !p.repository.ExistsById(id) {
+		return errors.New(fmt.Sprintf("payment schedule with id %s not found", id))
+	}
+	if request.Sum <= 0 {
+		return errors.New("sum should not be zero of negative")
+	}
+	if !p.providerService.ExistsById(request.ProviderId) {
+		return errors.New(fmt.Sprintf("provider with id %s not found", request.ProviderId))
+	}
+	if request.Spec == "" {
+		return errors.New("scheduler configuration not provided")
+	}
+	if err := p.repository.Update(request.ToEntity(id)); err != nil {
+		return err
+	}
+	entity, _ := p.repository.FindById(id)
+	if _, err := p.serviceScheduler.Update(entity.Id, string(entity.Spec), p.schedulerFunc(entity)); err != nil {
+		p.repository.DeleteById(entity.Id)
+
+		return err
+	}
+	return nil
 }
 
 func (p *PaymentSchedulerServiceObject) schedulerFunc(payment model.PaymentScheduler) func() {
@@ -122,6 +161,7 @@ func (p *PaymentSchedulerServiceObject) schedulerFunc(payment model.PaymentSched
 				Description: payment.Description,
 				HouseId:     payment.HouseId,
 				UserId:      payment.UserId,
+				ProviderId:  payment.ProviderId,
 				Date:        time.Now(),
 				Sum:         payment.Sum,
 			},
@@ -131,18 +171,4 @@ func (p *PaymentSchedulerServiceObject) schedulerFunc(payment model.PaymentSched
 			log.Info().Msgf("New payment added to the house %s and user %s via scheduler %s", payment.HouseId, payment.UserId, payment.Id)
 		}
 	}
-}
-
-func convert(payments []model.PaymentScheduler) []model.PaymentSchedulerDto {
-	if len(payments) == 0 {
-		return make([]model.PaymentSchedulerDto, 0)
-	}
-
-	var paymentsResponse []model.PaymentSchedulerDto
-
-	for _, payment := range payments {
-		paymentsResponse = append(paymentsResponse, payment.ToDto())
-	}
-
-	return paymentsResponse
 }

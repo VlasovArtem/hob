@@ -17,7 +17,7 @@ func NewMeterHandler(meterService service.MeterService) MeterHandler {
 	return &MeterHandlerObject{meterService}
 }
 
-func (m *MeterHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (m *MeterHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewMeterHandler(factory.FindRequiredByObject(service.MeterServiceObject{}).(service.MeterService))
 }
 
@@ -54,7 +54,7 @@ func (m *MeterHandlerObject) Add() http.HandlerFunc {
 func (m *MeterHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			meterResponse, err := m.meterService.FindById(id)
 
@@ -66,7 +66,7 @@ func (m *MeterHandlerObject) FindById() http.HandlerFunc {
 func (m *MeterHandlerObject) FindByPaymentId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			if meterResponse, err := m.meterService.FindByPaymentId(id); err == nil {
 				rest.PerformResponse(writer, meterResponse, err)
@@ -78,7 +78,7 @@ func (m *MeterHandlerObject) FindByPaymentId() http.HandlerFunc {
 func (m *MeterHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			rest.PerformResponse(writer, m.meterService.FindByHouseId(id), err)
 		}

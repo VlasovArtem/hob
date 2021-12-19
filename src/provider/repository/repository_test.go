@@ -6,6 +6,8 @@ import (
 	"github.com/VlasovArtem/hob/src/provider/mocks"
 	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
+	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
+	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -15,7 +17,8 @@ import (
 
 type ProviderRepositoryTestSuite struct {
 	database.DBTestSuite
-	repository ProviderRepository
+	repository  ProviderRepository
+	createdUser userModel.User
 }
 
 func (p *ProviderRepositoryTestSuite) SetupSuite() {
@@ -26,11 +29,10 @@ func (p *ProviderRepositoryTestSuite) SetupSuite() {
 			p.repository = NewProviderRepository(service)
 		},
 	).
-		AddMigrators(model.Provider{})
-}
+		AddMigrators(userModel.User{}, model.Provider{})
 
-func (p *ProviderRepositoryTestSuite) TearDownSuite() {
-	p.TearDown()
+	p.createdUser = userMocks.GenerateUser()
+	p.CreateConstantEntity(&p.createdUser)
 }
 
 func TestProviderRepositoryTestSuite(t *testing.T) {
@@ -38,34 +40,92 @@ func TestProviderRepositoryTestSuite(t *testing.T) {
 }
 
 func (p *ProviderRepositoryTestSuite) Test_Create() {
-	provider := mocks.GenerateProvider()
+	entity := mocks.GenerateProvider(p.createdUser.Id)
 
-	create, err := p.repository.Create(provider)
+	actual, err := p.repository.Create(entity)
 
 	assert.Nil(p.T(), err)
-	assert.Equal(p.T(), provider, create)
+	assert.Equal(p.T(), entity, actual)
 
+	p.Delete(entity)
+}
+
+func (p *ProviderRepositoryTestSuite) Test_Create_WithDefaultUser() {
+	defaultProvider := mocks.GenerateProvider(uuid.UUID{})
+	provider := mocks.GenerateProvider(p.createdUser.Id)
+
+	actual, err := p.repository.Create(defaultProvider)
+	actual1, err := p.repository.Create(provider)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), defaultProvider, actual)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), provider, actual1)
+
+	providers := p.repository.FindByUserId(p.createdUser.Id)
+
+	assert.EqualValues(p.T(), providers, []model.ProviderDto{defaultProvider.ToDto(), provider.ToDto()})
+
+	p.Delete(defaultProvider)
 	p.Delete(provider)
 }
 
-func (p *ProviderRepositoryTestSuite) Test_CreateWithMatchingName() {
-	expected := mocks.GenerateProvider()
+func (p *ProviderRepositoryTestSuite) Test_Create_WithSameNameButDifferentUsers() {
+	first := mocks.GenerateProvider(p.createdUser.Id)
 
-	actual, err := p.repository.Create(expected)
+	actual, err := p.repository.Create(first)
 
 	assert.Nil(p.T(), err)
-	assert.Equal(p.T(), expected, actual)
+	assert.Equal(p.T(), first, actual)
 
-	actual, err = p.repository.Create(expected)
+	newUser := userMocks.GenerateUser()
+	err = p.Database.Create(&newUser)
 
-	assert.Equal(p.T(), expected, actual)
+	assert.Nil(p.T(), err)
+
+	second := mocks.GenerateProvider(newUser.Id)
+	second.Name = first.Name
+
+	actual, err = p.repository.Create(second)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), second, actual)
+
+	p.Delete(first)
+	p.Delete(second)
+}
+
+func (p *ProviderRepositoryTestSuite) Test_Create_WithSameNameButSameUser() {
+	first := mocks.GenerateProvider(p.createdUser.Id)
+
+	actual, err := p.repository.Create(first)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), first, actual)
+
+	second := mocks.GenerateProvider(p.createdUser.Id)
+	second.Name = first.Name
+
+	actual, err = p.repository.Create(second)
+
 	assert.NotNil(p.T(), err)
+	assert.Equal(p.T(), second, actual)
 
-	p.Delete(expected)
+	p.Delete(first)
+}
+
+func (p *ProviderRepositoryTestSuite) Test_Creat_WithMissingUser() {
+	entity := mocks.GenerateProvider(uuid.New())
+
+	actual, err := p.repository.Create(entity)
+
+	assert.NotNil(p.T(), err)
+	assert.Equal(p.T(), entity, actual)
 }
 
 func (p *ProviderRepositoryTestSuite) Test_FindById() {
-	provider := p.CreateProvider()
+	provider := p.createCustomProvider()
 
 	actual, err := p.repository.FindById(provider.Id)
 
@@ -82,58 +142,53 @@ func (p *ProviderRepositoryTestSuite) Test_FindById_WithNotExistsRecord() {
 	assert.Equal(p.T(), model.Provider{}, actual)
 }
 
-func (p *ProviderRepositoryTestSuite) Test_FindByNameLike() {
-	var expectedProviders []model.Provider
+func (p *ProviderRepositoryTestSuite) Test_Delete() {
+	provider := p.createCustomProvider()
 
-	for i := 0; i < 10; i++ {
-		provider := mocks.GenerateProvider()
-		provider.Name = fmt.Sprintf("findByName-%d", i)
+	err := p.repository.Delete(provider.Id)
 
-		p.CreateEntity(&provider)
-
-		expectedProviders = append(expectedProviders, provider)
-	}
-
-	firstPage := p.repository.FindByNameLike("findByName", 0, 5)
-
-	assert.Equal(p.T(), expectedProviders[:5], firstPage)
-
-	secondPage := p.repository.FindByNameLike("findByName", 1, 5)
-
-	assert.Equal(p.T(), expectedProviders[5:], secondPage)
-
-	database.RecreateTable(p.Database.D(), model.Provider{})
+	assert.Nil(p.T(), err)
+	assert.False(p.T(), p.repository.ExistsById(provider.Id))
 }
 
-func (p *ProviderRepositoryTestSuite) Test_FindByNameLike_WithOutMatch() {
-	providers := p.repository.FindByNameLike("invalid", 0, 100)
+func (p *ProviderRepositoryTestSuite) Test_FindByUserId() {
+	provider := p.createCustomProviderWithNewUser()
 
-	assert.Equal(p.T(), []model.Provider{}, providers)
+	actual := p.repository.FindByUserId(provider.UserId)
+
+	assert.Equal(p.T(), []model.ProviderDto{provider.ToDto()}, actual)
 }
 
-func (p *ProviderRepositoryTestSuite) Test_FindByNameLike_WithEmptyString() {
-	database.RecreateTable(p.Database.D(), model.Provider{})
+func (p *ProviderRepositoryTestSuite) Test_FindByUserId_WithNotExistsRecord() {
+	actual := p.repository.FindByUserId(uuid.New())
 
-	var expectedProviders []model.Provider
+	assert.Equal(p.T(), []model.ProviderDto{}, actual)
+}
 
-	for i := 0; i < 10; i++ {
-		provider := mocks.GenerateProvider()
-		provider.Name = fmt.Sprintf("%d", i)
+func (p *ProviderRepositoryTestSuite) Test_FindByNameLikeAndUserIds() {
+	provider := p.createCustomProviderWithNewUser()
 
-		p.CreateEntity(&provider)
+	actual := p.repository.FindByNameLikeAndUserId("Provider", 0, 10, provider.UserId)
 
-		expectedProviders = append(expectedProviders, provider)
-	}
+	assert.Equal(p.T(), []model.ProviderDto{provider.ToDto()}, actual)
+}
 
-	page := p.repository.FindByNameLike("", 0, len(expectedProviders))
+func (p *ProviderRepositoryTestSuite) Test_FindByNameLikeAndUserIds_WithNotMatchingName() {
+	provider := p.createCustomProviderWithNewUser()
 
-	assert.ElementsMatch(p.T(), expectedProviders, page)
+	actual := p.repository.FindByNameLikeAndUserId("invalid", 0, 10, provider.UserId)
 
-	database.RecreateTable(p.Database.D(), model.Provider{})
+	assert.Equal(p.T(), []model.ProviderDto{}, actual)
+}
+
+func (p *ProviderRepositoryTestSuite) Test_FindByNameLikeAndUserIds_WithNotMatchingUserId() {
+	actual := p.repository.FindByNameLikeAndUserId("Provider", 0, 10, uuid.New())
+
+	assert.Equal(p.T(), []model.ProviderDto{}, actual)
 }
 
 func (p *ProviderRepositoryTestSuite) Test_ExistsById() {
-	provider := p.CreateProvider()
+	provider := p.createCustomProvider()
 
 	assert.True(p.T(), p.repository.ExistsById(provider.Id))
 }
@@ -144,18 +199,80 @@ func (p *ProviderRepositoryTestSuite) Test_ExistsById_WithNotExistsRecord() {
 	assert.False(p.T(), p.repository.ExistsById(id))
 }
 
-func (p *ProviderRepositoryTestSuite) Test_ExistsByName() {
-	provider := p.CreateProvider()
+func (p *ProviderRepositoryTestSuite) Test_ExistsByNameAndUserId() {
+	provider := p.createCustomProvider()
 
-	assert.True(p.T(), p.repository.ExistsByName(provider.Name))
+	assert.True(p.T(), p.repository.ExistsByNameAndUserId(provider.Name, provider.UserId))
 }
 
-func (p *ProviderRepositoryTestSuite) Test_ExistsByName_WithNotExistsRecord() {
-	assert.False(p.T(), p.repository.ExistsByName("not exists"))
+func (p *ProviderRepositoryTestSuite) Test_ExistsByNameAndUserId_WithNotMatchingName() {
+	provider := p.createCustomProvider()
+
+	assert.False(p.T(), p.repository.ExistsByNameAndUserId("not match", provider.UserId))
 }
 
-func (p *ProviderRepositoryTestSuite) CreateProvider() model.Provider {
-	provider := mocks.GenerateProvider()
+func (p *ProviderRepositoryTestSuite) Test_ExistsByNameAndUserId_WithNotMatchingUserId() {
+	provider := p.createCustomProvider()
+
+	assert.False(p.T(), p.repository.ExistsByNameAndUserId(provider.Name, uuid.New()))
+}
+
+func (p *ProviderRepositoryTestSuite) Test_Update() {
+	provider := p.createCustomProvider()
+
+	updated := model.Provider{
+		Id:      provider.Id,
+		Name:    fmt.Sprintf("%s-new", provider.Name),
+		Details: fmt.Sprintf("%s-new", provider.Details),
+	}
+
+	err := p.repository.Update(updated)
+
+	assert.Nil(p.T(), err)
+
+	response, err := p.repository.FindById(provider.Id)
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), model.Provider{
+		Id:      provider.Id,
+		Name:    fmt.Sprintf("%s-new", provider.Name),
+		Details: "Details-new",
+		UserId:  provider.UserId,
+		User:    provider.User,
+	}, response)
+}
+
+func (p *ProviderRepositoryTestSuite) Test_Update_WithMatchingName() {
+	first := p.createCustomProvider()
+	provider := p.createCustomProvider()
+
+	updated := model.Provider{
+		Id:      provider.Id,
+		Name:    first.Name,
+		Details: fmt.Sprintf("%s-new", provider.Details),
+	}
+
+	err := p.repository.Update(updated)
+
+	assert.NotNil(p.T(), err)
+}
+
+func (p *ProviderRepositoryTestSuite) Test_Update_WithMissingId() {
+	assert.Nil(p.T(), p.repository.Update(model.Provider{Id: uuid.New()}))
+}
+
+func (p *ProviderRepositoryTestSuite) createCustomProvider() model.Provider {
+	provider := mocks.GenerateProvider(p.createdUser.Id)
+
+	p.CreateEntity(provider)
+
+	return provider
+}
+
+func (p *ProviderRepositoryTestSuite) createCustomProviderWithNewUser() model.Provider {
+	createdUser := userMocks.GenerateUser()
+	p.CreateEntity(&createdUser)
+
+	provider := mocks.GenerateProvider(createdUser.Id)
 
 	p.CreateEntity(provider)
 

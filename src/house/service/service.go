@@ -11,7 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
+	"reflect"
 )
+
+var HouseServiceType = reflect.TypeOf(HouseServiceObject{})
 
 type HouseServiceObject struct {
 	countriesService countries.CountryService
@@ -35,7 +38,7 @@ func NewHouseService(
 	}
 }
 
-func (h *HouseServiceObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (h *HouseServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewHouseService(
 		factory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService),
 		factory.FindRequiredByObject(userService.UserServiceObject{}).(userService.UserService),

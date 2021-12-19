@@ -11,7 +11,16 @@ func GenerateCreateUserRequest() model.CreateUserRequest {
 		FirstName: "First Name",
 		LastName:  "Last Name",
 		Password:  "password",
-		Email:     "mail@mai.com",
+		Email:     "mail@mail.com",
+	}
+}
+
+func GenerateUpdateUserRequest() model.UpdateUserRequest {
+	return model.UpdateUserRequest{
+		FirstName: "First Name New",
+		LastName:  "Last Name New",
+		Password:  "password-new",
+		Email:     "mail@mail-new.com",
 	}
 }
 
@@ -26,11 +35,11 @@ func GenerateUser() model.User {
 	}
 }
 
-func GenerateUserResponse() model.UserResponse {
-	return model.UserResponse{
+func GenerateUserResponse() model.UserDto {
+	return model.UserDto{
 		Id:        uuid.New(),
 		FirstName: "First Name",
 		LastName:  "Last Name",
-		Email:     "mail@mai.com",
+		Email:     "mail@mail.com",
 	}
 }

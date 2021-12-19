@@ -17,7 +17,7 @@ func NewCountryHandler(countryService service.CountryService) CountryHandler {
 	return &CountryHandlerObject{countryService}
 }
 
-func (c *CountryHandlerObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (c *CountryHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewCountryHandler(factory.FindRequiredByObject(service.CountryServiceObject{}).(service.CountryService))
 }
 
@@ -42,7 +42,7 @@ func (c *CountryHandlerObject) FindAll() http.HandlerFunc {
 func (c *CountryHandlerObject) FindByCode() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if parameter, err := rest.GetRequestParameter(request, "code"); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			if err, country := c.countryService.FindCountryByCode(parameter); err != nil {
 				rest.HandleErrorResponseWithError(writer, http.StatusNotFound, err)

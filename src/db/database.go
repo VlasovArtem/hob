@@ -33,7 +33,7 @@ type DatabaseObject struct {
 	db *gorm.DB
 }
 
-func (d *DatabaseObject) Initialize(factory dependency.DependenciesFactory) interface{} {
+func (d *DatabaseObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewDatabaseService(factory.FindRequiredByObject(DatabaseConfiguration{}).(DatabaseConfiguration))
 }
 
@@ -53,6 +53,8 @@ type DatabaseService interface {
 	Create(value interface{}) error
 	FindById(receiver interface{}, id uuid.UUID) error
 	FindByIdModeled(model interface{}, receiver interface{}, id uuid.UUID) error
+	FindByQuery(receiver interface{}, query interface{}, conditions ...interface{}) error
+	FindByModeled(model interface{}, receiver interface{}, query interface{}, conditions ...interface{}) error
 	ExistsById(model interface{}, id uuid.UUID) (exists bool)
 	ExistsByQuery(model interface{}, query interface{}, args ...interface{}) (exists bool)
 	DeleteById(model interface{}, id uuid.UUID) error
@@ -76,6 +78,18 @@ func (d *DatabaseObject) FindById(receiver interface{}, id uuid.UUID) error {
 
 func (d *DatabaseObject) FindByIdModeled(model interface{}, receiver interface{}, id uuid.UUID) error {
 	tx := d.db.Model(model).First(receiver, id)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (d *DatabaseObject) FindByQuery(receiver interface{}, query interface{}, conditions ...interface{}) error {
+	return d.FindByModeled(receiver, receiver, query, conditions)
+}
+
+func (d *DatabaseObject) FindByModeled(model interface{}, receiver interface{}, query interface{}, conditions ...interface{}) error {
+	tx := d.db.Model(model).Where(query, conditions...).Find(receiver)
 	if tx.Error != nil {
 		return tx.Error
 	}

@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	errors "github.com/VlasovArtem/hob/src/common/errors"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	mock "github.com/stretchr/testify/mock"
 
 	model "github.com/VlasovArtem/hob/src/user/model"
@@ -15,15 +15,31 @@ type UserRequestValidator struct {
 }
 
 // ValidateCreateRequest provides a mock function with given fields: request
-func (_m *UserRequestValidator) ValidateCreateRequest(request model.CreateUserRequest) errors.ErrorResponse {
+func (_m *UserRequestValidator) ValidateCreateRequest(request model.CreateUserRequest) int_errors.ErrorResponse {
 	ret := _m.Called(request)
 
-	var r0 errors.ErrorResponse
-	if rf, ok := ret.Get(0).(func(model.CreateUserRequest) errors.ErrorResponse); ok {
+	var r0 int_errors.ErrorResponse
+	if rf, ok := ret.Get(0).(func(model.CreateUserRequest) int_errors.ErrorResponse); ok {
 		r0 = rf(request)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(errors.ErrorResponse)
+			r0 = ret.Get(0).(int_errors.ErrorResponse)
+		}
+	}
+
+	return r0
+}
+
+// ValidateUpdateRequest provides a mock function with given fields: request
+func (_m *UserRequestValidator) ValidateUpdateRequest(request model.UpdateUserRequest) int_errors.ErrorResponse {
+	ret := _m.Called(request)
+
+	var r0 int_errors.ErrorResponse
+	if rf, ok := ret.Get(0).(func(model.UpdateUserRequest) int_errors.ErrorResponse); ok {
+		r0 = rf(request)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(int_errors.ErrorResponse)
 		}
 	}
 

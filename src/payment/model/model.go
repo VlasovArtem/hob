@@ -2,6 +2,7 @@ package model
 
 import (
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
+	providerModel "github.com/VlasovArtem/hob/src/provider/model"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"time"
@@ -17,6 +18,8 @@ type Payment struct {
 	Sum         float32
 	User        userModel.User   `gorm:"foreignKey:UserId"`
 	House       houseModel.House `gorm:"foreignKey:HouseId"`
+	ProviderId  uuid.UUID
+	Provider    providerModel.Provider `gorm:"foreignKey:ProviderId"`
 }
 
 type CreatePaymentRequest struct {
@@ -24,16 +27,17 @@ type CreatePaymentRequest struct {
 	Description string
 	HouseId     uuid.UUID
 	UserId      uuid.UUID
+	ProviderId  uuid.UUID
 	Date        time.Time
 	Sum         float32
 }
 
 type UpdatePaymentRequest struct {
-	Id          uuid.UUID
 	Name        string
 	Description string
 	Date        time.Time
 	Sum         float32
+	ProviderId  uuid.UUID
 }
 
 type PaymentDto struct {
@@ -42,6 +46,7 @@ type PaymentDto struct {
 	Description string
 	HouseId     uuid.UUID
 	UserId      uuid.UUID
+	ProviderId  uuid.UUID
 	Date        time.Time
 	Sum         float32
 }
@@ -53,6 +58,7 @@ func (p Payment) ToDto() PaymentDto {
 		Description: p.Description,
 		HouseId:     p.HouseId,
 		UserId:      p.UserId,
+		ProviderId:  p.ProviderId,
 		Date:        p.Date,
 		Sum:         p.Sum,
 	}
@@ -65,16 +71,18 @@ func (c CreatePaymentRequest) CreateToEntity() Payment {
 		Description: c.Description,
 		HouseId:     c.HouseId,
 		UserId:      c.UserId,
+		ProviderId:  c.ProviderId,
 		Date:        c.Date,
 		Sum:         c.Sum,
 	}
 }
 
-func (u UpdatePaymentRequest) UpdateToEntity() Payment {
+func (u UpdatePaymentRequest) UpdateToEntity(id uuid.UUID) Payment {
 	return Payment{
-		Id:          u.Id,
+		Id:          id,
 		Name:        u.Name,
 		Description: u.Description,
+		ProviderId:  u.ProviderId,
 		Date:        u.Date,
 		Sum:         u.Sum,
 	}

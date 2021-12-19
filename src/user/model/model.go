@@ -12,7 +12,7 @@ type User struct {
 	Email     string `gorm:"unique"`
 }
 
-type UserResponse struct {
+type UserDto struct {
 	Id        uuid.UUID
 	FirstName string
 	LastName  string
@@ -20,6 +20,13 @@ type UserResponse struct {
 }
 
 type CreateUserRequest struct {
+	FirstName string
+	LastName  string
+	Password  string
+	Email     string
+}
+
+type UpdateUserRequest struct {
 	FirstName string
 	LastName  string
 	Password  string
@@ -36,8 +43,18 @@ func (u CreateUserRequest) ToEntity() User {
 	}
 }
 
-func (u User) ToResponse() UserResponse {
-	return UserResponse{
+func (u UpdateUserRequest) ToEntity(id uuid.UUID) User {
+	return User{
+		Id:        id,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Password:  []byte(u.Password),
+		Email:     u.Email,
+	}
+}
+
+func (u User) ToDto() UserDto {
+	return UserDto{
 		Id:        u.Id,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,

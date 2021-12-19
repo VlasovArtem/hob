@@ -2,6 +2,7 @@ package model
 
 import (
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
+	providerModel "github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/VlasovArtem/hob/src/scheduler"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
@@ -17,6 +18,8 @@ type PaymentScheduler struct {
 	User        userModel.User   `gorm:"foreignKey:UserId"`
 	House       houseModel.House `gorm:"foreignKey:HouseId"`
 	Spec        scheduler.SchedulingSpecification
+	ProviderId  uuid.UUID
+	Provider    providerModel.Provider `gorm:"foreignKey:ProviderId"`
 }
 
 type CreatePaymentSchedulerRequest struct {
@@ -24,6 +27,15 @@ type CreatePaymentSchedulerRequest struct {
 	Description string
 	HouseId     uuid.UUID
 	UserId      uuid.UUID
+	ProviderId  uuid.UUID
+	Sum         float32
+	Spec        scheduler.SchedulingSpecification
+}
+
+type UpdatePaymentSchedulerRequest struct {
+	Name        string
+	Description string
+	ProviderId  uuid.UUID
 	Sum         float32
 	Spec        scheduler.SchedulingSpecification
 }
@@ -34,6 +46,7 @@ type PaymentSchedulerDto struct {
 	Description string
 	HouseId     uuid.UUID
 	UserId      uuid.UUID
+	ProviderId  uuid.UUID
 	Sum         float32
 	Spec        scheduler.SchedulingSpecification
 }
@@ -45,6 +58,7 @@ func (ps PaymentScheduler) ToDto() PaymentSchedulerDto {
 		Description: ps.Description,
 		HouseId:     ps.HouseId,
 		UserId:      ps.UserId,
+		ProviderId:  ps.ProviderId,
 		Sum:         ps.Sum,
 		Spec:        ps.Spec,
 	}
@@ -57,6 +71,18 @@ func (request CreatePaymentSchedulerRequest) ToEntity() PaymentScheduler {
 		Description: request.Description,
 		HouseId:     request.HouseId,
 		UserId:      request.UserId,
+		ProviderId:  request.ProviderId,
+		Sum:         request.Sum,
+		Spec:        request.Spec,
+	}
+}
+
+func (request UpdatePaymentSchedulerRequest) ToEntity(id uuid.UUID) PaymentScheduler {
+	return PaymentScheduler{
+		Id:          id,
+		Name:        request.Name,
+		Description: request.Description,
+		ProviderId:  request.ProviderId,
 		Sum:         request.Sum,
 		Spec:        request.Spec,
 	}

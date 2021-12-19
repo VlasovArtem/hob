@@ -35,6 +35,20 @@ func (_m *UserRepository) Create(user model.User) (model.User, error) {
 	return r0, r1
 }
 
+// Delete provides a mock function with given fields: id
+func (_m *UserRepository) Delete(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ExistsByEmail provides a mock function with given fields: email
 func (_m *UserRepository) ExistsByEmail(email string) bool {
 	ret := _m.Called(email)
@@ -103,4 +117,18 @@ func (_m *UserRepository) FindById(id uuid.UUID) (model.User, error) {
 	}
 
 	return r0, r1
+}
+
+// Update provides a mock function with given fields: user
+func (_m *UserRepository) Update(user model.User) error {
+	ret := _m.Called(user)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(model.User) error); ok {
+		r0 = rf(user)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
