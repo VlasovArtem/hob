@@ -55,6 +55,7 @@ type DatabaseService interface {
 	FindByIdModeled(model interface{}, receiver interface{}, id uuid.UUID) error
 	FindByQuery(receiver interface{}, query interface{}, conditions ...interface{}) error
 	FindByModeled(model interface{}, receiver interface{}, query interface{}, conditions ...interface{}) error
+	FirstByModeled(model interface{}, receiver interface{}, query interface{}, conditions ...interface{}) error
 	ExistsById(model interface{}, id uuid.UUID) (exists bool)
 	ExistsByQuery(model interface{}, query interface{}, args ...interface{}) (exists bool)
 	DeleteById(model interface{}, id uuid.UUID) error
@@ -90,6 +91,14 @@ func (d *DatabaseObject) FindByQuery(receiver interface{}, query interface{}, co
 
 func (d *DatabaseObject) FindByModeled(model interface{}, receiver interface{}, query interface{}, conditions ...interface{}) error {
 	tx := d.db.Model(model).Where(query, conditions...).Find(receiver)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (d *DatabaseObject) FirstByModeled(model interface{}, receiver interface{}, query interface{}, conditions ...interface{}) error {
+	tx := d.db.Model(model).Where(query, conditions...).First(receiver)
 	if tx.Error != nil {
 		return tx.Error
 	}

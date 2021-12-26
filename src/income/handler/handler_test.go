@@ -28,7 +28,7 @@ func Test_AddIncome(t *testing.T) {
 
 	request := mocks.GenerateCreateIncomeRequest()
 
-	incomes.On("Add", request).Return(request.CreateToEntity().ToDto(), nil)
+	incomes.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income").
@@ -85,7 +85,7 @@ func Test_AddIncome_WithErrorFromService(t *testing.T) {
 func Test_FindById(t *testing.T) {
 	handler := handlerGenerator()
 
-	response := mocks.GenerateIncomeResponse()
+	response := mocks.GenerateIncomeDto()
 
 	incomes.On("FindById", response.Id).
 		Return(response, nil)
@@ -143,7 +143,7 @@ func Test_FindById_WithInvalidParameter(t *testing.T) {
 func Test_FindByHouseId(t *testing.T) {
 	handler := handlerGenerator()
 
-	response := []model.IncomeDto{mocks.GenerateIncomeResponse()}
+	response := []model.IncomeDto{mocks.GenerateIncomeDto()}
 
 	incomes.On("FindByHouseId", response[0].HouseId).
 		Return(response, nil)

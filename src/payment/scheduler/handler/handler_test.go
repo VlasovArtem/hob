@@ -80,7 +80,7 @@ func Test_Remove(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentsScheduler.On("Remove", id).Return(nil)
+	paymentsScheduler.On("DeleteById", id).Return(nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/scheduler/{id}").

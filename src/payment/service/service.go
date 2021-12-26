@@ -59,13 +59,13 @@ type PaymentService interface {
 
 func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentDto, err error) {
 	if !p.userService.ExistsById(request.UserId) {
-		return response, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId))
+		return response, fmt.Errorf("user with id %s in not exists", request.UserId)
 	}
 	if !p.houseService.ExistsById(request.HouseId) {
-		return response, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId))
+		return response, fmt.Errorf("house with id %s in not exists", request.HouseId)
 	}
 	if !p.providerService.ExistsById(request.ProviderId) {
-		return response, errors.New(fmt.Sprintf("provider with id %s in not exists", request.ProviderId))
+		return response, fmt.Errorf("provider with id %s in not exists", request.ProviderId)
 	}
 
 	payment, err := p.paymentRepository.Create(request.CreateToEntity())
@@ -99,17 +99,17 @@ func (p *PaymentServiceObject) ExistsById(id uuid.UUID) bool {
 
 func (p *PaymentServiceObject) DeleteById(id uuid.UUID) error {
 	if !p.ExistsById(id) {
-		return errors.New(fmt.Sprintf("payment with id %s not found", id))
+		return fmt.Errorf("payment with id %s not found", id)
 	}
 	return p.paymentRepository.DeleteById(id)
 }
 
 func (p *PaymentServiceObject) Update(id uuid.UUID, request model.UpdatePaymentRequest) error {
 	if !p.ExistsById(id) {
-		return errors.New(fmt.Sprintf("payment with id %s not found", id))
+		return fmt.Errorf("payment with id %s not found", id)
 	}
 	if !p.providerService.ExistsById(request.ProviderId) {
-		return errors.New(fmt.Sprintf("provider with id %s not found", request.ProviderId))
+		return fmt.Errorf("provider with id %s not found", request.ProviderId)
 	}
 	if request.Date.After(time.Now()) {
 		return errors.New("date should not be after current date")

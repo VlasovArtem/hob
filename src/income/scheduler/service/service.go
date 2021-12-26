@@ -2,8 +2,8 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	houseService "github.com/VlasovArtem/hob/src/house/service"
 	incomeModel "github.com/VlasovArtem/hob/src/income/model"
 	"github.com/VlasovArtem/hob/src/income/scheduler/model"
@@ -12,8 +12,11 @@ import (
 	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"reflect"
 	"time"
 )
+
+var IncomeSchedulerServiceType = reflect.TypeOf(IncomeSchedulerServiceObject{})
 
 type IncomeSchedulerServiceObject struct {
 	houseService     houseService.HouseService
@@ -38,28 +41,24 @@ func NewIncomeSchedulerService(
 
 func (i *IncomeSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
 	return NewIncomeSchedulerService(
-		factory.FindRequiredByObject(houseService.HouseServiceObject{}).(houseService.HouseService),
-		factory.FindRequiredByObject(incomeService.IncomeServiceObject{}).(incomeService.IncomeService),
-		factory.FindRequiredByObject(scheduler.SchedulerServiceObject{}).(scheduler.ServiceScheduler),
-		factory.FindRequiredByObject(repository.IncomeSchedulerRepositoryObject{}).(repository.IncomeSchedulerRepository),
+		factory.FindRequiredByType(houseService.HouseServiceType).(houseService.HouseService),
+		factory.FindRequiredByType(incomeService.IncomeServiceType).(incomeService.IncomeService),
+		factory.FindRequiredByType(scheduler.SchedulerServiceType).(scheduler.ServiceScheduler),
+		factory.FindRequiredByType(repository.IncomeSchedulerRepositoryType).(repository.IncomeSchedulerRepository),
 	)
 }
 
 type IncomeSchedulerService interface {
 	Add(request model.CreateIncomeSchedulerRequest) (model.IncomeSchedulerDto, error)
-	Remove(id uuid.UUID) error
+	DeleteById(id uuid.UUID) error
+	Update(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error
 	FindById(id uuid.UUID) (model.IncomeSchedulerDto, error)
 	FindByHouseId(id uuid.UUID) []model.IncomeSchedulerDto
 }
 
 func (i *IncomeSchedulerServiceObject) Add(request model.CreateIncomeSchedulerRequest) (response model.IncomeSchedulerDto, err error) {
-	if !i.houseService.ExistsById(request.HouseId) {
-		return response, errors.New(fmt.Sprintf("house with id %s not found", request.HouseId))
-	} else if err != nil {
+	if err := i.validateCreateRequest(request); err != nil {
 		return response, err
-	}
-	if request.Spec == "" {
-		return response, errors.New("scheduler configuration not provided")
 	}
 
 	entity := request.ToEntity()
@@ -75,21 +74,40 @@ func (i *IncomeSchedulerServiceObject) Add(request model.CreateIncomeSchedulerRe
 	}
 }
 
-func (i *IncomeSchedulerServiceObject) Remove(id uuid.UUID) error {
+func (i *IncomeSchedulerServiceObject) Update(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error {
+	if err := i.validateUpdateRequest(id, request); err != nil {
+		return err
+	}
+
+	updatedEntity, err := i.repository.Update(id, request)
+	if err != nil {
+		return err
+	}
+
+	if _, err := i.serviceScheduler.Update(id, string(updatedEntity.Spec), i.schedulerFunc(updatedEntity.Income)); err != nil {
+		if err := i.repository.DeleteById(id); err != nil {
+			log.Err(err)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (i *IncomeSchedulerServiceObject) DeleteById(id uuid.UUID) error {
 	if !i.repository.ExistsById(id) {
-		return errors.New(fmt.Sprintf("income scheduler with id %s not found", id))
+		return int_errors.NewErrNotFound("income scheduler with id %s not found", id)
 	} else {
 		if err := i.serviceScheduler.Remove(id); err != nil {
-			log.Error().Err(err).Msg("")
+			log.Error().Err(err)
 		}
-		i.repository.DeleteById(id)
+		return i.repository.DeleteById(id)
 	}
-	return nil
 }
 
 func (i *IncomeSchedulerServiceObject) FindById(id uuid.UUID) (response model.IncomeSchedulerDto, err error) {
 	if !i.repository.ExistsById(id) {
-		return response, errors.New(fmt.Sprintf("income scheduler with id %s not found", id))
+		return response, int_errors.NewErrNotFound("income scheduler with id %s not found", id)
 	} else {
 		if paymentScheduler, err := i.repository.FindById(id); err != nil {
 			return response, err
@@ -100,7 +118,11 @@ func (i *IncomeSchedulerServiceObject) FindById(id uuid.UUID) (response model.In
 }
 
 func (i *IncomeSchedulerServiceObject) FindByHouseId(id uuid.UUID) []model.IncomeSchedulerDto {
-	return convert(i.repository.FindByHouseId(id))
+	responses, err := i.repository.FindByHouseId(id)
+	if err != nil {
+		log.Err(err)
+	}
+	return responses
 }
 
 func (i *IncomeSchedulerServiceObject) schedulerFunc(income incomeModel.Income) func() {
@@ -121,16 +143,32 @@ func (i *IncomeSchedulerServiceObject) schedulerFunc(income incomeModel.Income) 
 	}
 }
 
-func convert(payments []model.IncomeScheduler) []model.IncomeSchedulerDto {
-	if len(payments) == 0 {
-		return make([]model.IncomeSchedulerDto, 0)
+func (i *IncomeSchedulerServiceObject) validateCreateRequest(request model.CreateIncomeSchedulerRequest) error {
+	if request.Sum <= 0 {
+		return errors.New("sum should not be zero of negative")
+	}
+	if !i.houseService.ExistsById(request.HouseId) {
+		return int_errors.NewErrNotFound("house with id %s not found", request.HouseId)
 	}
 
-	var paymentsResponse []model.IncomeSchedulerDto
-
-	for _, payment := range payments {
-		paymentsResponse = append(paymentsResponse, payment.ToDto())
+	if request.Spec == "" {
+		return errors.New("scheduler configuration not provided")
 	}
 
-	return paymentsResponse
+	return nil
+}
+
+func (i *IncomeSchedulerServiceObject) validateUpdateRequest(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error {
+	if request.Sum <= 0 {
+		return errors.New("sum should not be zero of negative")
+	}
+	if !i.repository.ExistsById(id) {
+		return int_errors.NewErrNotFound("income scheduler with id %s not found", id)
+	}
+
+	if request.Spec == "" {
+		return errors.New("scheduler configuration not provided")
+	}
+
+	return nil
 }

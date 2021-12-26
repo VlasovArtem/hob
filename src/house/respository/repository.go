@@ -5,14 +5,26 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
+	"reflect"
+)
+
+var (
+	HouseRepositoryType = reflect.TypeOf(HouseRepositoryObject{})
+	entity              = model.House{}
 )
 
 type HouseRepositoryObject struct {
-	database db.DatabaseService
+	database db.ModeledDatabase
 }
 
 func NewHouseRepository(database db.DatabaseService) HouseRepository {
-	return &HouseRepositoryObject{database}
+	return &HouseRepositoryObject{
+		db.ModeledDatabase{
+			DatabaseService: database,
+			Model:           entity,
+		},
+	}
 }
 
 func (h *HouseRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
@@ -20,7 +32,7 @@ func (h *HouseRepositoryObject) Initialize(factory dependency.DependenciesProvid
 }
 
 func (h *HouseRepositoryObject) GetEntity() interface{} {
-	return model.House{}
+	return entity
 }
 
 type HouseRepository interface {
@@ -29,7 +41,7 @@ type HouseRepository interface {
 	FindResponseByUserId(id uuid.UUID) []model.HouseDto
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
-	Update(entity model.House) error
+	Update(id uuid.UUID, request model.UpdateHouseRequest) error
 }
 
 func (h *HouseRepositoryObject) Create(entity model.House) (model.House, error) {
@@ -37,23 +49,24 @@ func (h *HouseRepositoryObject) Create(entity model.House) (model.House, error) 
 }
 
 func (h *HouseRepositoryObject) FindDtoById(id uuid.UUID) (response model.HouseDto, err error) {
-	return response, h.database.FindByIdModeled(model.House{}, &response, id)
+	return response, h.database.Find(&response, id)
 }
 
 func (h *HouseRepositoryObject) FindResponseByUserId(id uuid.UUID) (response []model.HouseDto) {
-	h.database.DM(model.House{}).Where("user_id = ?", id).Find(&response)
-
+	if err := h.database.FindBy(&response, "user_id = ?", id); err != nil {
+		log.Err(err)
+	}
 	return response
 }
 
 func (h *HouseRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return h.database.ExistsById(model.House{}, id)
+	return h.database.Exists(id)
 }
 
 func (h *HouseRepositoryObject) DeleteById(id uuid.UUID) error {
-	return h.database.DeleteById(model.House{}, id)
+	return h.database.Delete(id)
 }
 
-func (h *HouseRepositoryObject) Update(entity model.House) error {
-	return h.database.UpdateById(model.House{}, entity.Id, entity, "UserId", "User")
+func (h *HouseRepositoryObject) Update(id uuid.UUID, request model.UpdateHouseRequest) error {
+	return h.database.Update(id, request)
 }

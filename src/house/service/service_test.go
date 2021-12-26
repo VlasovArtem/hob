@@ -58,7 +58,7 @@ func Test_FindById(t *testing.T) {
 
 	house := mocks.GenerateHouseResponse()
 
-	repository.On("FindDtoById", house.Id).Return(house, nil)
+	repository.On("FindById", house.Id).Return(house, nil)
 
 	actual, err := houseService.FindById(house.Id)
 
@@ -71,7 +71,7 @@ func Test_FindById_WithRecordNotFound(t *testing.T) {
 
 	id := uuid.New()
 
-	repository.On("FindDtoById", id).Return(model.HouseDto{}, gorm.ErrRecordNotFound)
+	repository.On("FindById", id).Return(model.HouseDto{}, gorm.ErrRecordNotFound)
 
 	actual, err := houseService.FindById(id)
 
@@ -85,7 +85,7 @@ func Test_FindById_WithRecordNotFoundExists(t *testing.T) {
 	id := uuid.New()
 
 	expectedError := errors.New("error")
-	repository.On("FindDtoById", id).Return(model.HouseDto{}, expectedError)
+	repository.On("FindById", id).Return(model.HouseDto{}, expectedError)
 
 	actual, err := houseService.FindById(id)
 

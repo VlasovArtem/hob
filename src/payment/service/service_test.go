@@ -64,7 +64,7 @@ func Test_Add_WithUserNotExists(t *testing.T) {
 
 	payment, err := paymentService.Add(request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId)), err)
+	assert.Equal(t, fmt.Errorf("user with id %s in not exists", request.UserId), err)
 	assert.Equal(t, model.PaymentDto{}, payment)
 }
 
@@ -78,7 +78,7 @@ func Test_Add_WithHouseNotExists(t *testing.T) {
 
 	payment, err := paymentService.Add(request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId)), err)
+	assert.Equal(t, fmt.Errorf("house with id %s in not exists", request.HouseId), err)
 	assert.Equal(t, model.PaymentDto{}, payment)
 }
 
@@ -93,7 +93,7 @@ func Test_Add_WithProviderNotExists(t *testing.T) {
 
 	payment, err := paymentService.Add(request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("provider with id %s in not exists", request.ProviderId)), err)
+	assert.Equal(t, fmt.Errorf("provider with id %s in not exists", request.ProviderId), err)
 	assert.Equal(t, model.PaymentDto{}, payment)
 
 	paymentRepository.AssertNotCalled(t, "Create", mock.Anything)
@@ -121,7 +121,7 @@ func Test_FindById_WithNotExistingId(t *testing.T) {
 
 	actual, err := paymentService.FindById(id)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("payment with id %s not found", id)), err)
+	assert.Equal(t, fmt.Errorf("payment with id %s not found", id), err)
 	assert.Equal(t, model.PaymentDto{}, actual)
 }
 
@@ -258,7 +258,7 @@ func Test_DeleteById_WithNotExists(t *testing.T) {
 
 	paymentRepository.On("ExistsById", id).Return(false)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("payment with id %s not found", id)), paymentService.DeleteById(id))
+	assert.Equal(t, fmt.Errorf("payment with id %s not found", id), paymentService.DeleteById(id))
 
 	paymentRepository.AssertNotCalled(t, "DeleteById", id)
 }
@@ -308,7 +308,7 @@ func Test_Update_WithNotExists(t *testing.T) {
 	paymentRepository.On("ExistsById", id).Return(false)
 
 	err := houseService.Update(id, request)
-	assert.Equal(t, errors.New(fmt.Sprintf("payment with id %s not found", id)), err)
+	assert.Equal(t, fmt.Errorf("payment with id %s not found", id), err)
 
 	paymentRepository.AssertNotCalled(t, "Update", mock.Anything)
 }
@@ -339,7 +339,7 @@ func Test_Update_WithProviderNotExists(t *testing.T) {
 	providerService.On("ExistsById", request.ProviderId).Return(false)
 
 	err := houseService.Update(id, request)
-	assert.Equal(t, errors.New(fmt.Sprintf("provider with id %s not found", request.ProviderId)), err)
+	assert.Equal(t, fmt.Errorf("provider with id %s not found", request.ProviderId), err)
 
 	paymentRepository.AssertNotCalled(t, "Update", mock.Anything)
 }

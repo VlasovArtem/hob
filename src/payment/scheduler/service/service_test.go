@@ -233,7 +233,7 @@ func Test_Remove(t *testing.T) {
 
 	paymentSchedulerRepository.On("ExistsById", id).Return(true)
 	paymentSchedulerRepository.On("DeleteById", id).Return()
-	serviceScheduler.On("Remove", id).Return(nil)
+	serviceScheduler.On("DeleteById", id).Return(nil)
 
 	err := service.Remove(id)
 
@@ -250,7 +250,7 @@ func Test_Remove_WithErrorFromScheduler(t *testing.T) {
 	paymentSchedulerRepository.On("ExistsById", id).Return(true)
 	paymentSchedulerRepository.On("DeleteById", id).Return()
 
-	serviceScheduler.On("Remove", id).Return(errors.New("error"))
+	serviceScheduler.On("DeleteById", id).Return(errors.New("error"))
 
 	err := service.Remove(id)
 

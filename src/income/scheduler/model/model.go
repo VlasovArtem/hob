@@ -19,6 +19,13 @@ type CreateIncomeSchedulerRequest struct {
 	Spec        scheduler.SchedulingSpecification
 }
 
+type UpdateIncomeSchedulerRequest struct {
+	Name        string
+	Description string
+	Sum         float32
+	Spec        scheduler.SchedulingSpecification
+}
+
 type IncomeSchedulerDto struct {
 	Id          uuid.UUID
 	Name        string
@@ -49,5 +56,17 @@ func (c CreateIncomeSchedulerRequest) ToEntity() IncomeScheduler {
 			HouseId:     c.HouseId,
 		},
 		Spec: c.Spec,
+	}
+}
+
+func (u UpdateIncomeSchedulerRequest) ToEntity(id uuid.UUID) IncomeScheduler {
+	return IncomeScheduler{
+		Income: model.Income{
+			Id:          id,
+			Name:        u.Name,
+			Description: u.Description,
+			Sum:         u.Sum,
+		},
+		Spec: u.Spec,
 	}
 }

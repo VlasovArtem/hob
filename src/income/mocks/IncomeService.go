@@ -99,3 +99,17 @@ func (_m *IncomeService) FindById(id uuid.UUID) (model.IncomeDto, error) {
 
 	return r0, r1
 }
+
+// Update provides a mock function with given fields: id, request
+func (_m *IncomeService) Update(id uuid.UUID, request model.UpdateIncomeRequest) error {
+	ret := _m.Called(id, request)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateIncomeRequest) error); ok {
+		r0 = rf(id, request)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

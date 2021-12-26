@@ -49,7 +49,7 @@ func (u *UserHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := model.CreateUserRequest{}
 
-		if err := rest.PerformRequest(&requestEntity, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
 			rest.HandleWithError(writer, err)
 			return
 		}
@@ -77,7 +77,7 @@ func (u *UserHandlerObject) FindById() http.HandlerFunc {
 				rest.HandleWithError(writer, err)
 			} else {
 				userResponse, err := u.userService.FindById(id)
-				rest.PerformResponse(writer, userResponse, err)
+				rest.PerformResponseWithBody(writer, userResponse, err)
 			}
 		}
 	}
@@ -100,7 +100,7 @@ func (u *UserHandlerObject) Update() http.HandlerFunc {
 		} else {
 			requestEntity := model.UpdateUserRequest{}
 
-			if err := rest.PerformRequest(&requestEntity, writer, request); err != nil {
+			if err := rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
 				rest.HandleWithError(writer, err)
 				return
 			}
@@ -112,7 +112,7 @@ func (u *UserHandlerObject) Update() http.HandlerFunc {
 			if err = u.userService.Update(id, requestEntity); err != nil {
 				rest.HandleBadRequestWithErrorResponse(writer, projectErrors.NewWithDetails(err.Error()))
 			} else {
-				rest.PerformResponse(writer, nil, nil)
+				rest.PerformResponseWithBody(writer, nil, nil)
 			}
 		}
 	}

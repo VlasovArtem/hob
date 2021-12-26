@@ -47,7 +47,7 @@ func (p *PaymentSchedulerHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		paymentRequest := model.CreatePaymentSchedulerRequest{}
 
-		if err := rest.PerformRequest(&paymentRequest, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&paymentRequest, writer, request); err != nil {
 			return
 		}
 
@@ -76,7 +76,7 @@ func (p *PaymentSchedulerHandlerObject) FindById() http.HandlerFunc {
 		} else {
 			response, err := p.paymentSchedulerService.FindById(id)
 
-			rest.PerformResponse(writer, response, err)
+			rest.PerformResponseWithBody(writer, response, err)
 		}
 	}
 }
@@ -86,7 +86,7 @@ func (p *PaymentSchedulerHandlerObject) FindByHouseId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, p.paymentSchedulerService.FindByHouseId(id), nil)
+			rest.PerformResponseWithBody(writer, p.paymentSchedulerService.FindByHouseId(id), nil)
 		}
 	}
 }
@@ -96,7 +96,7 @@ func (p *PaymentSchedulerHandlerObject) FindByUserId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, p.paymentSchedulerService.FindByUserId(id), nil)
+			rest.PerformResponseWithBody(writer, p.paymentSchedulerService.FindByUserId(id), nil)
 		}
 	}
 }
@@ -106,7 +106,7 @@ func (p *PaymentSchedulerHandlerObject) FindByProviderId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, p.paymentSchedulerService.FindByProviderId(id), nil)
+			rest.PerformResponseWithBody(writer, p.paymentSchedulerService.FindByProviderId(id), nil)
 		}
 	}
 }
@@ -118,7 +118,7 @@ func (p *PaymentSchedulerHandlerObject) Update() http.HandlerFunc {
 		} else {
 			request := model.UpdatePaymentSchedulerRequest{}
 
-			if err := rest.PerformRequest(&request, w, r); err != nil {
+			if err := rest.ReadRequestBody(&request, w, r); err != nil {
 				return
 			}
 

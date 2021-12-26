@@ -10,7 +10,7 @@ import (
 type Meter struct {
 	Id          uuid.UUID `gorm:"primarykey;type:uuid"`
 	Name        string
-	Details     string
+	Details     []byte
 	Description string
 	PaymentId   uuid.UUID            `gorm:"index:idx_payment_id"`
 	Payment     paymentModel.Payment `gorm:"foreignKey:PaymentId"`
@@ -26,7 +26,13 @@ type CreateMeterRequest struct {
 	HouseId     uuid.UUID
 }
 
-type MeterResponse struct {
+type UpdateMeterRequest struct {
+	Name        string
+	Details     map[string]float64
+	Description string
+}
+
+type MeterDto struct {
 	Id          uuid.UUID
 	Name        string
 	Details     map[string]float64
@@ -35,12 +41,12 @@ type MeterResponse struct {
 	HouseId     uuid.UUID
 }
 
-func (m Meter) ToResponse() MeterResponse {
+func (m Meter) ToDto() MeterDto {
 	details := map[string]float64{}
 
-	_ = json.Unmarshal([]byte(m.Details), &details)
+	_ = json.Unmarshal(m.Details, &details)
 
-	return MeterResponse{
+	return MeterDto{
 		Id:          m.Id,
 		Name:        m.Name,
 		Details:     details,
@@ -56,9 +62,19 @@ func (c CreateMeterRequest) ToEntity() Meter {
 	return Meter{
 		Id:          uuid.New(),
 		Name:        c.Name,
-		Details:     string(marshal),
+		Details:     marshal,
 		Description: c.Description,
 		PaymentId:   c.PaymentId,
 		HouseId:     c.HouseId,
+	}
+}
+
+func (c UpdateMeterRequest) ToEntity() Meter {
+	marshal, _ := json.Marshal(c.Details)
+
+	return Meter{
+		Name:        c.Name,
+		Details:     marshal,
+		Description: c.Description,
 	}
 }

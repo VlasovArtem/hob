@@ -13,7 +13,7 @@ import (
 	"strconv"
 )
 
-func PerformRequest(target interface{}, w http.ResponseWriter, r *http.Request) error {
+func ReadRequestBody(target interface{}, w http.ResponseWriter, r *http.Request) error {
 	reqBody, err := ioutil.ReadAll(r.Body)
 
 	service.LogError(err, "")
@@ -26,7 +26,9 @@ func PerformRequest(target interface{}, w http.ResponseWriter, r *http.Request) 
 
 	if service.LogError(err, "") {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		_, err = w.Write([]byte(err.Error()))
+
+		return err
 	}
 
 	return err
@@ -66,11 +68,11 @@ func GetIdRequestParameter(request *http.Request) (uuid.UUID, error) {
 	}
 }
 
-func PerformResponse(writer http.ResponseWriter, response interface{}, err error) {
+func PerformResponseWithBody(writer http.ResponseWriter, body interface{}, err error) {
 	if err != nil {
 		HandleWithError(writer, err)
-	} else if response != nil {
-		if err = json.NewEncoder(writer).Encode(response); err != nil {
+	} else if body != nil {
+		if err = json.NewEncoder(writer).Encode(body); err != nil {
 			HandleErrorResponseWithError(writer, http.StatusInternalServerError, err)
 		}
 	}

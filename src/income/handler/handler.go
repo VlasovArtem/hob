@@ -39,7 +39,7 @@ func (i *IncomeHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var requestBody model.CreateIncomeRequest
 
-		if err := rest.PerformRequest(&requestBody, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&requestBody, writer, request); err != nil {
 			return
 		}
 
@@ -56,7 +56,7 @@ func (i *IncomeHandlerObject) FindById() http.HandlerFunc {
 		} else {
 			meterResponse, err := i.incomeService.FindById(id)
 
-			rest.PerformResponse(writer, meterResponse, err)
+			rest.PerformResponseWithBody(writer, meterResponse, err)
 		}
 	}
 }
@@ -66,7 +66,7 @@ func (i *IncomeHandlerObject) FindByHouseId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, i.incomeService.FindByHouseId(id), err)
+			rest.PerformResponseWithBody(writer, i.incomeService.FindByHouseId(id), err)
 		}
 	}
 }

@@ -25,7 +25,6 @@ type CreateIncomeRequest struct {
 }
 
 type UpdateIncomeRequest struct {
-	Id          uuid.UUID
 	Name        string
 	Description string
 	Date        time.Time
@@ -52,7 +51,7 @@ func (i Income) ToDto() IncomeDto {
 	}
 }
 
-func (c CreateIncomeRequest) CreateToEntity() Income {
+func (c CreateIncomeRequest) ToEntity() Income {
 	return Income{
 		Id:          uuid.New(),
 		Name:        c.Name,
@@ -60,15 +59,5 @@ func (c CreateIncomeRequest) CreateToEntity() Income {
 		Date:        c.Date,
 		Sum:         c.Sum,
 		HouseId:     c.HouseId,
-	}
-}
-
-func (c UpdateIncomeRequest) UpdateToEntity() Income {
-	return Income{
-		Id:          c.Id,
-		Name:        c.Name,
-		Description: c.Description,
-		Date:        c.Date,
-		Sum:         c.Sum,
 	}
 }

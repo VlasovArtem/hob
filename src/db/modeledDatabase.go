@@ -17,6 +17,14 @@ func (m *ModeledDatabase) FindBy(receiver interface{}, query interface{}, condit
 	return m.FindByModeled(m.Model, receiver, query, conditions...)
 }
 
+func (m *ModeledDatabase) First(receiver interface{}, id uuid.UUID) error {
+	return m.FindByIdModeled(m.Model, receiver, id)
+}
+
+func (m *ModeledDatabase) FirstBy(receiver interface{}, query interface{}, conditions ...interface{}) error {
+	return m.FirstByModeled(m.Model, receiver, query, conditions...)
+}
+
 func (m *ModeledDatabase) Exists(id uuid.UUID) bool {
 	return m.ExistsById(m.Model, id)
 }

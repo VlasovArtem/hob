@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	houses "github.com/VlasovArtem/hob/src/house/service"
 	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
@@ -67,20 +68,8 @@ type PaymentSchedulerService interface {
 }
 
 func (p *PaymentSchedulerServiceObject) Add(request model.CreatePaymentSchedulerRequest) (response model.PaymentSchedulerDto, err error) {
-	if request.Sum <= 0 {
-		return response, errors.New("sum should not be zero of negative")
-	}
-	if !p.userService.ExistsById(request.UserId) {
-		return response, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId))
-	}
-	if !p.houseService.ExistsById(request.HouseId) {
-		return response, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId))
-	}
-	if !p.providerService.ExistsById(request.ProviderId) {
-		return response, errors.New(fmt.Sprintf("provider with id %s in not exists", request.ProviderId))
-	}
-	if request.Spec == "" {
-		return response, errors.New("scheduler configuration not provided")
+	if err = p.validateCreateRequest(request); err != nil {
+		return response, err
 	}
 
 	entity := request.ToEntity()
@@ -96,9 +85,28 @@ func (p *PaymentSchedulerServiceObject) Add(request model.CreatePaymentScheduler
 	}
 }
 
+func (p *PaymentSchedulerServiceObject) validateCreateRequest(request model.CreatePaymentSchedulerRequest) error {
+	if request.Sum <= 0 {
+		return errors.New("sum should not be zero of negative")
+	}
+	if !p.userService.ExistsById(request.UserId) {
+		return int_errors.NewErrNotFound("user with id %s in not exists", request.UserId)
+	}
+	if !p.houseService.ExistsById(request.HouseId) {
+		return int_errors.NewErrNotFound("house with id %s in not exists", request.HouseId)
+	}
+	if !p.providerService.ExistsById(request.ProviderId) {
+		return int_errors.NewErrNotFound("provider with id %s in not exists", request.ProviderId)
+	}
+	if request.Spec == "" {
+		return errors.New("scheduler configuration not provided")
+	}
+	return nil
+}
+
 func (p *PaymentSchedulerServiceObject) Remove(id uuid.UUID) error {
 	if !p.repository.ExistsById(id) {
-		return errors.New(fmt.Sprintf("payment scheduler with id %s not found", id))
+		return int_errors.NewErrNotFound("payment scheduler with id %s not found", id)
 	} else {
 		if err := p.serviceScheduler.Remove(id); err != nil {
 			log.Error().Err(err).Msg("")
@@ -129,28 +137,38 @@ func (p *PaymentSchedulerServiceObject) FindByProviderId(providerId uuid.UUID) [
 }
 
 func (p *PaymentSchedulerServiceObject) Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) error {
-	if !p.repository.ExistsById(id) {
-		return errors.New(fmt.Sprintf("payment schedule with id %s not found", id))
-	}
-	if request.Sum <= 0 {
-		return errors.New("sum should not be zero of negative")
-	}
-	if !p.providerService.ExistsById(request.ProviderId) {
-		return errors.New(fmt.Sprintf("provider with id %s not found", request.ProviderId))
-	}
-	if request.Spec == "" {
-		return errors.New("scheduler configuration not provided")
-	}
-	if err := p.repository.Update(request.ToEntity(id)); err != nil {
+	if err, _ := p.validateUpdateRequest(id, request); err != nil {
 		return err
 	}
-	entity, _ := p.repository.FindById(id)
-	if _, err := p.serviceScheduler.Update(entity.Id, string(entity.Spec), p.schedulerFunc(entity)); err != nil {
-		p.repository.DeleteById(entity.Id)
+
+	updatedEntity, err := p.repository.Update(id, request)
+
+	if err != nil {
+		return err
+	}
+
+	if _, err := p.serviceScheduler.Update(updatedEntity.Id, string(updatedEntity.Spec), p.schedulerFunc(updatedEntity)); err != nil {
+		p.repository.DeleteById(updatedEntity.Id)
 
 		return err
 	}
 	return nil
+}
+
+func (p *PaymentSchedulerServiceObject) validateUpdateRequest(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) (error, bool) {
+	if request.Sum <= 0 {
+		return errors.New("sum should not be zero of negative"), true
+	}
+	if !p.repository.ExistsById(id) {
+		return int_errors.NewErrNotFound("payment schedule with id %s not found", id), true
+	}
+	if !p.providerService.ExistsById(request.ProviderId) {
+		return int_errors.NewErrNotFound("provider with id %s not found", request.ProviderId), true
+	}
+	if request.Spec == "" {
+		return errors.New("scheduler configuration not provided"), true
+	}
+	return nil, false
 }
 
 func (p *PaymentSchedulerServiceObject) schedulerFunc(payment model.PaymentScheduler) func() {

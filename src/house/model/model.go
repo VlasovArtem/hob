@@ -37,7 +37,6 @@ type CreateHouseRequest struct {
 }
 
 type UpdateHouseRequest struct {
-	Id          uuid.UUID
 	Name        string
 	Country     string
 	City        string
@@ -66,16 +65,5 @@ func (c CreateHouseRequest) ToEntity(country *model.Country) House {
 		StreetLine1: c.StreetLine1,
 		StreetLine2: c.StreetLine2,
 		UserId:      c.UserId,
-	}
-}
-
-func (u UpdateHouseRequest) UpdateToEntity(country *model.Country) House {
-	return House{
-		Id:          u.Id,
-		Name:        u.Name,
-		CountryCode: country.Code,
-		City:        u.City,
-		StreetLine1: u.StreetLine1,
-		StreetLine2: u.StreetLine2,
 	}
 }

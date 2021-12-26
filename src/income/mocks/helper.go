@@ -29,9 +29,8 @@ func GenerateCreateIncomeRequest() model.CreateIncomeRequest {
 	}
 }
 
-func GenerateUpdateIncomeRequest() model.UpdateIncomeRequest {
-	return model.UpdateIncomeRequest{
-		Id:          uuid.New(),
+func GenerateUpdateIncomeRequest() (uuid.UUID, model.UpdateIncomeRequest) {
+	return uuid.New(), model.UpdateIncomeRequest{
 		Name:        "Name",
 		Date:        Date,
 		Description: "Description",
@@ -39,7 +38,7 @@ func GenerateUpdateIncomeRequest() model.UpdateIncomeRequest {
 	}
 }
 
-func GenerateIncomeResponse() model.IncomeDto {
+func GenerateIncomeDto() model.IncomeDto {
 	return model.IncomeDto{
 		Id:          uuid.New(),
 		Name:        "Name",

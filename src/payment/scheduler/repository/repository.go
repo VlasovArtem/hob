@@ -40,7 +40,7 @@ type PaymentSchedulerRepository interface {
 	FindByHouseId(houseId uuid.UUID) []model.PaymentSchedulerDto
 	FindByUserId(userId uuid.UUID) []model.PaymentSchedulerDto
 	FindByProviderId(providerId uuid.UUID) []model.PaymentSchedulerDto
-	Update(entity model.PaymentScheduler) error
+	Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) (model.PaymentScheduler, error)
 }
 
 func (p *PaymentSchedulerRepositoryObject) Create(scheduler model.PaymentScheduler) (model.PaymentScheduler, error) {
@@ -76,6 +76,10 @@ func (p *PaymentSchedulerRepositoryObject) findBy(query interface{}, conditions 
 	return response
 }
 
-func (p *PaymentSchedulerRepositoryObject) Update(entity model.PaymentScheduler) error {
-	return p.database.Update(entity.Id, entity, "HouseId", "House", "UserId", "User", "Provider")
+func (p *PaymentSchedulerRepositoryObject) Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) (response model.PaymentScheduler, error error) {
+	if err := p.database.Update(id, request); err != nil {
+		return response, err
+	}
+
+	return p.FindById(id)
 }

@@ -63,15 +63,17 @@ func (_m *IncomeRepository) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindDtoById provides a mock function with given fields: id
-func (_m *IncomeRepository) FindDtoById(id uuid.UUID) (model.IncomeDto, error) {
+// FindByHouseId provides a mock function with given fields: id
+func (_m *IncomeRepository) FindByHouseId(id uuid.UUID) ([]model.IncomeDto, error) {
 	ret := _m.Called(id)
 
-	var r0 model.IncomeDto
-	if rf, ok := ret.Get(0).(func(uuid.UUID) model.IncomeDto); ok {
+	var r0 []model.IncomeDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.IncomeDto); ok {
 		r0 = rf(id)
 	} else {
-		r0 = ret.Get(0).(model.IncomeDto)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.IncomeDto)
+		}
 	}
 
 	var r1 error
@@ -84,29 +86,34 @@ func (_m *IncomeRepository) FindDtoById(id uuid.UUID) (model.IncomeDto, error) {
 	return r0, r1
 }
 
-// FindResponseByHouseId provides a mock function with given fields: id
-func (_m *IncomeRepository) FindResponseByHouseId(id uuid.UUID) []model.IncomeDto {
+// FindById provides a mock function with given fields: id
+func (_m *IncomeRepository) FindById(id uuid.UUID) (model.Income, error) {
 	ret := _m.Called(id)
 
-	var r0 []model.IncomeDto
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.IncomeDto); ok {
+	var r0 model.Income
+	if rf, ok := ret.Get(0).(func(uuid.UUID) model.Income); ok {
 		r0 = rf(id)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.IncomeDto)
-		}
+		r0 = ret.Get(0).(model.Income)
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uuid.UUID) error); ok {
+		r1 = rf(id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
-// Update provides a mock function with given fields: entity
-func (_m *IncomeRepository) Update(entity model.Income) error {
-	ret := _m.Called(entity)
+// Update provides a mock function with given fields: id, request
+func (_m *IncomeRepository) Update(id uuid.UUID, request model.UpdateIncomeRequest) error {
+	ret := _m.Called(id, request)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(model.Income) error); ok {
-		r0 = rf(entity)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateIncomeRequest) error); ok {
+		r0 = rf(id, request)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -49,7 +49,7 @@ func (p *ProviderHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := model.CreateProviderRequest{}
 
-		if err := rest.PerformRequest(&requestEntity, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
 			rest.HandleWithError(writer, err)
 
 			return
@@ -68,7 +68,7 @@ func (p *ProviderHandlerObject) Delete() http.HandlerFunc {
 		} else {
 			dto, err := p.providerService.FindById(id)
 
-			rest.PerformResponse(writer, dto, err)
+			rest.PerformResponseWithBody(writer, dto, err)
 		}
 	}
 }
@@ -82,12 +82,12 @@ func (p *ProviderHandlerObject) Update() http.HandlerFunc {
 		} else {
 			requestEntity := model.UpdateProviderRequest{}
 
-			if err = rest.PerformRequest(&requestEntity, writer, request); err != nil {
+			if err = rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
 				rest.HandleWithError(writer, err)
 
 				return
 			}
-			rest.PerformResponse(writer, nil, p.providerService.Update(id, requestEntity))
+			rest.PerformResponseWithBody(writer, nil, p.providerService.Update(id, requestEntity))
 		}
 	}
 }
@@ -101,7 +101,7 @@ func (p *ProviderHandlerObject) FindById() http.HandlerFunc {
 		} else {
 			dto, err := p.providerService.FindById(id)
 
-			rest.PerformResponse(writer, dto, err)
+			rest.PerformResponseWithBody(writer, dto, err)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func (p *ProviderHandlerObject) FindByUserId() http.HandlerFunc {
 			return
 		}
 
-		rest.PerformResponse(writer, p.providerService.FindByUserId(id), nil)
+		rest.PerformResponseWithBody(writer, p.providerService.FindByUserId(id), nil)
 	}
 }
 
@@ -124,7 +124,7 @@ func (p *ProviderHandlerObject) FindByNameLikeAndUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestEntity := FindByNameRequest{}
 
-		if err := rest.PerformRequest(&requestEntity, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
 
 			return
 		}
@@ -149,6 +149,6 @@ func (p *ProviderHandlerObject) FindByNameLikeAndUserId() http.HandlerFunc {
 			return
 		}
 
-		rest.PerformResponse(writer, p.providerService.FindByNameLikeAndUserId(requestEntity.Name, id, page, size), nil)
+		rest.PerformResponseWithBody(writer, p.providerService.FindByNameLikeAndUserId(requestEntity.Name, id, page, size), nil)
 	}
 }

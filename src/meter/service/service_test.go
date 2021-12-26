@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	meterMocks "github.com/VlasovArtem/hob/src/meter/mocks"
 	"github.com/VlasovArtem/hob/src/meter/model"
@@ -49,7 +50,7 @@ func Test_Add(t *testing.T) {
 	meter, err := service.Add(request)
 
 	assert.Nil(t, err)
-	assert.Equal(t, savedMeter.ToResponse(), meter)
+	assert.Equal(t, savedMeter.ToDto(), meter)
 }
 
 func Test_Add_WithNotExistingPayment(t *testing.T) {
@@ -60,8 +61,8 @@ func Test_Add_WithNotExistingPayment(t *testing.T) {
 
 	meter, err := service.Add(request)
 
-	assert.Equal(t, fmt.Sprintf("payment with id %s in not exists", request.PaymentId.String()), err.Error())
-	assert.Equal(t, model.MeterResponse{}, meter)
+	assert.Equal(t, fmt.Sprintf("payment with id %s not found", request.PaymentId.String()), err.Error())
+	assert.Equal(t, model.MeterDto{}, meter)
 }
 
 func Test_Add_WithNotExistingHouse(t *testing.T) {
@@ -73,8 +74,8 @@ func Test_Add_WithNotExistingHouse(t *testing.T) {
 
 	meter, err := service.Add(request)
 
-	assert.Equal(t, fmt.Sprintf("house with id %s in not exists", request.HouseId.String()), err.Error())
-	assert.Equal(t, model.MeterResponse{}, meter)
+	assert.Equal(t, fmt.Sprintf("house with id %s not found", request.HouseId.String()), err.Error())
+	assert.Equal(t, model.MeterDto{}, meter)
 }
 
 func Test_Add_WithErrorFromRepository(t *testing.T) {
@@ -90,7 +91,87 @@ func Test_Add_WithErrorFromRepository(t *testing.T) {
 	meter, err := service.Add(request)
 
 	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.MeterResponse{}, meter)
+	assert.Equal(t, model.MeterDto{}, meter)
+}
+
+func Test_Update(t *testing.T) {
+	service := serviceGenerator()
+
+	id, request := meterMocks.GenerateUpdateMeterRequest()
+
+	meterRepository.On("ExistsById", id).Return(true)
+	meterRepository.On("Update", id, request.ToEntity()).Return(nil)
+
+	err := service.Update(id, request)
+
+	assert.Nil(t, err)
+}
+
+func Test_Update_WithMissingId(t *testing.T) {
+	service := serviceGenerator()
+
+	id, request := meterMocks.GenerateUpdateMeterRequest()
+
+	meterRepository.On("ExistsById", id).Return(false)
+
+	err := service.Update(id, request)
+
+	assert.Equal(t, int_errors.NewErrNotFound("meter with id %s not found", id), err)
+
+	meterRepository.AssertNotCalled(t, "Update", id, request)
+}
+
+func Test_Update_WithErrorFromRepository(t *testing.T) {
+	service := serviceGenerator()
+
+	id, request := meterMocks.GenerateUpdateMeterRequest()
+
+	meterRepository.On("ExistsById", id).Return(true)
+	meterRepository.On("Update", id, request.ToEntity()).Return(errors.New("test"))
+
+	err := service.Update(id, request)
+
+	assert.Equal(t, errors.New("test"), err)
+}
+
+func Test_DeleteById(t *testing.T) {
+	service := serviceGenerator()
+
+	id := uuid.New()
+
+	meterRepository.On("ExistsById", id).Return(true)
+	meterRepository.On("DeleteById", id).Return(nil)
+
+	err := service.DeleteById(id)
+
+	assert.Nil(t, err)
+}
+
+func Test_DeleteById_WithMissingId(t *testing.T) {
+	service := serviceGenerator()
+
+	id := uuid.New()
+
+	meterRepository.On("ExistsById", id).Return(false)
+
+	err := service.DeleteById(id)
+
+	assert.Equal(t, int_errors.NewErrNotFound("meter with id %s not found", id), err)
+
+	meterRepository.AssertNotCalled(t, "DeleteById", id)
+}
+
+func Test_DeleteById_WithErrorFromRepository(t *testing.T) {
+	service := serviceGenerator()
+
+	id := uuid.New()
+
+	meterRepository.On("ExistsById", id).Return(true)
+	meterRepository.On("DeleteById", id).Return(errors.New("test"))
+
+	err := service.DeleteById(id)
+
+	assert.Equal(t, errors.New("test"), err)
 }
 
 func Test_FindById(t *testing.T) {
@@ -105,7 +186,7 @@ func Test_FindById(t *testing.T) {
 	actual, err := service.FindById(id)
 
 	assert.Nil(t, err)
-	assert.Equal(t, expected.ToResponse(), actual)
+	assert.Equal(t, expected.ToDto(), actual)
 }
 
 func Test_FindById_WithMissingId(t *testing.T) {
@@ -117,8 +198,8 @@ func Test_FindById_WithMissingId(t *testing.T) {
 
 	actual, err := service.FindById(id)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("meter with id %s in not exists", id)), err)
-	assert.Equal(t, model.MeterResponse{}, actual)
+	assert.Equal(t, fmt.Errorf("meter with id %s in not exists", id), err)
+	assert.Equal(t, model.MeterDto{}, actual)
 }
 
 func Test_FindById_WithError(t *testing.T) {
@@ -132,7 +213,7 @@ func Test_FindById_WithError(t *testing.T) {
 	actual, err := service.FindById(id)
 
 	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.MeterResponse{}, actual)
+	assert.Equal(t, model.MeterDto{}, actual)
 }
 
 func Test_FindByPaymentId(t *testing.T) {
@@ -147,7 +228,7 @@ func Test_FindByPaymentId(t *testing.T) {
 	actual, err := service.FindByPaymentId(id)
 
 	assert.Nil(t, err)
-	assert.Equal(t, expected.ToResponse(), actual)
+	assert.Equal(t, expected.ToDto(), actual)
 }
 
 func Test_FindByPaymentId_WithMissingId(t *testing.T) {
@@ -159,8 +240,8 @@ func Test_FindByPaymentId_WithMissingId(t *testing.T) {
 
 	actual, err := service.FindByPaymentId(id)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("meter with payment id %s in not exists", id)), err)
-	assert.Equal(t, model.MeterResponse{}, actual)
+	assert.Equal(t, fmt.Errorf("meter with payment id %s in not exists", id), err)
+	assert.Equal(t, model.MeterDto{}, actual)
 }
 
 func Test_FindByPaymentId_WithError(t *testing.T) {
@@ -174,7 +255,7 @@ func Test_FindByPaymentId_WithError(t *testing.T) {
 	actual, err := service.FindByPaymentId(id)
 
 	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.MeterResponse{}, actual)
+	assert.Equal(t, model.MeterDto{}, actual)
 }
 
 func Test_FindByHouseId(t *testing.T) {
@@ -188,7 +269,7 @@ func Test_FindByHouseId(t *testing.T) {
 
 	actual := service.FindByHouseId(id)
 
-	assert.Equal(t, []model.MeterResponse{expected.ToResponse()}, actual)
+	assert.Equal(t, []model.MeterDto{expected.ToDto()}, actual)
 }
 
 func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
@@ -200,5 +281,5 @@ func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
 
 	actual := service.FindByHouseId(id)
 
-	assert.Equal(t, []model.MeterResponse{}, actual)
+	assert.Equal(t, []model.MeterDto{}, actual)
 }

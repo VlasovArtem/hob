@@ -50,7 +50,7 @@ func (p *PaymentHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		paymentRequest := model.CreatePaymentRequest{}
 
-		if err := rest.PerformRequest(&paymentRequest, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&paymentRequest, writer, request); err != nil {
 			return
 		}
 
@@ -77,7 +77,7 @@ func (p *PaymentHandlerObject) Update() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		paymentRequest := model.UpdatePaymentRequest{}
 
-		if err := rest.PerformRequest(&paymentRequest, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&paymentRequest, writer, request); err != nil {
 			return
 		}
 
@@ -96,7 +96,7 @@ func (p *PaymentHandlerObject) FindById() http.HandlerFunc {
 		} else {
 			response, err := p.paymentService.FindById(id)
 
-			rest.PerformResponse(writer, response, err)
+			rest.PerformResponseWithBody(writer, response, err)
 		}
 	}
 }
@@ -106,7 +106,7 @@ func (p *PaymentHandlerObject) FindByHouseId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, p.paymentService.FindByHouseId(id), nil)
+			rest.PerformResponseWithBody(writer, p.paymentService.FindByHouseId(id), nil)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func (p *PaymentHandlerObject) FindByUserId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, p.paymentService.FindByUserId(id), nil)
+			rest.PerformResponseWithBody(writer, p.paymentService.FindByUserId(id), nil)
 		}
 	}
 }
@@ -126,7 +126,7 @@ func (p *PaymentHandlerObject) FindByProviderId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, p.paymentService.FindByProviderId(id), nil)
+			rest.PerformResponseWithBody(writer, p.paymentService.FindByProviderId(id), nil)
 		}
 	}
 }
