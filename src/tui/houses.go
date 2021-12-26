@@ -91,7 +91,7 @@ func (h *Houses) updateHouse(key *tcell.EventKey) *tcell.EventKey {
 }
 
 func (h *Houses) homePage(key *tcell.EventKey) *tcell.EventKey {
-	h.NavigateHome()
+	h.Home()
 	return key
 }
 

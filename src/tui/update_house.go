@@ -57,9 +57,7 @@ func NewUpdateHouse(app *TerminalApp, ctx context.Context) *UpdateHouse {
 		}
 	}
 
-	request := houseModel.UpdateHouseRequest{
-		Id: houseId,
-	}
+	request := houseModel.UpdateHouseRequest{}
 
 	form := tview.NewForm().
 		AddInputField("Name", houseDto.Name, 20, nil, func(text string) { request.Name = text }).
@@ -68,7 +66,7 @@ func NewUpdateHouse(app *TerminalApp, ctx context.Context) *UpdateHouse {
 		AddInputField("Street Line 1", houseDto.StreetLine1, 20, nil, func(text string) { request.StreetLine1 = text }).
 		AddInputField("Street Line 2", houseDto.StreetLine2, 20, nil, func(text string) { request.StreetLine2 = text }).
 		AddButton("Update", func() {
-			if err := f.app.GetHouseService().Update(request); err != nil {
+			if err := f.app.GetHouseService().Update(houseId, request); err != nil {
 				f.ShowErrorTo(err)
 			} else {
 				f.ShowInfoReturnBack(fmt.Sprintf("House %s successfully updated.", request.Name))

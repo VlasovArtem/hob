@@ -75,7 +75,7 @@ func (i *Incomes) createIncome(key *tcell.EventKey) *tcell.EventKey {
 }
 
 func (i *Incomes) homePage(key *tcell.EventKey) *tcell.EventKey {
-	i.NavigateHome()
+	i.Home()
 	return key
 }
 

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
@@ -9,64 +8,63 @@ import (
 
 type PageName string
 
+var (
+	OnError  = PageName("on_error")
+	Refresh  = PageName("refresh")
+	homePage = PageName("home")
+)
+
 type NavigationRules struct {
-	owner      PageName
-	home       *NavigationInfo
-	onError    *NavigationInfo
-	refresh    *NavigationInfo
+	my         *NavigationInfo
 	additional map[PageName]*NavigationInfo
 }
 
 func NewNavigationRules(app *TerminalApp, my *NavigationInfo) *NavigationRules {
-	n := &NavigationRules{additional: make(map[PageName]*NavigationInfo)}
-	n.home = &NavigationInfo{
-		pageName: HomePageName,
-		provider: func() tview.Primitive { return NewHome(app) },
+	return &NavigationRules{
+		my: my,
+		additional: map[PageName]*NavigationInfo{
+			homePage: {
+				pageName: HomePageName,
+				provider: func() tview.Primitive { return NewHome(app) },
+			},
+			Refresh:     my,
+			OnError:     my,
+			my.pageName: my,
+		},
 	}
-	n.refresh = my
-	n.onError = my
-	n.owner = my.pageName
-	n.additional[my.pageName] = my
-	return n
-}
-
-type MyNavigation interface {
-	my(app *TerminalApp, ctx context.Context) *NavigationInfo
-	enrichNavigation(app *TerminalApp, ctx context.Context)
 }
 
 type Navigation struct {
-	MyNavigation
 	*NavigationRules
 	app *TerminalApp
 }
 
-func NewNavigation() *Navigation {
-	return &Navigation{}
+func NewNavigation(app *TerminalApp, my *NavigationInfo) *Navigation {
+	return &Navigation{
+		NavigationRules: NewNavigationRules(app, my),
+		app:             app,
+	}
 }
 
-func (n *Navigation) enrich(app *TerminalApp, ctx context.Context) *Navigation {
-	n.app = app
-	n.NavigationRules = NewNavigationRules(app, n.MyNavigation.my(app, ctx))
-	return n
-}
-
-func (n *Navigation) addCustomPage(ctx context.Context, nav MyNavigation) *Navigation {
-	navInfo := nav.my(n.app, ctx)
-	n.NavigationRules.additional[navInfo.pageName] = navInfo
+func (n *Navigation) addCustomPage(navigation *NavigationInfo) *Navigation {
+	n.additional[navigation.pageName] = navigation
 	return n
 }
 
 func (n *Navigation) OnError() {
-	n.Navigate(n.NavigationRules.onError)
+	n.NavigateTo(OnError)
 }
 
 func (n *Navigation) Refresh() {
-	n.Navigate(n.NavigationRules.refresh)
+	n.NavigateTo(Refresh)
 }
 
 func (n *Navigation) Back() {
-	n.app.Main.RemovePage(n.owner.String())
+	n.app.Main.RemovePage(n.my.pageName.String())
+}
+
+func (n *Navigation) Home() {
+	n.NavigateTo(homePage)
 }
 
 func (n *Navigation) NavigateTo(name PageName) {
@@ -107,24 +105,16 @@ func (n *Navigation) ShowError(err error, doneFunc func(key tcell.Key)) {
 	n.ShowOnMe(NewInfoWithError(err, doneFunc))
 }
 
-func (n *Navigation) NavigateHome() {
-	n.Navigate(n.NavigationRules.home)
-}
-
 func (n *Navigation) Navigate(info *NavigationInfo) {
 	n.Show(info.pageName, info.provider)
 }
 
 func (n *Navigation) ShowOnMe(primitive tview.Primitive) {
-	n.Show(n.NavigationRules.owner, func() tview.Primitive { return primitive })
+	n.Show(n.NavigationRules.my.pageName, func() tview.Primitive { return primitive })
 }
 
 func (n *Navigation) Show(pageName PageName, provider NavigationProvider) {
 	n.app.Main.AddAndSwitchToPage(pageName.String(), provider(), true)
-}
-
-func (n *Navigation) NavigateToMe() {
-	n.Navigate(n.NavigationRules.refresh)
 }
 
 func (n *Navigation) BackFunc() func() {
@@ -134,7 +124,7 @@ func (n *Navigation) BackFunc() func() {
 }
 
 func (n *Navigation) DoneFuncRefresh(key tcell.Key) {
-	n.Navigate(n.NavigationRules.refresh)
+	n.Refresh()
 }
 
 func (n *Navigation) DoneFuncBack(key tcell.Key) {
@@ -142,11 +132,11 @@ func (n *Navigation) DoneFuncBack(key tcell.Key) {
 }
 
 func (n *Navigation) DoneFuncHome(key tcell.Key) {
-	n.Navigate(n.NavigationRules.home)
+	n.Home()
 }
 
 func (n *Navigation) DoneFuncError(key tcell.Key) {
-	n.Navigate(n.NavigationRules.onError)
+	n.OnError()
 }
 
 func (p PageName) String() string {

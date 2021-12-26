@@ -148,7 +148,7 @@ func (h *Home) bindKeys() {
 }
 
 func (h *Home) homePage(key *tcell.EventKey) *tcell.EventKey {
-	h.NavigateHome()
+	h.Home()
 	return key
 }
 

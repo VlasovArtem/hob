@@ -24,23 +24,12 @@ type Payments struct {
 	payments *TableFiller
 }
 
-func (p *Payments) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
-	return NewNavigationInfo(PaymentsPageName, func() tview.Primitive { return NewPayments(app) })
-}
-
-func (p *Payments) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	p.MyNavigation = interface{}(p).(MyNavigation)
-	p.enrich(app, ctx).
-		addCustomPage(ctx, &CreatePayment{})
-}
-
 func NewPayments(app *TerminalApp) *Payments {
 	p := &Payments{
-		FlexApp:    NewFlexApp(),
-		Navigation: NewNavigation(),
-		payments:   NewTableFiller(paymentsTableHeader),
+		FlexApp:  NewFlexApp(),
+		payments: NewTableFiller(paymentsTableHeader),
 	}
-	p.enrichNavigation(app, nil)
+	p.enrichNavigation(app)
 
 	p.bindKeys()
 	p.InitFlexApp(app)
@@ -60,6 +49,17 @@ func (p *Payments) fillTable() *TableFiller {
 	return p.payments
 }
 
+func (p *Payments) enrichNavigation(app *TerminalApp) {
+	p.Navigation = NewNavigation(
+		app,
+		NewNavigationInfo(PaymentsPageName, func() tview.Primitive { return NewPayments(app) }),
+	)
+	p.addCustomPage(&CreatePayment{})
+	//p.MyNavigation = interface{}(p).(MyNavigation)
+	//p.enrich(app, ctx).
+	//	addCustomPage(ctx, )
+}
+
 func (p *Payments) bindKeys() {
 	p.Actions = KeyActions{
 		tcell.KeyCtrlP:  NewKeyAction("Create Payment", p.createPayment),
@@ -75,7 +75,7 @@ func (p *Payments) createPayment(key *tcell.EventKey) *tcell.EventKey {
 }
 
 func (p *Payments) homePage(key *tcell.EventKey) *tcell.EventKey {
-	p.NavigateHome()
+	p.Home()
 	return key
 }
 
