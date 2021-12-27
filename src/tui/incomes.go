@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
@@ -24,23 +23,21 @@ type Incomes struct {
 	incomes *TableFiller
 }
 
-func (i *Incomes) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
+func (i *Incomes) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
 	return NewNavigationInfo(IncomesPageName, func() tview.Primitive { return NewIncomes(app) })
 }
 
-func (i *Incomes) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	i.MyNavigation = interface{}(i).(MyNavigation)
-	i.enrich(app, ctx).
-		addCustomPage(ctx, &CreateIncome{})
+func (i *Incomes) enrichNavigation(app *TerminalApp) {
+	i.Navigation = NewNavigation(app, i.NavigationInfo(app, nil))
+	i.AddCustomPage(&CreateIncome{})
 }
 
 func NewIncomes(app *TerminalApp) *Incomes {
 	p := &Incomes{
-		FlexApp:    NewFlexApp(),
-		Navigation: NewNavigation(),
-		incomes:    NewTableFiller(incomesTableHeader),
+		FlexApp: NewFlexApp(),
+		incomes: NewTableFiller(incomesTableHeader),
 	}
-	p.enrichNavigation(app, nil)
+	p.enrichNavigation(app)
 
 	p.bindKeys()
 	p.InitFlexApp(app)
@@ -55,8 +52,8 @@ func NewIncomes(app *TerminalApp) *Incomes {
 func (i *Incomes) fillTable() *TableFiller {
 	i.incomes.SetSelectable(true, false)
 	i.incomes.SetTitle("Incomes")
-	content := i.app.GetIncomeService().FindByHouseId(i.app.House.Id)
-	i.incomes.fill(content)
+	content := i.App.GetIncomeService().FindByHouseId(i.App.House.Id)
+	i.incomes.Fill(content)
 	return i.incomes
 }
 
@@ -65,7 +62,7 @@ func (i *Incomes) bindKeys() {
 		tcell.KeyCtrlP:  NewKeyAction("Create Income", i.createIncome),
 		tcell.KeyCtrlD:  NewKeyAction("Delete Income", i.deleteIncome),
 		tcell.KeyCtrlU:  NewKeyAction("Update Income", i.updateIncome),
-		tcell.KeyEscape: NewKeyAction("Back Home", i.homePage),
+		tcell.KeyEscape: NewKeyAction("Back Home", i.KeyHome),
 	}
 }
 
@@ -74,15 +71,10 @@ func (i *Incomes) createIncome(key *tcell.EventKey) *tcell.EventKey {
 	return key
 }
 
-func (i *Incomes) homePage(key *tcell.EventKey) *tcell.EventKey {
-	i.Home()
-	return key
-}
-
 func (i *Incomes) deleteIncome(key *tcell.EventKey) *tcell.EventKey {
-	err := i.incomes.performWithSelectedId(1, func(row int, id uuid.UUID) {
+	err := i.incomes.PerformWithSelectedId(1, func(row int, id uuid.UUID) {
 		name := i.incomes.GetCell(row, 2).Text
-		showModal(i.app.Main, fmt.Sprintf("Do you want to delete income %s (%s)?", id, name), []modalButton{
+		ShowModal(i.App.Main, fmt.Sprintf("Do you want to delete income %s (%s)?", id, name), []ModalButton{
 			i.createDeleteModalButton(name, id),
 		})
 	})
@@ -95,10 +87,9 @@ func (i *Incomes) deleteIncome(key *tcell.EventKey) *tcell.EventKey {
 }
 
 func (i *Incomes) updateIncome(key *tcell.EventKey) *tcell.EventKey {
-	err := i.incomes.performWithSelectedId(1, func(row int, id uuid.UUID) {
+	err := i.incomes.PerformWithSelectedId(1, func(row int, id uuid.UUID) {
 		i.Navigate(NewNavigationInfo(UpdateIncomePageName, func() tview.Primitive {
-			updateContext := context.WithValue(context.Background(), UpdateIncomePageName, id.String())
-			return NewUpdateIncome(i.app, updateContext)
+			return NewUpdateIncome(i.App, id)
 		}))
 	})
 
@@ -109,11 +100,11 @@ func (i *Incomes) updateIncome(key *tcell.EventKey) *tcell.EventKey {
 	return key
 }
 
-func (i *Incomes) createDeleteModalButton(name string, id uuid.UUID) modalButton {
-	return modalButton{
-		name: "Delete",
-		action: func() {
-			if err := i.app.GetIncomeService().DeleteById(id); err != nil {
+func (i *Incomes) createDeleteModalButton(name string, id uuid.UUID) ModalButton {
+	return ModalButton{
+		Name: "Delete",
+		Action: func() {
+			if err := i.App.GetIncomeService().DeleteById(id); err != nil {
 				i.ShowErrorTo(err)
 			} else {
 				i.ShowInfoRefresh(fmt.Sprintf("Income %s (%s) successfully deleted.", name, id))

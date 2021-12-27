@@ -16,8 +16,11 @@ import (
 	users "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"reflect"
 	"time"
 )
+
+var PaymentSchedulerServiceType = reflect.TypeOf(PaymentSchedulerServiceObject{})
 
 type PaymentSchedulerServiceObject struct {
 	userService      users.UserService

@@ -22,8 +22,6 @@ import (
 	paymentSchedulerRepository "github.com/VlasovArtem/hob/src/payment/scheduler/repository"
 	paymentSchedulerService "github.com/VlasovArtem/hob/src/payment/scheduler/service"
 	paymentService "github.com/VlasovArtem/hob/src/payment/service"
-	customProviderRepository "github.com/VlasovArtem/hob/src/provider/custom/repository"
-	customProviderService "github.com/VlasovArtem/hob/src/provider/custom/service"
 	providerRepository "github.com/VlasovArtem/hob/src/provider/repository"
 	providerService "github.com/VlasovArtem/hob/src/provider/service"
 	"github.com/VlasovArtem/hob/src/scheduler"
@@ -96,8 +94,6 @@ func (a *RootApplication) addAutoInitializingDependencies() {
 		new(scheduler.SchedulerServiceObject),
 		new(providerRepository.ProviderRepositoryObject),
 		new(providerService.ProviderServiceObject),
-		new(customProviderRepository.CustomProviderRepositoryObject),
-		new(customProviderService.CustomProviderServiceObject),
 		new(paymentRepository.PaymentRepositoryObject),
 		new(paymentService.PaymentServiceObject),
 		new(paymentSchedulerRepository.PaymentSchedulerRepositoryObject),

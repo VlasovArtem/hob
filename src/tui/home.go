@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/gdamore/tcell/v2"
@@ -30,27 +29,25 @@ type Home struct {
 	incomes  *TableFiller
 }
 
-func (h *Home) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
+func (h *Home) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
 	return NewNavigationInfo(HomePageName, func() tview.Primitive { return NewHome(app) })
 }
 
-func (h *Home) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	h.MyNavigation = interface{}(h).(MyNavigation)
-	h.enrich(app, ctx).
-		addCustomPage(ctx, &CreateHouse{}).
-		addCustomPage(ctx, &CreateIncome{}).
-		addCustomPage(ctx, &CreatePayment{}).
-		addCustomPage(ctx, &Payments{}).
-		addCustomPage(ctx, &Houses{}).
-		addCustomPage(ctx, &Incomes{})
+func (h *Home) enrichNavigation(app *TerminalApp) {
+	h.Navigation = NewNavigation(app, h.NavigationInfo(app, nil))
+	h.AddCustomPage(&CreateHouse{}).
+		AddCustomPage(&CreateIncome{}).
+		AddCustomPage(&CreatePayment{}).
+		AddCustomPage(&Payments{}).
+		AddCustomPage(&Houses{}).
+		AddCustomPage(&Incomes{})
 }
 
 func NewHome(app *TerminalApp) *Home {
 	h := &Home{
-		Navigation: NewNavigation(),
-		FlexApp:    NewFlexApp(),
-		payments:   NewTableFiller(homePaymentFields),
-		incomes:    NewTableFiller(homeIncomeFields),
+		FlexApp:  NewFlexApp(),
+		payments: NewTableFiller(homePaymentFields),
+		incomes:  NewTableFiller(homeIncomeFields),
 	}
 
 	h.Init(app)
@@ -63,7 +60,7 @@ func (h *Home) Init(app *TerminalApp) {
 
 	h.InitFlexApp(app)
 
-	h.enrichNavigation(app, nil)
+	h.enrichNavigation(app)
 
 	houseList := tview.NewList().ShowSecondaryText(false)
 	houseList.
@@ -97,12 +94,12 @@ func (h *Home) Init(app *TerminalApp) {
 }
 
 func (h *Home) showHouses(houseList *tview.List, onSelect func(dto houseModel.HouseDto)) {
-	housesData := h.app.GetHouseService().FindByUserId(h.app.AuthorizedUser.Id)
+	housesData := h.App.GetHouseService().FindByUserId(h.App.AuthorizedUser.Id)
 
-	hasCurrentHouse := h.app.House != nil
+	hasCurrentHouse := h.App.House != nil
 
 	for _, house := range housesData {
-		if hasCurrentHouse && h.app.House.Id == house.Id {
+		if hasCurrentHouse && h.App.House.Id == house.Id {
 			onSelect(house)
 		}
 		houseList.AddItem(house.Name, house.Id.String(), 0, nil)
@@ -122,39 +119,22 @@ func (h *Home) setHouse(onSelect func(dto houseModel.HouseDto)) func(index int, 
 			if err != nil {
 				log.Fatal().Err(err)
 			}
-			if houseDto, err := h.app.GetHouseService().FindById(id); err != nil {
+			if houseDto, err := h.App.GetHouseService().FindById(id); err != nil {
 				h.ShowErrorTo(err)
 			} else {
-				h.app.House = &houseDto
+				h.App.House = &houseDto
 				onSelect(houseDto)
 			}
 		}
 	}
 }
 
-func (h *Home) createIncome(key *tcell.EventKey) *tcell.EventKey {
-	h.NavigateTo(CreateIncomePageName)
-	return key
-}
-
 func (h *Home) bindKeys() {
 	h.Keyboard.Actions = KeyActions{
-		tcell.KeyCtrlP: NewKeyAction("Create Payment", h.createPayment),
-		tcell.KeyCtrlJ: NewKeyAction("Create Income", h.createIncome),
 		tcell.KeyCtrlA: NewKeyAction("Show Payments", h.paymentsPage),
 		tcell.KeyCtrlE: NewKeyAction("Show Houses", h.housesPage),
 		tcell.KeyCtrlF: NewKeyAction("Show Incomes", h.incomesPage),
 	}
-}
-
-func (h *Home) homePage(key *tcell.EventKey) *tcell.EventKey {
-	h.Home()
-	return key
-}
-
-func (h *Home) createPayment(key *tcell.EventKey) *tcell.EventKey {
-	h.NavigateTo(CreatePaymentPageName)
-	return key
 }
 
 func (h *Home) paymentsPage(key *tcell.EventKey) *tcell.EventKey {
@@ -173,12 +153,12 @@ func (h *Home) incomesPage(key *tcell.EventKey) *tcell.EventKey {
 }
 
 func (h *Home) fillPaymentsTable() *TableFiller {
-	if h.app.House == nil {
+	if h.App.House == nil {
 		return h.payments
 	}
-	payments := h.app.GetPaymentService().FindByHouseId(h.app.House.Id)
+	payments := h.App.GetPaymentService().FindByHouseId(h.App.House.Id)
 
-	h.payments.fill(payments)
+	h.payments.Fill(payments)
 	var sum float64
 	for _, payment := range payments {
 		sum += float64(payment.Sum)
@@ -188,12 +168,12 @@ func (h *Home) fillPaymentsTable() *TableFiller {
 }
 
 func (h *Home) fillIncomesTable() *TableFiller {
-	if h.app.House == nil {
+	if h.App.House == nil {
 		return h.incomes
 	}
-	incomes := h.app.GetIncomeService().FindByHouseId(h.app.House.Id)
+	incomes := h.App.GetIncomeService().FindByHouseId(h.App.House.Id)
 
-	h.incomes.fill(incomes)
+	h.incomes.Fill(incomes)
 	var sum float64
 	for _, income := range incomes {
 		sum += float64(income.Sum)

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	"github.com/rivo/tview"
 )
@@ -16,24 +15,22 @@ type SignInForm struct {
 	password string
 }
 
-func (s *SignInForm) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
+func (s *SignInForm) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
 	return NewNavigationInfo(SignInPageName, func() tview.Primitive { return NewSignIn(app) })
 }
 
-func (s *SignInForm) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	s.MyNavigation = interface{}(s).(MyNavigation)
-	s.enrich(app, ctx).addCustomPage(ctx, &SignUp{})
+func (s *SignInForm) enrichNavigation(app *TerminalApp) {
+	s.Navigation = NewNavigation(app, s.NavigationInfo(app, nil))
+	s.AddCustomPage(&SignUp{})
 }
 
 func NewSignIn(app *TerminalApp) *SignInForm {
 
 	f := &SignInForm{
-		Form:       tview.NewForm(),
-		Navigation: NewNavigation(),
-		app:        app,
+		Form: tview.NewForm(),
+		app:  app,
 	}
-	f.MyNavigation = interface{}(f).(MyNavigation)
-	f.enrichNavigation(app, nil)
+	f.enrichNavigation(app)
 
 	f.
 		AddInputField("Email", "", 20, nil, func(text string) { f.email = text }).

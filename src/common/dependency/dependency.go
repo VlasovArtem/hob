@@ -99,7 +99,8 @@ func findName(dependency interface{}) (name string) {
 }
 
 func findNameAndType(dependency interface{}) (name string, dependencyType reflect.Type) {
-	typeOf := reflect.TypeOf(dependency)
+	valueOf := reflect.Indirect(reflect.ValueOf(dependency))
+	typeOf := valueOf.Type()
 
 	switch typeOf.Kind() {
 	case reflect.Struct:

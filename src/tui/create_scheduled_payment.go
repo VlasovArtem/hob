@@ -3,37 +3,39 @@ package tui
 import (
 	"errors"
 	"fmt"
-	"github.com/VlasovArtem/hob/src/payment/model"
+	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
 	"github.com/rivo/tview"
 	"strconv"
-	"time"
 )
 
-const CreatePaymentPageName = "create-payment"
+var specs = []string{string(scheduler.HOURLY), string(scheduler.DAILY), string(scheduler.WEEKLY), string(scheduler.MONTHLY), string(scheduler.ANNUALLY)}
 
-type createPaymentReq struct {
-	name, description, date, sum string
+const CreateScheduledPaymentPageName = "create-scheduled-payment"
+
+type createScheduledPaymentReq struct {
+	name, description, sum, spec string
 	providerId                   uuid.UUID
 }
 
-type CreatePayment struct {
+type CreateScheduledPayment struct {
 	*FlexApp
 	*Navigation
 	app *TerminalApp
 }
 
-func (c *CreatePayment) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
-	return NewNavigationInfo(CreatePaymentPageName, func() tview.Primitive { return NewCreatePayment(app) })
+func (c *CreateScheduledPayment) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+	return NewNavigationInfo(CreateScheduledPaymentPageName, func() tview.Primitive { return NewCreateScheduledPayment(app) })
 }
 
-func (c *CreatePayment) enrichNavigation(app *TerminalApp) {
+func (c *CreateScheduledPayment) enrichNavigation(app *TerminalApp) {
 	c.Navigation = NewNavigation(app, c.NavigationInfo(app, nil))
 }
 
-func NewCreatePayment(app *TerminalApp) *CreatePayment {
-	f := &CreatePayment{
+func NewCreateScheduledPayment(app *TerminalApp) *CreateScheduledPayment {
+	f := &CreateScheduledPayment{
 		app:     app,
 		FlexApp: NewFlexApp(),
 	}
@@ -43,13 +45,15 @@ func NewCreatePayment(app *TerminalApp) *CreatePayment {
 
 	providers, providerOptions := GetProviders(app)
 
-	var request createPaymentReq
+	var request createScheduledPaymentReq
 
 	form := tview.NewForm().
 		AddInputField("Name", "", 20, nil, func(text string) { request.name = text }).
 		AddInputField("Description", "", 20, nil, func(text string) { request.description = text }).
-		AddInputField("Date (ex. 2006-01-02)", "", 20, nil, func(text string) { request.date = text }).
 		AddInputField("Sum", "", 20, nil, func(text string) { request.sum = text }).
+		AddDropDown("Spec", specs, 1, func(option string, optionIndex int) {
+			request.spec = option
+		}).
 		AddDropDown("Provider", providerOptions, -1, func(option string, optionIndex int) {
 			request.providerId = providers[optionIndex].Id
 		}).
@@ -65,24 +69,14 @@ func NewCreatePayment(app *TerminalApp) *CreatePayment {
 	return f
 }
 
-func (c *CreatePayment) bindKeys() {
+func (c *CreateScheduledPayment) bindKeys() {
 	c.Actions = KeyActions{
 		tcell.KeyEscape: NewKeyAction("Back", c.KeyBack),
 	}
 }
 
-func (c *CreatePayment) create(request createPaymentReq) func() {
+func (c *CreateScheduledPayment) create(request createScheduledPaymentReq) func() {
 	return func() {
-		newDate := time.Now()
-		if request.date != "" {
-			parsedDate, err := time.Parse("2006-01-02", request.date)
-			if err != nil {
-				c.ShowErrorTo(errors.New("date is not valid"))
-				return
-			}
-			newDate = parsedDate
-		}
-
 		sum, err := strconv.ParseFloat(request.sum, 32)
 
 		if err != nil {
@@ -95,20 +89,20 @@ func (c *CreatePayment) create(request createPaymentReq) func() {
 			return
 		}
 
-		paymentRequest := model.CreatePaymentRequest{
+		paymentRequest := model.CreatePaymentSchedulerRequest{
 			UserId:      c.app.AuthorizedUser.Id,
 			HouseId:     c.app.House.Id,
 			ProviderId:  request.providerId,
-			Date:        newDate,
 			Name:        request.name,
 			Description: request.description,
 			Sum:         float32(sum),
+			Spec:        scheduler.SchedulingSpecification(request.spec),
 		}
 
-		if _, err := c.app.GetPaymentService().Add(paymentRequest); err != nil {
+		if _, err := c.app.GetPaymentSchedulerService().Add(paymentRequest); err != nil {
 			c.ShowErrorTo(err)
 		} else {
-			c.ShowInfoReturnBack(fmt.Sprintf("Payment for the house %s successfully added.", c.app.House.Name))
+			c.ShowInfoReturnBack(fmt.Sprintf("Scheduled Payment for the house %s successfully added.", c.app.House.Name))
 		}
 	}
 }

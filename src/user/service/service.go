@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/VlasovArtem/hob/src/user/repository"
 	"github.com/google/uuid"

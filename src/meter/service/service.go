@@ -47,9 +47,6 @@ func (m *MeterServiceObject) Add(request model.CreateMeterRequest) (response mod
 	if !m.paymentService.ExistsById(request.PaymentId) {
 		return response, fmt.Errorf("payment with id %s not found", request.PaymentId)
 	}
-	if !m.houseService.ExistsById(request.HouseId) {
-		return response, fmt.Errorf("house with id %s not found", request.HouseId)
-	}
 
 	if entity, err := m.repository.Create(request.ToEntity()); err != nil {
 		return response, err

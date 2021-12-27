@@ -2,7 +2,6 @@ package model
 
 import (
 	"encoding/json"
-	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/google/uuid"
 )
@@ -14,8 +13,6 @@ type Meter struct {
 	Description string
 	PaymentId   uuid.UUID            `gorm:"index:idx_payment_id"`
 	Payment     paymentModel.Payment `gorm:"foreignKey:PaymentId"`
-	HouseId     uuid.UUID
-	House       houseModel.House `gorm:"foreignKey:HouseId"`
 }
 
 type CreateMeterRequest struct {
@@ -23,7 +20,6 @@ type CreateMeterRequest struct {
 	Details     map[string]float64
 	Description string
 	PaymentId   uuid.UUID
-	HouseId     uuid.UUID
 }
 
 type UpdateMeterRequest struct {
@@ -38,7 +34,6 @@ type MeterDto struct {
 	Details     map[string]float64
 	Description string
 	PaymentId   uuid.UUID
-	HouseId     uuid.UUID
 }
 
 func (m Meter) ToDto() MeterDto {
@@ -52,7 +47,6 @@ func (m Meter) ToDto() MeterDto {
 		Details:     details,
 		Description: m.Description,
 		PaymentId:   m.PaymentId,
-		HouseId:     m.HouseId,
 	}
 }
 
@@ -65,7 +59,6 @@ func (c CreateMeterRequest) ToEntity() Meter {
 		Details:     marshal,
 		Description: c.Description,
 		PaymentId:   c.PaymentId,
-		HouseId:     c.HouseId,
 	}
 }
 

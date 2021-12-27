@@ -25,33 +25,24 @@ type UpdateIncome struct {
 	updateContent context.Context
 }
 
-func (u *UpdateIncome) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
-	return NewNavigationInfo(UpdateIncomePageName, func() tview.Primitive { return NewUpdateIncome(app, ctx) })
+func (u *UpdateIncome) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+	return NewNavigationInfo(UpdateIncomePageName, func() tview.Primitive { return NewUpdateIncome(app, variables["id"].(uuid.UUID)) })
 }
 
-func (u *UpdateIncome) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	u.MyNavigation = interface{}(u).(MyNavigation)
-	u.enrich(app, ctx)
+func (u *UpdateIncome) enrichNavigation(app *TerminalApp, incomeId uuid.UUID) {
+	u.Navigation = NewNavigation(app, u.NavigationInfo(app, map[string]interface{}{"id": incomeId}))
 }
 
-func NewUpdateIncome(app *TerminalApp, ctx context.Context) *UpdateIncome {
+func NewUpdateIncome(app *TerminalApp, incomeId uuid.UUID) *UpdateIncome {
 	f := &UpdateIncome{
-		FlexApp:       NewFlexApp(),
-		Navigation:    NewNavigation(),
-		app:           app,
-		updateContent: ctx,
+		FlexApp: NewFlexApp(),
+		app:     app,
 	}
-	f.enrichNavigation(app, ctx)
+	f.enrichNavigation(app, incomeId)
 	f.InitFlexApp(app)
 	f.bindKeys()
 
-	paymentId, err := f.getId()
-
-	if err != nil {
-		f.ShowInfoReturnBack(err.Error())
-	}
-
-	incomeDto, err := app.GetIncomeService().FindById(paymentId)
+	incomeDto, err := app.GetIncomeService().FindById(incomeId)
 	if err != nil {
 		f.ShowInfoReturnBack(err.Error())
 	}
@@ -63,7 +54,7 @@ func NewUpdateIncome(app *TerminalApp, ctx context.Context) *UpdateIncome {
 		AddInputField("Description", incomeDto.Description, 20, nil, func(text string) { request.description = text }).
 		AddInputField("Date (ex. 2006-01-02)", incomeDto.Date.Format("2006-01-02"), 20, nil, func(text string) { request.date = text }).
 		AddInputField("Sum", fmt.Sprintf("%.2f", incomeDto.Sum), 20, nil, func(text string) { request.sum = text }).
-		AddButton("Update", f.update(request, paymentId)).
+		AddButton("Update", f.update(request, incomeId)).
 		AddButton("Cancel", f.BackFunc())
 
 	form.SetBorder(true).SetTitle("Update a House").SetTitleAlign(tview.AlignCenter).SetRect(150, 30, 60, 15)
@@ -77,29 +68,13 @@ func NewUpdateIncome(app *TerminalApp, ctx context.Context) *UpdateIncome {
 
 func (u *UpdateIncome) bindKeys() {
 	u.Actions = KeyActions{
-		tcell.KeyEscape: NewKeyAction("Back", func(key *tcell.EventKey) *tcell.EventKey {
-			u.Back()
-			return key
-		}),
+		tcell.KeyEscape: NewKeyAction("Back", u.KeyBack),
 	}
-}
-
-func (u *UpdateIncome) getId() (uuid.UUID, error) {
-	idString := u.updateContent.Value(UpdateIncomePageName)
-
-	houseId, err := uuid.Parse(idString.(string))
-
-	if err != nil {
-		return uuid.UUID{}, err
-	}
-
-	return houseId, nil
 }
 
 func (u *UpdateIncome) update(update updateIncomeReq, id uuid.UUID) func() {
 	return func() {
 		request := model.UpdateIncomeRequest{
-			Id:          id,
 			Name:        update.name,
 			Description: update.description,
 		}
@@ -118,7 +93,7 @@ func (u *UpdateIncome) update(update updateIncomeReq, id uuid.UUID) func() {
 			request.Date = newDate
 		}
 
-		if err := u.app.GetIncomeService().Update(request); err != nil {
+		if err := u.app.GetIncomeService().Update(id, request); err != nil {
 			u.ShowErrorTo(err)
 		} else {
 			u.ShowInfoReturnBack(fmt.Sprintf("Income %s successfully updated.", request.Name))

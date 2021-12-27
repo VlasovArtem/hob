@@ -11,8 +11,8 @@ import (
 
 var (
 	PaymentRepositoryType = reflect.TypeOf(ProviderRepositoryObject{})
-	entity                = model.Provider{}
-	defaultUser           = uuid.UUID{}
+	entity      = model.Provider{}
+	DefaultUser = uuid.UUID{}
 )
 
 type ProviderRepositoryObject struct {
@@ -48,7 +48,7 @@ type ProviderRepository interface {
 }
 
 func (p *ProviderRepositoryObject) Create(provider model.Provider) (model.Provider, error) {
-	if provider.UserId == defaultUser {
+	if provider.UserId == DefaultUser {
 		return provider, p.database.D().Omit("UserId", "User").Create(provider).Error
 	}
 	return provider, p.database.Create(provider)

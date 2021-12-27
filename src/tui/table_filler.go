@@ -17,6 +17,7 @@ type TableHeader struct {
 	header          string
 	headerModifier  func(cell *tview.TableCell) *tview.TableCell
 	contentModifier func(cell *tview.TableCell) *tview.TableCell
+	customProvider  func(content interface{}) interface{}
 }
 
 func NewTableHeader(header string) *TableHeader {
@@ -47,6 +48,11 @@ func (t *TableHeader) SetContentModifier(modifier func(cell *tview.TableCell) *t
 	return t
 }
 
+func (t *TableHeader) SetContentProvider(provider func(content interface{}) interface{}) *TableHeader {
+	t.customProvider = provider
+	return t
+}
+
 func AlignCenter() func(cell *tview.TableCell) *tview.TableCell {
 	return func(cell *tview.TableCell) *tview.TableCell {
 		return cell.SetAlign(tview.AlignCenter)
@@ -73,7 +79,7 @@ func AlignLeftExpansion() func(cell *tview.TableCell) *tview.TableCell {
 
 type TableFiller struct {
 	*tview.Table
-	tableHeaders []*TableHeader
+	TableHeaders []*TableHeader
 	ignoreHeader bool
 	empty        bool
 }
@@ -81,7 +87,7 @@ type TableFiller struct {
 func NewTableFiller(tableHeaders []*TableHeader) *TableFiller {
 	filler := &TableFiller{
 		Table:        tview.NewTable(),
-		tableHeaders: tableHeaders,
+		TableHeaders: tableHeaders,
 	}
 
 	filler.SetFixed(1, 0)
@@ -93,23 +99,23 @@ func NewTableFiller(tableHeaders []*TableHeader) *TableFiller {
 	return filler
 }
 
-func (t *TableFiller) fill(content interface{}) {
-	value := reflect.ValueOf(content)
-	if value.Kind() != reflect.Slice || value.IsNil() {
+func (t *TableFiller) Fill(content interface{}) {
+	array := reflect.ValueOf(content)
+	if array.Kind() != reflect.Slice || array.IsNil() {
 		log.Fatal().Msgf("Table filler content is not a slice")
 	}
 
 	t.Clear()
 	var row int
 	if !t.ignoreHeader {
-		for index, tableHeader := range t.tableHeaders {
+		for index, tableHeader := range t.TableHeaders {
 			t.SetCell(0, index, tableHeader.headerModifier(tview.NewTableCell(tableHeader.header)))
 		}
 		row++
 	}
 
-	if value.Len() == 0 {
-		for i, tableHeader := range t.tableHeaders {
+	if array.Len() == 0 {
+		for i, tableHeader := range t.TableHeaders {
 			t.SetCell(row, i, tableHeader.contentModifier(tview.NewTableCell(" ")))
 		}
 		t.empty = true
@@ -118,13 +124,20 @@ func (t *TableFiller) fill(content interface{}) {
 
 	t.empty = false
 
-	for i := 0; i < value.Len(); i++ {
-		t.fillRowContent(i+row, value.Index(i).Interface())
+	for i := 0; i < array.Len(); i++ {
+		provider := t.TableHeaders[i].customProvider
+
+		var value = array.Index(i).Interface()
+		if provider != nil {
+			value = provider(value)
+		}
+
+		t.fillRowContent(i+row, value)
 	}
 }
 
 func (t *TableFiller) fillRowContent(currentRow int, data interface{}) {
-	for i, contentHeader := range t.tableHeaders {
+	for i, contentHeader := range t.TableHeaders {
 		var value string
 		header := contentHeader.header
 		if contentHeader.IsIndex() {
@@ -133,7 +146,7 @@ func (t *TableFiller) fillRowContent(currentRow int, data interface{}) {
 			byName := reflect.ValueOf(data).FieldByName(header)
 
 			if byName.Kind() == reflect.Invalid {
-				log.Warn().Msgf("field with name %s not found in object %v", header, data)
+				log.Warn().Msgf("field with Name %s not found in object %v", header, data)
 				break
 			}
 
@@ -158,7 +171,7 @@ func (t *TableFiller) addResultRow(result string) {
 	}
 	lastRow := t.GetRowCount() + 1
 	columnCount := t.GetColumnCount()
-	for i, tableHeader := range t.tableHeaders {
+	for i, tableHeader := range t.TableHeaders {
 		switch i {
 		case columnCount - 2:
 			t.SetCell(lastRow, i, tableHeader.contentModifier(tview.NewTableCell("Result")))
@@ -179,7 +192,7 @@ func (t *TableFiller) getSelectedUUID(idColumnIndex int) (row int, id uuid.UUID,
 	return row, id, err
 }
 
-func (t *TableFiller) performWithSelectedId(idColumnIndex int, perform func(row int, id uuid.UUID)) error {
+func (t *TableFiller) PerformWithSelectedId(idColumnIndex int, perform func(row int, id uuid.UUID)) error {
 	row, id, err := t.getSelectedUUID(idColumnIndex)
 	if row == 0 {
 		return nil

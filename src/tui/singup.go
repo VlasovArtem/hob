@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/gdamore/tcell/v2"
@@ -17,22 +16,20 @@ type SignUp struct {
 	request userModel.CreateUserRequest
 }
 
-func (s *SignUp) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
+func (s *SignUp) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
 	return NewNavigationInfo(SingUpPageName, func() tview.Primitive { return NewSignUp(app) })
 }
 
-func (s *SignUp) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	s.MyNavigation = interface{}(s).(MyNavigation)
-	s.enrich(app, ctx)
+func (s *SignUp) enrichNavigation(app *TerminalApp) {
+	s.Navigation = NewNavigation(app, s.NavigationInfo(app, nil))
 }
 
 func NewSignUp(app *TerminalApp) *SignUp {
 	f := &SignUp{
-		Form:       tview.NewForm(),
-		Navigation: NewNavigation(),
+		Form: tview.NewForm(),
 	}
 	f.bindKeys()
-	f.enrichNavigation(app, nil)
+	f.enrichNavigation(app)
 
 	f.
 		AddInputField("Email", "", 20, nil, func(text string) { f.request.Email = text }).
@@ -60,11 +57,6 @@ func NewSignUp(app *TerminalApp) *SignUp {
 
 func (s *SignUp) bindKeys() {
 	s.Actions = KeyActions{
-		tcell.KeyEscape: NewKeyAction("Back", s.backToParent),
+		tcell.KeyEscape: NewKeyAction("Back", s.KeyBack),
 	}
-}
-
-func (s *SignUp) backToParent(key *tcell.EventKey) *tcell.EventKey {
-	s.Back()
-	return key
 }

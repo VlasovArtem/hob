@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/VlasovArtem/hob/src/income/model"
@@ -24,19 +23,17 @@ type CreateIncome struct {
 	request model.CreateIncomeRequest
 }
 
-func (c *CreateIncome) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
+func (c *CreateIncome) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
 	return NewNavigationInfo(CreateIncomePageName, func() tview.Primitive { return NewCreateIncome(app) })
 }
 
-func (c *CreateIncome) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	c.MyNavigation = interface{}(c).(MyNavigation)
-	c.enrich(app, ctx)
+func (c *CreateIncome) enrichNavigation(app *TerminalApp) {
+	c.Navigation = NewNavigation(app, c.NavigationInfo(app, nil))
 }
 
 func NewCreateIncome(app *TerminalApp) *CreateIncome {
 	f := &CreateIncome{
-		FlexApp:    NewFlexApp(),
-		Navigation: NewNavigation(),
+		FlexApp: NewFlexApp(),
 		request: model.CreateIncomeRequest{
 			HouseId: app.House.Id,
 			Date:    time.Now(),
@@ -44,7 +41,7 @@ func NewCreateIncome(app *TerminalApp) *CreateIncome {
 	}
 	f.bindKeys()
 	f.InitFlexApp(app)
-	f.enrichNavigation(app, nil)
+	f.enrichNavigation(app)
 
 	var create createIncome
 
@@ -66,13 +63,8 @@ func NewCreateIncome(app *TerminalApp) *CreateIncome {
 
 func (c *CreateIncome) bindKeys() {
 	c.Actions = KeyActions{
-		tcell.KeyEscape: NewKeyAction("Back", c.backToParent),
+		tcell.KeyEscape: NewKeyAction("Back", c.KeyBack),
 	}
-}
-
-func (c *CreateIncome) backToParent(key *tcell.EventKey) *tcell.EventKey {
-	c.Back()
-	return key
 }
 
 func (c *CreateIncome) create(create createIncome) func() {
@@ -89,10 +81,10 @@ func (c *CreateIncome) create(create createIncome) func() {
 			c.request.Date = newDate
 		}
 
-		if _, err := c.app.GetIncomeService().Add(c.request); err != nil {
+		if _, err := c.App.GetIncomeService().Add(c.request); err != nil {
 			c.ShowErrorTo(err)
 		} else {
-			c.ShowInfoReturnBack(fmt.Sprintf("Income for the house %s successfully added.", c.app.House.Name))
+			c.ShowInfoReturnBack(fmt.Sprintf("Income for the house %s successfully added.", c.App.House.Name))
 		}
 	}
 }

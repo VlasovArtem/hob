@@ -7,17 +7,17 @@ import (
 
 var promptPage = "prompt"
 
-type modalButton struct {
-	name   string
-	action func()
+type ModalButton struct {
+	Name   string
+	Action func()
 }
 
-func showModal(p *tview.Pages, msg string, buttons []modalButton) {
+func ShowModal(p *tview.Pages, msg string, buttons []ModalButton) {
 	var modalButtons []string
 	buttonToAction := make(map[string]func())
 	for _, button := range buttons {
-		modalButtons = append(modalButtons, button.name)
-		buttonToAction[button.name] = button.action
+		modalButtons = append(modalButtons, button.Name)
+		buttonToAction[button.Name] = button.Action
 	}
 	modalButtons = append(modalButtons, "Cancel")
 	buttonToAction["Cancel"] = func() { p.RemovePage(promptPage) }

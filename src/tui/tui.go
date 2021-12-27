@@ -6,13 +6,19 @@ import (
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	houses "github.com/VlasovArtem/hob/src/house/service"
 	incomes "github.com/VlasovArtem/hob/src/income/service"
+	meters "github.com/VlasovArtem/hob/src/meter/service"
+	paymentSchedulers "github.com/VlasovArtem/hob/src/payment/scheduler/service"
 	payments "github.com/VlasovArtem/hob/src/payment/service"
+	providers "github.com/VlasovArtem/hob/src/provider/service"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	users "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/gdamore/tcell/v2"
+	"github.com/google/uuid"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
 )
+
+var DefaultUUID = uuid.UUID{}
 
 type TerminalApp struct {
 	*tview.Application
@@ -82,6 +88,18 @@ func (t *TerminalApp) GetIncomeService() incomes.IncomeService {
 
 func (t *TerminalApp) GetPaymentService() payments.PaymentService {
 	return t.root.DependenciesFactory.FindRequiredByObject(payments.PaymentServiceObject{}).(payments.PaymentService)
+}
+
+func (t *TerminalApp) GetProviderService() providers.ProviderService {
+	return t.root.DependenciesFactory.FindRequiredByType(providers.ProviderServiceType).(providers.ProviderService)
+}
+
+func (t *TerminalApp) GetMeterService() meters.MeterService {
+	return t.root.DependenciesFactory.FindRequiredByType(meters.MeterServiceType).(meters.MeterService)
+}
+
+func (t *TerminalApp) GetPaymentSchedulerService() paymentSchedulers.PaymentSchedulerService {
+	return t.root.DependenciesFactory.FindRequiredByType(paymentSchedulers.PaymentSchedulerServiceType).(paymentSchedulers.PaymentSchedulerService)
 }
 
 func AsKey(evt *tcell.EventKey) tcell.Key {

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
@@ -25,23 +24,24 @@ type Houses struct {
 	houses *TableFiller
 }
 
-func (h *Houses) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
+func (h *Houses) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
 	return NewNavigationInfo(HousesPageName, func() tview.Primitive { return NewHouses(app) })
 }
 
-func (h *Houses) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	h.MyNavigation = interface{}(h).(MyNavigation)
-	h.enrich(app, ctx).
-		addCustomPage(ctx, &CreateHouse{})
+func (h *Houses) enrichNavigation(app *TerminalApp) {
+	h.Navigation = NewNavigation(
+		app,
+		h.NavigationInfo(app, nil),
+	)
+	h.AddCustomPage(&CreateHouse{})
 }
 
 func NewHouses(app *TerminalApp) *Houses {
 	p := &Houses{
-		FlexApp:    NewFlexApp(),
-		Navigation: NewNavigation(),
-		houses:     NewTableFiller(housesTableHeader),
+		FlexApp: NewFlexApp(),
+		houses:  NewTableFiller(housesTableHeader),
 	}
-	p.enrichNavigation(app, nil)
+	p.enrichNavigation(app)
 
 	p.bindKeys()
 	p.InitFlexApp(app)
@@ -56,8 +56,8 @@ func NewHouses(app *TerminalApp) *Houses {
 func (h *Houses) fillTable() *TableFiller {
 	h.houses.SetSelectable(true, false)
 	h.houses.SetTitle("Houses")
-	content := h.app.GetHouseService().FindByUserId(h.app.AuthorizedUser.Id)
-	h.houses.fill(content)
+	content := h.App.GetHouseService().FindByUserId(h.App.AuthorizedUser.Id)
+	h.houses.Fill(content)
 	return h.houses
 }
 
@@ -66,7 +66,7 @@ func (h *Houses) bindKeys() {
 		tcell.KeyCtrlE:  NewKeyAction("Create House", h.createHouse),
 		tcell.KeyCtrlU:  NewKeyAction("Update House", h.updateHouse),
 		tcell.KeyCtrlD:  NewKeyAction("Delete House", h.deleteHouse),
-		tcell.KeyEscape: NewKeyAction("Back Home", h.homePage),
+		tcell.KeyEscape: NewKeyAction("Back Home", h.KeyHome),
 	}
 }
 
@@ -76,10 +76,9 @@ func (h *Houses) createHouse(key *tcell.EventKey) *tcell.EventKey {
 }
 
 func (h *Houses) updateHouse(key *tcell.EventKey) *tcell.EventKey {
-	err := h.houses.performWithSelectedId(1, func(row int, id uuid.UUID) {
+	err := h.houses.PerformWithSelectedId(1, func(row int, id uuid.UUID) {
 		h.Navigate(NewNavigationInfo(UpdateHousePageName, func() tview.Primitive {
-			updateContext := context.WithValue(context.Background(), UpdateHousePageName, id.String())
-			return NewUpdateHouse(h.app, updateContext)
+			return NewUpdateHouse(h.App, id)
 		}))
 	})
 
@@ -90,15 +89,10 @@ func (h *Houses) updateHouse(key *tcell.EventKey) *tcell.EventKey {
 	return key
 }
 
-func (h *Houses) homePage(key *tcell.EventKey) *tcell.EventKey {
-	h.Home()
-	return key
-}
-
 func (h *Houses) deleteHouse(key *tcell.EventKey) *tcell.EventKey {
-	err := h.houses.performWithSelectedId(1, func(row int, houseId uuid.UUID) {
+	err := h.houses.PerformWithSelectedId(1, func(row int, houseId uuid.UUID) {
 		name := h.houses.GetCell(row, 2).Text
-		showModal(h.app.Main, fmt.Sprintf("Do you want to delete house %s (%s)?", houseId, name), []modalButton{
+		ShowModal(h.App.Main, fmt.Sprintf("Do you want to delete house %s (%s)?", houseId, name), []ModalButton{
 			h.createDeleteModalButton(name, houseId),
 		})
 	})
@@ -110,11 +104,11 @@ func (h *Houses) deleteHouse(key *tcell.EventKey) *tcell.EventKey {
 	return key
 }
 
-func (h *Houses) createDeleteModalButton(houseName string, houseId uuid.UUID) modalButton {
-	return modalButton{
-		name: "Delete",
-		action: func() {
-			if err := h.app.GetHouseService().DeleteById(houseId); err != nil {
+func (h *Houses) createDeleteModalButton(houseName string, houseId uuid.UUID) ModalButton {
+	return ModalButton{
+		Name: "Delete",
+		Action: func() {
+			if err := h.App.GetHouseService().DeleteById(houseId); err != nil {
 				h.ShowErrorTo(err)
 			} else {
 				h.ShowInfoRefresh(fmt.Sprintf("House %s (%s) successfully deleted.", houseName, houseId))

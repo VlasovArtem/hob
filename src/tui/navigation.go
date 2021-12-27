@@ -14,6 +14,10 @@ var (
 	homePage = PageName("home")
 )
 
+type Navigator interface {
+	NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo
+}
+
 type NavigationRules struct {
 	my         *NavigationInfo
 	additional map[PageName]*NavigationInfo
@@ -36,19 +40,24 @@ func NewNavigationRules(app *TerminalApp, my *NavigationInfo) *NavigationRules {
 
 type Navigation struct {
 	*NavigationRules
-	app *TerminalApp
+	App *TerminalApp
 }
 
 func NewNavigation(app *TerminalApp, my *NavigationInfo) *Navigation {
 	return &Navigation{
+		App:             app,
 		NavigationRules: NewNavigationRules(app, my),
-		app:             app,
 	}
 }
 
-func (n *Navigation) addCustomPage(navigation *NavigationInfo) *Navigation {
-	n.additional[navigation.pageName] = navigation
+func (n *Navigation) AddCustomPageWithVars(navigator Navigator, variables map[string]interface{}) *Navigation {
+	navigationInfo := navigator.NavigationInfo(n.App, variables)
+	n.additional[navigationInfo.pageName] = navigationInfo
 	return n
+}
+
+func (n *Navigation) AddCustomPage(navigator Navigator) *Navigation {
+	return n.AddCustomPageWithVars(navigator, nil)
 }
 
 func (n *Navigation) OnError() {
@@ -60,7 +69,7 @@ func (n *Navigation) Refresh() {
 }
 
 func (n *Navigation) Back() {
-	n.app.Main.RemovePage(n.my.pageName.String())
+	n.App.Main.RemovePage(n.my.pageName.String())
 }
 
 func (n *Navigation) Home() {
@@ -69,7 +78,7 @@ func (n *Navigation) Home() {
 
 func (n *Navigation) NavigateTo(name PageName) {
 	if info, ok := n.NavigationRules.additional[name]; !ok {
-		log.Error().Msgf("Page with name %s not exits", name)
+		log.Error().Msgf("Page with Name %s not exits", name)
 	} else {
 		n.Navigate(info)
 	}
@@ -114,7 +123,7 @@ func (n *Navigation) ShowOnMe(primitive tview.Primitive) {
 }
 
 func (n *Navigation) Show(pageName PageName, provider NavigationProvider) {
-	n.app.Main.AddAndSwitchToPage(pageName.String(), provider(), true)
+	n.App.Main.AddAndSwitchToPage(pageName.String(), provider(), true)
 }
 
 func (n *Navigation) BackFunc() func() {
@@ -137,6 +146,26 @@ func (n *Navigation) DoneFuncHome(key tcell.Key) {
 
 func (n *Navigation) DoneFuncError(key tcell.Key) {
 	n.OnError()
+}
+
+func (n *Navigation) KeyRefresh(key *tcell.EventKey) *tcell.EventKey {
+	n.Refresh()
+	return key
+}
+
+func (n *Navigation) KeyBack(key *tcell.EventKey) *tcell.EventKey {
+	n.Back()
+	return key
+}
+
+func (n *Navigation) KeyHome(key *tcell.EventKey) *tcell.EventKey {
+	n.Home()
+	return key
+}
+
+func (n *Navigation) KeyError(key *tcell.EventKey) *tcell.EventKey {
+	n.OnError()
+	return key
 }
 
 func (p PageName) String() string {

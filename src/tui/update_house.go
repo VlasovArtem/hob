@@ -18,31 +18,25 @@ type UpdateHouse struct {
 	updateContent context.Context
 }
 
-func (u *UpdateHouse) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
-	return NewNavigationInfo(UpdateHousePageName, func() tview.Primitive { return NewUpdateHouse(app, ctx) })
+func (u *UpdateHouse) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+	return NewNavigationInfo(UpdateHousePageName, func() tview.Primitive { return NewUpdateHouse(app, variables["id"].(uuid.UUID)) })
 }
 
-func (u *UpdateHouse) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	u.MyNavigation = interface{}(u).(MyNavigation)
-	u.enrich(app, ctx)
+func (u *UpdateHouse) enrichNavigation(app *TerminalApp, variables map[string]interface{}) {
+	u.Navigation = NewNavigation(
+		app,
+		u.NavigationInfo(app, variables),
+	)
 }
 
-func NewUpdateHouse(app *TerminalApp, ctx context.Context) *UpdateHouse {
+func NewUpdateHouse(app *TerminalApp, houseId uuid.UUID) *UpdateHouse {
 	f := &UpdateHouse{
-		FlexApp:       NewFlexApp(),
-		Navigation:    NewNavigation(),
-		app:           app,
-		updateContent: ctx,
+		FlexApp: NewFlexApp(),
+		app:     app,
 	}
-	f.enrichNavigation(app, ctx)
+	f.enrichNavigation(app, map[string]interface{}{"id": houseId})
 	f.InitFlexApp(app)
 	f.bindKeys()
-
-	houseId, err := f.getHouseId()
-
-	if err != nil {
-		f.ShowInfoReturnBack(err.Error())
-	}
 
 	houseDto, err := app.GetHouseService().FindById(houseId)
 	if err != nil {
@@ -84,21 +78,6 @@ func NewUpdateHouse(app *TerminalApp, ctx context.Context) *UpdateHouse {
 
 func (u *UpdateHouse) bindKeys() {
 	u.Actions = KeyActions{
-		tcell.KeyEscape: NewKeyAction("Back", func(key *tcell.EventKey) *tcell.EventKey {
-			u.Back()
-			return key
-		}),
+		tcell.KeyEscape: NewKeyAction("Back", u.KeyBack),
 	}
-}
-
-func (u *UpdateHouse) getHouseId() (uuid.UUID, error) {
-	idString := u.updateContent.Value(UpdateHousePageName)
-
-	houseId, err := uuid.Parse(idString.(string))
-
-	if err != nil {
-		return uuid.UUID{}, err
-	}
-
-	return houseId, nil
 }

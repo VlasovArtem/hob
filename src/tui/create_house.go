@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/gdamore/tcell/v2"
@@ -17,25 +16,23 @@ type CreateHouse struct {
 	request houseModel.CreateHouseRequest
 }
 
-func (c *CreateHouse) my(app *TerminalApp, ctx context.Context) *NavigationInfo {
+func (c *CreateHouse) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
 	return NewNavigationInfo(CreateHousePageName, func() tview.Primitive { return NewCreateHouse(app) })
 }
 
-func (c *CreateHouse) enrichNavigation(app *TerminalApp, ctx context.Context) {
-	c.MyNavigation = interface{}(c).(MyNavigation)
-	c.enrich(app, ctx)
+func (c *CreateHouse) enrichNavigation(app *TerminalApp) {
+	c.Navigation = NewNavigation(app, c.NavigationInfo(app, nil))
 }
 
 func NewCreateHouse(app *TerminalApp) *CreateHouse {
 	f := &CreateHouse{
-		FlexApp:    NewFlexApp(),
-		Navigation: NewNavigation(),
-		app:        app,
+		FlexApp: NewFlexApp(),
+		app:     app,
 		request: houseModel.CreateHouseRequest{
 			UserId: app.AuthorizedUser.Id,
 		},
 	}
-	f.enrichNavigation(app, nil)
+	f.enrichNavigation(app)
 	f.bindKeys()
 
 	form := tview.NewForm().
@@ -63,11 +60,6 @@ func NewCreateHouse(app *TerminalApp) *CreateHouse {
 
 func (c *CreateHouse) bindKeys() {
 	c.Actions = KeyActions{
-		tcell.KeyEscape: NewKeyAction("Back", c.backToParent),
+		tcell.KeyEscape: NewKeyAction("Back", c.KeyBack),
 	}
-}
-
-func (c *CreateHouse) backToParent(key *tcell.EventKey) *tcell.EventKey {
-	c.Back()
-	return key
 }
