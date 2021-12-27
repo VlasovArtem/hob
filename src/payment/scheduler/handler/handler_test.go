@@ -9,6 +9,7 @@ import (
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"net/http"
 	"testing"
 )
@@ -24,7 +25,7 @@ func handlerGenerator() PaymentSchedulerHandler {
 func Test_Add(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 
 	paymentsScheduler.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
@@ -40,7 +41,7 @@ func Test_Add(t *testing.T) {
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, mocks.GeneratePaymentSchedulerResponse(actual.Id, mocks.HouseId, mocks.UserId), actual)
+	assert.Equal(t, mocks.GeneratePaymentSchedulerResponse(actual.Id), actual)
 }
 
 func Test_Add_WithInvalidRequest(t *testing.T) {
@@ -57,7 +58,7 @@ func Test_Add_WithInvalidRequest(t *testing.T) {
 func Test_Add_WithErrorFromService(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := mocks.GenerateCreatePaymentSchedulerRequest(mocks.HouseId, mocks.UserId)
+	request := mocks.GenerateCreatePaymentSchedulerRequest()
 
 	expected := errors.New("error")
 
@@ -79,7 +80,7 @@ func Test_Remove(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentsScheduler.On("Remove", id).Return(nil)
+	paymentsScheduler.On("DeleteById", id).Return(nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
@@ -122,7 +123,7 @@ func Test_FindById(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponse := mocks.GeneratePaymentSchedulerResponse(id, mocks.HouseId, mocks.UserId)
+	paymentResponse := mocks.GeneratePaymentSchedulerResponse(id)
 
 	paymentsScheduler.On("FindById", id).
 		Return(paymentResponse, nil)
@@ -182,7 +183,7 @@ func Test_FindByHouseId(t *testing.T) {
 
 	id := uuid.New()
 
-	response := mocks.GeneratePaymentSchedulerResponse(id, mocks.HouseId, mocks.UserId)
+	response := mocks.GeneratePaymentSchedulerResponse(id)
 
 	paymentResponses := []paymentScheduler.PaymentSchedulerDto{response}
 
@@ -248,7 +249,7 @@ func Test_FindByUserId(t *testing.T) {
 
 	id := uuid.New()
 
-	response := mocks.GeneratePaymentSchedulerResponse(id, mocks.HouseId, mocks.UserId)
+	response := mocks.GeneratePaymentSchedulerResponse(id)
 
 	paymentResponses := []paymentScheduler.PaymentSchedulerDto{response}
 
@@ -263,7 +264,7 @@ func Test_FindByUserId(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []paymentScheduler.PaymentSchedulerDto{}
+	var actual []paymentScheduler.PaymentSchedulerDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -275,7 +276,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentResponses := []paymentScheduler.PaymentSchedulerDto{}
+	var paymentResponses []paymentScheduler.PaymentSchedulerDto
 
 	paymentsScheduler.On("FindByUserId", id).
 		Return(paymentResponses, nil)
@@ -288,7 +289,7 @@ func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := []paymentScheduler.PaymentSchedulerDto{}
+	var actual []paymentScheduler.PaymentSchedulerDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -307,4 +308,141 @@ func Test_FindByUserId_WithInvalidParameter(t *testing.T) {
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
 
 	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+}
+
+func Test_FindByProviderId(t *testing.T) {
+	handler := handlerGenerator()
+
+	id := uuid.New()
+
+	response := mocks.GeneratePaymentSchedulerResponse(id)
+
+	paymentResponses := []paymentScheduler.PaymentSchedulerDto{response}
+
+	paymentsScheduler.On("FindByProviderId", id).
+		Return(paymentResponses, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/provider/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindByProviderId()).
+		WithVar("id", id.String())
+
+	responseByteArray := testRequest.Verify(t, http.StatusOK)
+
+	var actual []paymentScheduler.PaymentSchedulerDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(t, paymentResponses, actual)
+}
+
+func Test_FindByProviderId_WithEmptyResponse(t *testing.T) {
+	handler := handlerGenerator()
+
+	id := uuid.New()
+
+	var paymentResponses []paymentScheduler.PaymentSchedulerDto
+
+	paymentsScheduler.On("FindByProviderId", id).
+		Return(paymentResponses, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/provider/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindByProviderId()).
+		WithVar("id", id.String())
+
+	responseByteArray := testRequest.Verify(t, http.StatusOK)
+
+	var actual []paymentScheduler.PaymentSchedulerDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(t, paymentResponses, actual)
+}
+
+func Test_FindByProviderId_WithInvalidParameter(t *testing.T) {
+	handler := handlerGenerator()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/provider/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindByProviderId()).
+		WithVar("id", "id")
+
+	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+}
+
+func Test_Update(t *testing.T) {
+	handler := handlerGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	id := uuid.New()
+
+	paymentsScheduler.On("Update", id, request).Return(nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithBody(request).
+		WithVar("id", id.String())
+
+	testRequest.Verify(t, http.StatusOK)
+}
+
+func Test_Update_WithInvalidId(t *testing.T) {
+	handler := handlerGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithBody(request).
+		WithVar("id", "id")
+
+	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+
+	paymentsScheduler.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+}
+
+func Test_Update_WithInvalidRequest(t *testing.T) {
+	handler := handlerGenerator()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithVar("id", uuid.New().String())
+
+	testRequest.Verify(t, http.StatusBadRequest)
+}
+
+func Test_Update_WithErrorFromService(t *testing.T) {
+	handler := handlerGenerator()
+
+	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	id := uuid.New()
+
+	expected := errors.New("error")
+
+	paymentsScheduler.On("Update", id, request).Return(expected)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
+		WithMethod("PUT").
+		WithHandler(handler.Update()).
+		WithVar("id", id.String()).
+		WithBody(request)
+
+	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
 }

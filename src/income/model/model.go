@@ -24,7 +24,14 @@ type CreateIncomeRequest struct {
 	HouseId     uuid.UUID
 }
 
-type IncomeResponse struct {
+type UpdateIncomeRequest struct {
+	Name        string
+	Description string
+	Date        time.Time
+	Sum         float32
+}
+
+type IncomeDto struct {
 	Id          uuid.UUID
 	Name        string
 	Description string
@@ -33,8 +40,8 @@ type IncomeResponse struct {
 	HouseId     uuid.UUID
 }
 
-func (i Income) ToResponse() IncomeResponse {
-	return IncomeResponse{
+func (i Income) ToDto() IncomeDto {
+	return IncomeDto{
 		Id:          i.Id,
 		Name:        i.Name,
 		Description: i.Description,

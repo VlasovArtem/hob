@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/provider/mocks"
 	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
@@ -28,7 +29,7 @@ func Test_Add(t *testing.T) {
 
 	request := mocks.GenerateCreateProviderRequest()
 
-	providerService.On("Add", request).Return(mocks.GenerateProviderDto(), nil)
+	providerService.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/provider").
@@ -46,6 +47,7 @@ func Test_Add(t *testing.T) {
 		Id:      actualResponse.Id,
 		Name:    "Name",
 		Details: "Details",
+		UserId:  request.UserId,
 	}, actualResponse)
 }
 
@@ -116,6 +118,22 @@ func Test_FindById_WithErrorFromService(t *testing.T) {
 		WithHandler(handler.FindById()).
 		WithVar("id", uuid.New().String())
 
+	content := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "test\n", string(content))
+}
+
+func Test_FindById_WithNotFoundErrorFromService(t *testing.T) {
+	handler := generateHandler()
+
+	providerService.On("FindById", mock.Anything).Return(model.ProviderDto{}, int_errors.NewErrNotFound("test"))
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/provider/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindById()).
+		WithVar("id", uuid.New().String())
+
 	content := testRequest.Verify(t, http.StatusNotFound)
 
 	assert.Equal(t, "test\n", string(content))
@@ -148,18 +166,20 @@ func Test_FindById_WithInvalidUUID(t *testing.T) {
 	assert.Equal(t, "the id is not valid id\n", string(content))
 }
 
-func Test_FindByNameLike(t *testing.T) {
+func Test_FindByUserId(t *testing.T) {
 	handler := generateHandler()
 
-	expected := []model.ProviderDto{mocks.GenerateProviderDto()}
+	request := mocks.GenerateCreateProviderRequest()
+	expected := []model.ProviderDto{request.ToEntity().ToDto()}
+	userId := expected[0].UserId
 
-	providerService.On("FindByNameLike", "name", 1, 15).Return(expected)
+	providerService.On("FindByUserId", userId).Return(expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/provider/name/{name}?page=1&size=15").
+		WithURL("https://test.com/api/v1/provider/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByNameLike()).
-		WithVar("name", "name")
+		WithHandler(handler.FindByUserId()).
+		WithVar("id", userId.String())
 
 	content := testRequest.Verify(t, http.StatusOK)
 
@@ -172,18 +192,47 @@ func Test_FindByNameLike(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func Test_FindByNameLike_WithDefault(t *testing.T) {
+func Test_FindByUserId_WithMissingParameter(t *testing.T) {
+	handler := generateHandler()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/provider/user/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindByUserId())
+
+	content := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "parameter 'id' not found\n", string(content))
+}
+
+func Test_FindByUserId_WithInvalidUUID(t *testing.T) {
+	handler := generateHandler()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/provider/user/{id}").
+		WithMethod("GET").
+		WithHandler(handler.FindByUserId()).
+		WithVar("id", "id")
+
+	content := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "the id is not valid id\n", string(content))
+}
+
+func Test_FindByUserIdAndNameLike(t *testing.T) {
 	handler := generateHandler()
 
 	expected := []model.ProviderDto{mocks.GenerateProviderDto()}
+	userId := expected[0].UserId
 
-	providerService.On("FindByNameLike", "name", 0, 25).Return(expected)
+	providerService.On("FindByNameLikeAndUserId", "Name", userId, 1, 15).Return(expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/provider/name/{name}").
-		WithMethod("GET").
-		WithHandler(handler.FindByNameLike()).
-		WithVar("name", "name")
+		WithURL("https://test.com/api/v1/provider/user/{id}?page=1&size=15").
+		WithMethod("POST").
+		WithHandler(handler.FindByNameLikeAndUserId()).
+		WithVar("id", userId.String()).
+		WithBody(FindByNameRequest{"Name"})
 
 	content := testRequest.Verify(t, http.StatusOK)
 
@@ -196,26 +245,60 @@ func Test_FindByNameLike_WithDefault(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func Test_FindByNameLike_WithEmptyResponse(t *testing.T) {
+func Test_FindByUserIdAndNameLike_WithInvalidId(t *testing.T) {
 	handler := generateHandler()
 
-	var expected []model.ProviderDto
+	expected := []model.ProviderDto{mocks.GenerateProviderDto()}
+	userId := expected[0].UserId
 
-	providerService.On("FindByNameLike", "name", 0, 25).Return(expected)
+	providerService.On("FindByNameLikeAndUserId", "Name", userId, 1, 15).Return(expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/provider/name/{name}").
-		WithMethod("GET").
-		WithHandler(handler.FindByNameLike()).
-		WithVar("name", "name")
+		WithURL("https://test.com/api/v1/provider/user/{id}?page=1&size=15").
+		WithMethod("POST").
+		WithHandler(handler.FindByNameLikeAndUserId()).
+		WithVar("id", "id").
+		WithBody(FindByNameRequest{"Name"})
 
-	content := testRequest.Verify(t, http.StatusOK)
+	content := testRequest.Verify(t, http.StatusBadRequest)
 
-	var actual []model.ProviderDto
+	assert.Equal(t, "the id is not valid id\n", string(content))
+}
 
-	err := json.Unmarshal(content, &actual)
+func Test_FindByUserIdAndNameLike_WithoutId(t *testing.T) {
+	handler := generateHandler()
 
-	assert.Nil(t, err)
+	expected := []model.ProviderDto{mocks.GenerateProviderDto()}
+	userId := expected[0].UserId
 
-	assert.Equal(t, expected, actual)
+	providerService.On("FindByNameLikeAndUserId", "Name", userId, 1, 15).Return(expected)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/provider/user/{id}?page=1&size=15").
+		WithMethod("POST").
+		WithHandler(handler.FindByNameLikeAndUserId()).
+		WithBody(FindByNameRequest{"Name"})
+
+	content := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "parameter 'id' not found\n", string(content))
+}
+
+func Test_FindByUserIdAndNameLike_WithoutBody(t *testing.T) {
+	handler := generateHandler()
+
+	expected := []model.ProviderDto{mocks.GenerateProviderDto()}
+	userId := expected[0].UserId
+
+	providerService.On("FindByNameLikeAndUserId", "Name", userId, 1, 15).Return(expected)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/provider/user/{id}?page=1&size=15").
+		WithMethod("POST").
+		WithHandler(handler.FindByNameLikeAndUserId()).
+		WithVar("id", userId.String())
+
+	content := testRequest.Verify(t, http.StatusBadRequest)
+
+	assert.Equal(t, "request not parsed", string(content))
 }

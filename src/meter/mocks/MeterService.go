@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/meter/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -16,14 +15,14 @@ type MeterService struct {
 }
 
 // Add provides a mock function with given fields: request
-func (_m *MeterService) Add(request model.CreateMeterRequest) (model.MeterResponse, error) {
+func (_m *MeterService) Add(request model.CreateMeterRequest) (model.MeterDto, error) {
 	ret := _m.Called(request)
 
-	var r0 model.MeterResponse
-	if rf, ok := ret.Get(0).(func(model.CreateMeterRequest) model.MeterResponse); ok {
+	var r0 model.MeterDto
+	if rf, ok := ret.Get(0).(func(model.CreateMeterRequest) model.MeterDto); ok {
 		r0 = rf(request)
 	} else {
-		r0 = ret.Get(0).(model.MeterResponse)
+		r0 = ret.Get(0).(model.MeterDto)
 	}
 
 	var r1 error
@@ -36,16 +35,30 @@ func (_m *MeterService) Add(request model.CreateMeterRequest) (model.MeterRespon
 	return r0, r1
 }
 
-// FindByHouseId provides a mock function with given fields: id
-func (_m *MeterService) FindByHouseId(id uuid.UUID) []model.MeterResponse {
+// DeleteById provides a mock function with given fields: id
+func (_m *MeterService) DeleteById(id uuid.UUID) error {
 	ret := _m.Called(id)
 
-	var r0 []model.MeterResponse
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.MeterResponse); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// FindByHouseId provides a mock function with given fields: id
+func (_m *MeterService) FindByHouseId(id uuid.UUID) []model.MeterDto {
+	ret := _m.Called(id)
+
+	var r0 []model.MeterDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.MeterDto); ok {
 		r0 = rf(id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.MeterResponse)
+			r0 = ret.Get(0).([]model.MeterDto)
 		}
 	}
 
@@ -53,14 +66,14 @@ func (_m *MeterService) FindByHouseId(id uuid.UUID) []model.MeterResponse {
 }
 
 // FindById provides a mock function with given fields: id
-func (_m *MeterService) FindById(id uuid.UUID) (model.MeterResponse, error) {
+func (_m *MeterService) FindById(id uuid.UUID) (model.MeterDto, error) {
 	ret := _m.Called(id)
 
-	var r0 model.MeterResponse
-	if rf, ok := ret.Get(0).(func(uuid.UUID) model.MeterResponse); ok {
+	var r0 model.MeterDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) model.MeterDto); ok {
 		r0 = rf(id)
 	} else {
-		r0 = ret.Get(0).(model.MeterResponse)
+		r0 = ret.Get(0).(model.MeterDto)
 	}
 
 	var r1 error
@@ -74,14 +87,14 @@ func (_m *MeterService) FindById(id uuid.UUID) (model.MeterResponse, error) {
 }
 
 // FindByPaymentId provides a mock function with given fields: id
-func (_m *MeterService) FindByPaymentId(id uuid.UUID) (model.MeterResponse, error) {
+func (_m *MeterService) FindByPaymentId(id uuid.UUID) (model.MeterDto, error) {
 	ret := _m.Called(id)
 
-	var r0 model.MeterResponse
-	if rf, ok := ret.Get(0).(func(uuid.UUID) model.MeterResponse); ok {
+	var r0 model.MeterDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) model.MeterDto); ok {
 		r0 = rf(id)
 	} else {
-		r0 = ret.Get(0).(model.MeterResponse)
+		r0 = ret.Get(0).(model.MeterDto)
 	}
 
 	var r1 error
@@ -92,4 +105,18 @@ func (_m *MeterService) FindByPaymentId(id uuid.UUID) (model.MeterResponse, erro
 	}
 
 	return r0, r1
+}
+
+// Update provides a mock function with given fields: id, request
+func (_m *MeterService) Update(id uuid.UUID, request model.UpdateMeterRequest) error {
+	ret := _m.Called(id, request)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateMeterRequest) error); ok {
+		r0 = rf(id, request)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }

@@ -4,11 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/VlasovArtem/hob/src/provider/repository"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"reflect"
 )
+
+var ProviderServiceType = reflect.TypeOf(ProviderServiceObject{})
 
 type ProviderServiceObject struct {
 	repository repository.ProviderRepository
@@ -18,21 +22,23 @@ func NewProviderService(repository repository.ProviderRepository) ProviderServic
 	return &ProviderServiceObject{repository}
 }
 
-func (p *ProviderServiceObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(
-		NewProviderService(factory.FindRequiredByObject(repository.ProviderRepositoryObject{}).(repository.ProviderRepository)),
-	)
+func (p *ProviderServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+	return NewProviderService(factory.FindRequiredByObject(repository.ProviderRepositoryObject{}).(repository.ProviderRepository))
 }
 
 type ProviderService interface {
 	Add(request model.CreateProviderRequest) (dto model.ProviderDto, err error)
+	ExistsById(id uuid.UUID) bool
+	Update(id uuid.UUID, request model.UpdateProviderRequest) error
+	Delete(id uuid.UUID) error
 	FindById(id uuid.UUID) (dto model.ProviderDto, err error)
-	FindByNameLike(namePattern string, page int, size int) []model.ProviderDto
+	FindByUserId(id uuid.UUID) []model.ProviderDto
+	FindByNameLikeAndUserId(namePattern string, userId uuid.UUID, page, size int) []model.ProviderDto
 }
 
 func (p *ProviderServiceObject) Add(request model.CreateProviderRequest) (dto model.ProviderDto, err error) {
-	if p.repository.ExistsByName(request.Name) {
-		return dto, errors.New(fmt.Sprintf("provider with name '%s' already exists", request.Name))
+	if p.repository.ExistsByNameAndUserId(request.Name, request.UserId) {
+		return dto, errors.New(fmt.Sprintf("provider with name '%s' for user already exists", request.Name))
 	}
 
 	if entity, err := p.repository.Create(request.ToEntity()); err != nil {
@@ -45,7 +51,7 @@ func (p *ProviderServiceObject) Add(request model.CreateProviderRequest) (dto mo
 func (p *ProviderServiceObject) FindById(id uuid.UUID) (dto model.ProviderDto, err error) {
 	if provider, err := p.repository.FindById(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return dto, errors.New(fmt.Sprintf("provider with id %s in not exists", id))
+			return dto, notFoundError(id)
 		}
 		return dto, err
 	} else {
@@ -53,17 +59,32 @@ func (p *ProviderServiceObject) FindById(id uuid.UUID) (dto model.ProviderDto, e
 	}
 }
 
-func (p *ProviderServiceObject) FindByNameLike(namePattern string, page int, size int) []model.ProviderDto {
-	return convert(p.repository.FindByNameLike(namePattern, page, size))
+func (p *ProviderServiceObject) FindByUserId(id uuid.UUID) (response []model.ProviderDto) {
+	return p.repository.FindByUserId(id)
 }
 
-func convert(entities []model.Provider) (dtos []model.ProviderDto) {
-	if len(entities) == 0 {
-		return make([]model.ProviderDto, 0)
-	}
+func (p *ProviderServiceObject) FindByNameLikeAndUserId(namePattern string, userId uuid.UUID, page, size int) []model.ProviderDto {
+	return p.repository.FindByNameLikeAndUserId(namePattern, page, size, userId)
+}
 
-	for _, entity := range entities {
-		dtos = append(dtos, entity.ToDto())
+func (p *ProviderServiceObject) Update(id uuid.UUID, request model.UpdateProviderRequest) error {
+	if !p.repository.ExistsById(id) {
+		return notFoundError(id)
 	}
-	return dtos
+	return p.repository.Update(request.ToEntity(id))
+}
+
+func (p *ProviderServiceObject) ExistsById(id uuid.UUID) bool {
+	return p.repository.ExistsById(id)
+}
+
+func (p *ProviderServiceObject) Delete(id uuid.UUID) error {
+	if !p.repository.ExistsById(id) {
+		return notFoundError(id)
+	}
+	return p.repository.Delete(id)
+}
+
+func notFoundError(id uuid.UUID) error {
+	return int_errors.NewErrNotFound("provider with id %s not found", id)
 }

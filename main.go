@@ -1,138 +1,86 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"github.com/VlasovArtem/hob/src/api"
 	"github.com/VlasovArtem/hob/src/app"
-	"github.com/VlasovArtem/hob/src/common/environment"
-	helper "github.com/VlasovArtem/hob/src/common/service"
-	"github.com/VlasovArtem/hob/src/country/handler"
-	"github.com/VlasovArtem/hob/src/country/model"
-	countries "github.com/VlasovArtem/hob/src/country/service"
-	houseHandler "github.com/VlasovArtem/hob/src/house/handler"
-	houseRepository "github.com/VlasovArtem/hob/src/house/respository"
-	houseService "github.com/VlasovArtem/hob/src/house/service"
-	incomeHandler "github.com/VlasovArtem/hob/src/income/handler"
-	incomeRepository "github.com/VlasovArtem/hob/src/income/repository"
-	incomeSchedulerHandler "github.com/VlasovArtem/hob/src/income/scheduler/handler"
-	incomeSchedulerRepository "github.com/VlasovArtem/hob/src/income/scheduler/repository"
-	incomeSchedulerService "github.com/VlasovArtem/hob/src/income/scheduler/service"
-	incomeService "github.com/VlasovArtem/hob/src/income/service"
-	meterHandler "github.com/VlasovArtem/hob/src/meter/handler"
-	meterRepository "github.com/VlasovArtem/hob/src/meter/repository"
-	meterService "github.com/VlasovArtem/hob/src/meter/service"
-	paymentHandler "github.com/VlasovArtem/hob/src/payment/handler"
-	paymentRepository "github.com/VlasovArtem/hob/src/payment/repository"
-	paymentSchedulerHandler "github.com/VlasovArtem/hob/src/payment/scheduler/handler"
-	paymentSchedulerRepository "github.com/VlasovArtem/hob/src/payment/scheduler/repository"
-	paymentSchedulerService "github.com/VlasovArtem/hob/src/payment/scheduler/service"
-	paymentService "github.com/VlasovArtem/hob/src/payment/service"
-	customProviderHandler "github.com/VlasovArtem/hob/src/provider/custom/handler"
-	customProviderRepository "github.com/VlasovArtem/hob/src/provider/custom/repository"
-	customProviderService "github.com/VlasovArtem/hob/src/provider/custom/service"
-	providerHandler "github.com/VlasovArtem/hob/src/provider/handler"
-	providerRepository "github.com/VlasovArtem/hob/src/provider/repository"
-	providerService "github.com/VlasovArtem/hob/src/provider/service"
-	"github.com/VlasovArtem/hob/src/scheduler"
-	userHandler "github.com/VlasovArtem/hob/src/user/handler"
-	userRepository "github.com/VlasovArtem/hob/src/user/repository"
-	userService "github.com/VlasovArtem/hob/src/user/service"
-	userRequestValidator "github.com/VlasovArtem/hob/src/user/validator"
+	"github.com/VlasovArtem/hob/src/common"
+	"github.com/VlasovArtem/hob/src/config"
+	"github.com/VlasovArtem/hob/src/tui"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"io/ioutil"
 	"net/http"
 	"os"
 )
 
-const countriesDirVariable = "COUNTRIES_DIR"
-
 func main() {
-	router := mux.NewRouter().StrictSlash(true)
+	cfg := prepareConfig()
 
-	application := app.NewApplicationService(router)
+	if cfg.App.LogFile != "" {
+		common.EnsurePath(cfg.App.LogFile, common.DefaultDirMod)
 
-	createCountriesService(application)
+		mod := os.O_CREATE | os.O_APPEND | os.O_WRONLY
+		file, err := os.OpenFile(cfg.App.LogFile, mod, common.DefaultFileMode)
 
-	addAutoInitializingDependencies(application)
+		defer func() {
+			_ = file.Close()
+		}()
 
-	http.Handle("/", router)
+		if err != nil {
+			log.Fatal().Err(err)
+		}
 
-	err := http.ListenAndServe(":3000", router)
-	log.Fatal().Msg(err.Error())
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: file})
+	}
+
+	zerolog.SetGlobalLevel(cfg.GetLogLevel())
+
+	rootApplication := app.NewRootApplication(cfg)
+
+	startApplication(cfg, rootApplication)
 }
 
-func addAutoInitializingDependencies(application app.ApplicationService) {
-	application.
-		AddHandler(new(handler.CountryHandlerObject))
+func startApplication(cfg *config.Config, rootApplication *app.RootApplication) {
+	if cfg.IsTerminalView() {
+		tApp := tui.NewTApp(rootApplication)
 
-	application.
-		AddAutoDependency(new(userRequestValidator.UserRequestValidatorObject)).
-		AddAutoDependency(new(userRepository.UserRepositoryObject)).
-		AddAutoDependency(new(userService.UserServiceObject)).
-		AddHandler(new(userHandler.UserHandlerObject))
+		tApp.Init()
 
-	application.
-		AddAutoDependency(new(houseRepository.HouseRepositoryObject)).
-		AddAutoDependency(new(houseService.HouseServiceObject)).
-		AddHandler(new(houseHandler.HouseHandlerObject))
+		if err := tApp.Run(); err != nil {
+			panic(err)
+		}
+	} else {
+		router := mux.NewRouter().StrictSlash(true)
 
-	application.
-		AddAutoDependency(new(scheduler.SchedulerServiceObject))
+		api.InitApi(router, rootApplication)
 
-	application.
-		AddAutoDependency(new(providerRepository.ProviderRepositoryObject)).
-		AddAutoDependency(new(providerService.ProviderServiceObject)).
-		AddHandler(new(providerHandler.ProviderHandlerObject))
+		http.Handle("/", router)
 
-	application.
-		AddAutoDependency(new(customProviderRepository.CustomProviderRepositoryObject)).
-		AddAutoDependency(new(customProviderService.CustomProviderServiceObject)).
-		AddHandler(new(customProviderHandler.CustomProviderHandlerObject))
+		if err := router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+			if template, err := route.GetPathTemplate(); err != nil {
+				log.Error().Err(err)
+			} else {
+				log.Info().Msg(template)
+			}
+			return nil
+		}); err != nil {
+			log.Fatal().Err(err).Msg("router walk error")
+		}
 
-	application.
-		AddAutoDependency(new(paymentRepository.PaymentRepositoryObject)).
-		AddAutoDependency(new(paymentService.PaymentServiceObject)).
-		AddHandler(new(paymentHandler.PaymentHandlerObject))
-
-	application.
-		AddAutoDependency(new(paymentSchedulerRepository.PaymentSchedulerRepositoryObject)).
-		AddAutoDependency(new(paymentSchedulerService.PaymentSchedulerServiceObject)).
-		AddHandler(new(paymentSchedulerHandler.PaymentSchedulerHandlerObject))
-
-	application.
-		AddAutoDependency(new(meterRepository.MeterRepositoryObject)).
-		AddAutoDependency(new(meterService.MeterServiceObject)).
-		AddHandler(new(meterHandler.MeterHandlerObject))
-
-	application.
-		AddAutoDependency(new(incomeRepository.IncomeRepositoryObject)).
-		AddAutoDependency(new(incomeService.IncomeServiceObject)).
-		AddHandler(new(incomeHandler.IncomeHandlerObject))
-
-	application.
-		AddAutoDependency(new(incomeSchedulerRepository.IncomeSchedulerRepositoryObject)).
-		AddAutoDependency(new(incomeSchedulerService.IncomeSchedulerServiceObject)).
-		AddHandler(new(incomeSchedulerHandler.IncomeSchedulerHandlerObject))
+		log.Fatal().
+			Err(http.ListenAndServe(":3000", router)).
+			Msg("HTTP Application error")
+	}
 }
 
-func createCountriesService(app app.ApplicationService) {
-	file, err := ioutil.ReadFile(fmt.Sprintf("%scontent/countries.json", environment.GetEnvironmentVariable(countriesDirVariable, "./")))
+func prepareConfig() *config.Config {
+	cmdConfig := config.NewCMDConfig()
+	cmdConfig.ParseCMDConfig()
 
-	if helper.LogError(err, "Countries is not found") {
-		os.Exit(1)
-	}
+	cfg := config.NewConfig()
+	cfg.LoadConfig()
+	cfg.EnrichWithCMD(cmdConfig)
 
-	var countriesContent []model.Country
-
-	if err = json.Unmarshal(file, &countriesContent); err != nil {
-		log.Fatal().Err(err)
-	}
-
-	if len(countriesContent) == 0 {
-		log.Fatal().Msg("countries content is empty")
-	}
-
-	app.AddDependency(countries.NewCountryService(countriesContent))
+	return cfg
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	projectErrors "github.com/VlasovArtem/hob/src/common/errors"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/common/service"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -13,7 +13,7 @@ import (
 	"strconv"
 )
 
-func PerformRequest(target interface{}, w http.ResponseWriter, r *http.Request) error {
+func ReadRequestBody(target interface{}, w http.ResponseWriter, r *http.Request) error {
 	reqBody, err := ioutil.ReadAll(r.Body)
 
 	service.LogError(err, "")
@@ -25,8 +25,10 @@ func PerformRequest(target interface{}, w http.ResponseWriter, r *http.Request) 
 	}
 
 	if service.LogError(err, "") {
-		w.WriteHeader(400)
-		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusBadRequest)
+		_, err = w.Write([]byte(err.Error()))
+
+		return err
 	}
 
 	return err
@@ -66,11 +68,11 @@ func GetIdRequestParameter(request *http.Request) (uuid.UUID, error) {
 	}
 }
 
-func PerformResponse(writer http.ResponseWriter, response interface{}, err error) {
+func PerformResponseWithBody(writer http.ResponseWriter, body interface{}, err error) {
 	if err != nil {
-		HandleBadRequestWithError(writer, err)
-	} else if response != nil {
-		if err = json.NewEncoder(writer).Encode(response); err != nil {
+		HandleWithError(writer, err)
+	} else if body != nil {
+		if err = json.NewEncoder(writer).Encode(body); err != nil {
 			HandleErrorResponseWithError(writer, http.StatusInternalServerError, err)
 		}
 	}
@@ -78,7 +80,7 @@ func PerformResponse(writer http.ResponseWriter, response interface{}, err error
 
 func PerformResponseWithCode(writer http.ResponseWriter, response interface{}, statusCode int, err error) {
 	if err != nil {
-		HandleBadRequestWithError(writer, err)
+		HandleWithError(writer, err)
 	} else {
 		writer.WriteHeader(statusCode)
 
@@ -96,11 +98,15 @@ func HandleErrorResponseWithError(writer http.ResponseWriter, statusCode int, er
 	http.Error(writer, message, statusCode)
 }
 
-func HandleBadRequestWithError(writer http.ResponseWriter, err error) {
-	HandleErrorResponseWithError(writer, http.StatusBadRequest, err)
+func HandleWithError(writer http.ResponseWriter, err error) {
+	if errors.Is(err, int_errors.ErrNotFound{}) {
+		HandleErrorResponseWithError(writer, http.StatusNotFound, err)
+	} else {
+		HandleErrorResponseWithError(writer, http.StatusBadRequest, err)
+	}
 }
 
-func HandleBadRequestWithErrorResponse(writer http.ResponseWriter, response projectErrors.ErrorResponse) bool {
+func HandleBadRequestWithErrorResponse(writer http.ResponseWriter, response int_errors.ErrorResponse) bool {
 	if response != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(writer).Encode(response)

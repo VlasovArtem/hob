@@ -59,6 +59,20 @@ func (_m *DatabaseService) DM(model interface{}) *gorm.DB {
 	return r0
 }
 
+// DeleteById provides a mock function with given fields: model, id
+func (_m *DatabaseService) DeleteById(model interface{}, id uuid.UUID) error {
+	ret := _m.Called(model, id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(interface{}, uuid.UUID) error); ok {
+		r0 = rf(model, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ExistsById provides a mock function with given fields: model, id
 func (_m *DatabaseService) ExistsById(model interface{}, id uuid.UUID) bool {
 	ret := _m.Called(model, id)
@@ -111,6 +125,61 @@ func (_m *DatabaseService) FindByIdModeled(model interface{}, receiver interface
 	var r0 error
 	if rf, ok := ret.Get(0).(func(interface{}, interface{}, uuid.UUID) error); ok {
 		r0 = rf(model, receiver, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// FindByModeled provides a mock function with given fields: model, receiver, query, conditions
+func (_m *DatabaseService) FindByModeled(model interface{}, receiver interface{}, query interface{}, conditions ...interface{}) error {
+	var _ca []interface{}
+	_ca = append(_ca, model, receiver, query)
+	_ca = append(_ca, conditions...)
+	ret := _m.Called(_ca...)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(interface{}, interface{}, interface{}, ...interface{}) error); ok {
+		r0 = rf(model, receiver, query, conditions...)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// FindByQuery provides a mock function with given fields: receiver, query, conditions
+func (_m *DatabaseService) FindByQuery(receiver interface{}, query interface{}, conditions ...interface{}) error {
+	var _ca []interface{}
+	_ca = append(_ca, receiver, query)
+	_ca = append(_ca, conditions...)
+	ret := _m.Called(_ca...)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(interface{}, interface{}, ...interface{}) error); ok {
+		r0 = rf(receiver, query, conditions...)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateById provides a mock function with given fields: model, id, entity, omit
+func (_m *DatabaseService) UpdateById(model interface{}, id uuid.UUID, entity interface{}, omit ...string) error {
+	_va := make([]interface{}, len(omit))
+	for _i := range omit {
+		_va[_i] = omit[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, model, id, entity)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(interface{}, uuid.UUID, interface{}, ...string) error); ok {
+		r0 = rf(model, id, entity, omit...)
 	} else {
 		r0 = ret.Error(0)
 	}

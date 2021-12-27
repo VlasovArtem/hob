@@ -19,7 +19,7 @@ func GenerateMeter(paymentId uuid.UUID, houseId uuid.UUID) model.Meter {
 		return model.Meter{
 			Id:          uuid.New(),
 			Name:        "Name",
-			Details:     string(detailsBytes),
+			Details:     detailsBytes,
 			Description: "Description",
 			PaymentId:   paymentId,
 			HouseId:     houseId,
@@ -40,8 +40,20 @@ func GenerateCreateMeterRequest() model.CreateMeterRequest {
 	}
 }
 
-func GenerateMeterResponse(id uuid.UUID) model.MeterResponse {
-	return model.MeterResponse{
+func GenerateUpdateMeterRequest() (uuid.UUID, model.UpdateMeterRequest) {
+	return uuid.New(), model.UpdateMeterRequest{
+		Name: "Name",
+		Details: map[string]float64{
+			"first":  1.1,
+			"second": 2.2,
+			"third":  3.0,
+		},
+		Description: "Description",
+	}
+}
+
+func GenerateMeterResponse(id uuid.UUID) model.MeterDto {
+	return model.MeterDto{
 		Id:   id,
 		Name: "Name",
 		Details: map[string]float64{

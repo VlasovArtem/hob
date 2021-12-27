@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/meter/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -34,6 +33,20 @@ func (_m *MeterRepository) Create(entity model.Meter) (model.Meter, error) {
 	}
 
 	return r0, r1
+}
+
+// DeleteById provides a mock function with given fields: id
+func (_m *MeterRepository) DeleteById(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // ExistsById provides a mock function with given fields: id
@@ -106,4 +119,18 @@ func (_m *MeterRepository) FindByPaymentId(paymentId uuid.UUID) (model.Meter, er
 	}
 
 	return r0, r1
+}
+
+// Update provides a mock function with given fields: id, meter
+func (_m *MeterRepository) Update(id uuid.UUID, meter model.Meter) error {
+	ret := _m.Called(id, meter)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.Meter) error); ok {
+		r0 = rf(id, meter)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }

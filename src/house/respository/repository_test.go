@@ -1,6 +1,7 @@
 package respository
 
 import (
+	"fmt"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/house/model"
@@ -49,6 +50,8 @@ func (h *HouseRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(h.T(), err)
 	assert.Equal(h.T(), house, actual)
+
+	h.Delete(house)
 }
 
 func (h *HouseRepositoryTestSuite) Test_Creat_WithMissingUser() {
@@ -63,14 +66,14 @@ func (h *HouseRepositoryTestSuite) Test_Creat_WithMissingUser() {
 func (h *HouseRepositoryTestSuite) Test_FindById() {
 	house := h.createHouse()
 
-	actual, err := h.repository.FindResponseById(house.Id)
+	actual, err := h.repository.FindDtoById(house.Id)
 
 	assert.Nil(h.T(), err)
 	assert.Equal(h.T(), house.ToDto(), actual)
 }
 
 func (h *HouseRepositoryTestSuite) Test_FindById_WithMissingId() {
-	actual, err := h.repository.FindResponseById(uuid.New())
+	actual, err := h.repository.FindDtoById(uuid.New())
 
 	assert.ErrorIs(h.T(), err, gorm.ErrRecordNotFound)
 	assert.Equal(h.T(), model.HouseDto{}, actual)
@@ -112,12 +115,55 @@ func (h *HouseRepositoryTestSuite) Test_ExistsById_WithMissingId() {
 	assert.False(h.T(), actual)
 }
 
-func (h *HouseRepositoryTestSuite) createHouse() model.House {
-	house := mocks.GenerateHouse(h.createdUser.Id)
+func (h *HouseRepositoryTestSuite) Test_DeleteById() {
+	house := h.createHouse()
 
-	create, err := h.repository.Create(house)
+	assert.Nil(h.T(), h.repository.DeleteById(house.Id))
+}
+
+func (h *HouseRepositoryTestSuite) Test_DeleteById_WithMissingId() {
+	assert.Nil(h.T(), h.repository.DeleteById(uuid.New()))
+}
+
+func (h *HouseRepositoryTestSuite) Test_Update() {
+	house := h.createHouse()
+
+	updatedHouse := model.House{
+		Id:          house.Id,
+		Name:        fmt.Sprintf("%s-new", house.Name),
+		CountryCode: fmt.Sprintf("%s-new", house.CountryCode),
+		City:        fmt.Sprintf("%s-new", house.City),
+		StreetLine1: fmt.Sprintf("%s-new", house.StreetLine1),
+		StreetLine2: fmt.Sprintf("%s-new", house.StreetLine2),
+		UserId:      house.UserId,
+		User:        house.User,
+	}
+
+	err := h.repository.Update(updatedHouse)
 
 	assert.Nil(h.T(), err)
 
-	return create
+	response, err := h.repository.FindDtoById(house.Id)
+	assert.Nil(h.T(), err)
+	assert.Equal(h.T(), model.HouseDto{
+		Id:          house.Id,
+		Name:        "Name-new",
+		CountryCode: "UA-new",
+		City:        "City-new",
+		StreetLine1: "Street Line 1-new",
+		StreetLine2: "Street Line 2-new",
+		UserId:      house.UserId,
+	}, response)
+}
+
+func (h *HouseRepositoryTestSuite) Test_Update_WithMissingId() {
+	assert.Nil(h.T(), h.repository.DeleteById(uuid.New()))
+}
+
+func (h *HouseRepositoryTestSuite) createHouse() (house model.House) {
+	house = mocks.GenerateHouse(h.createdUser.Id)
+
+	h.CreateEntity(&house)
+
+	return house
 }

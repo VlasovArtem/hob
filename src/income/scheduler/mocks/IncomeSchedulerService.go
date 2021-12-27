@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/income/scheduler/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -34,6 +33,20 @@ func (_m *IncomeSchedulerService) Add(request model.CreateIncomeSchedulerRequest
 	}
 
 	return r0, r1
+}
+
+// DeleteById provides a mock function with given fields: id
+func (_m *IncomeSchedulerService) DeleteById(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // FindByHouseId provides a mock function with given fields: id
@@ -73,13 +86,13 @@ func (_m *IncomeSchedulerService) FindById(id uuid.UUID) (model.IncomeSchedulerD
 	return r0, r1
 }
 
-// Remove provides a mock function with given fields: id
-func (_m *IncomeSchedulerService) Remove(id uuid.UUID) error {
-	ret := _m.Called(id)
+// Update provides a mock function with given fields: id, request
+func (_m *IncomeSchedulerService) Update(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error {
+	ret := _m.Called(id, request)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
-		r0 = rf(id)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateIncomeSchedulerRequest) error); ok {
+		r0 = rf(id, request)
 	} else {
 		r0 = ret.Error(0)
 	}

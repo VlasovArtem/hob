@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/income/scheduler/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -37,8 +36,17 @@ func (_m *IncomeSchedulerRepository) Create(scheduler model.IncomeScheduler) (mo
 }
 
 // DeleteById provides a mock function with given fields: id
-func (_m *IncomeSchedulerRepository) DeleteById(id uuid.UUID) {
-	_m.Called(id)
+func (_m *IncomeSchedulerRepository) DeleteById(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // ExistsById provides a mock function with given fields: id
@@ -56,19 +64,26 @@ func (_m *IncomeSchedulerRepository) ExistsById(id uuid.UUID) bool {
 }
 
 // FindByHouseId provides a mock function with given fields: houseId
-func (_m *IncomeSchedulerRepository) FindByHouseId(houseId uuid.UUID) []model.IncomeScheduler {
+func (_m *IncomeSchedulerRepository) FindByHouseId(houseId uuid.UUID) ([]model.IncomeSchedulerDto, error) {
 	ret := _m.Called(houseId)
 
-	var r0 []model.IncomeScheduler
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.IncomeScheduler); ok {
+	var r0 []model.IncomeSchedulerDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.IncomeSchedulerDto); ok {
 		r0 = rf(houseId)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.IncomeScheduler)
+			r0 = ret.Get(0).([]model.IncomeSchedulerDto)
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uuid.UUID) error); ok {
+		r1 = rf(houseId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // FindById provides a mock function with given fields: id
@@ -85,6 +100,27 @@ func (_m *IncomeSchedulerRepository) FindById(id uuid.UUID) (model.IncomeSchedul
 	var r1 error
 	if rf, ok := ret.Get(1).(func(uuid.UUID) error); ok {
 		r1 = rf(id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Update provides a mock function with given fields: id, scheduler
+func (_m *IncomeSchedulerRepository) Update(id uuid.UUID, scheduler model.UpdateIncomeSchedulerRequest) (model.IncomeScheduler, error) {
+	ret := _m.Called(id, scheduler)
+
+	var r0 model.IncomeScheduler
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateIncomeSchedulerRequest) model.IncomeScheduler); ok {
+		r0 = rf(id, scheduler)
+	} else {
+		r0 = ret.Get(0).(model.IncomeScheduler)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uuid.UUID, model.UpdateIncomeSchedulerRequest) error); ok {
+		r1 = rf(id, scheduler)
 	} else {
 		r1 = ret.Error(1)
 	}

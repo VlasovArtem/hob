@@ -33,3 +33,12 @@ func GenerateCreateIncomeSchedulerRequest() model.CreateIncomeSchedulerRequest {
 		Spec:        scheduler.DAILY,
 	}
 }
+
+func GenerateUpdateIncomeSchedulerRequest() (uuid.UUID, model.UpdateIncomeSchedulerRequest) {
+	return uuid.New(), model.UpdateIncomeSchedulerRequest{
+		Name:        "Test Income",
+		Description: "Test Income Description",
+		Sum:         1000,
+		Spec:        scheduler.DAILY,
+	}
+}

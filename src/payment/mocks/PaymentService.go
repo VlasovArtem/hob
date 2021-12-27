@@ -4,7 +4,6 @@ package mocks
 
 import (
 	model "github.com/VlasovArtem/hob/src/payment/model"
-
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -36,6 +35,20 @@ func (_m *PaymentService) Add(request model.CreatePaymentRequest) (model.Payment
 	return r0, r1
 }
 
+// DeleteById provides a mock function with given fields: id
+func (_m *PaymentService) DeleteById(id uuid.UUID) error {
+	ret := _m.Called(id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ExistsById provides a mock function with given fields: id
 func (_m *PaymentService) ExistsById(id uuid.UUID) bool {
 	ret := _m.Called(id)
@@ -50,13 +63,13 @@ func (_m *PaymentService) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindByHouseId provides a mock function with given fields: HouseId
-func (_m *PaymentService) FindByHouseId(houseId uuid.UUID) []model.PaymentDto {
-	ret := _m.Called(houseId)
+// FindByHouseId provides a mock function with given fields: id
+func (_m *PaymentService) FindByHouseId(id uuid.UUID) []model.PaymentDto {
+	ret := _m.Called(id)
 
 	var r0 []model.PaymentDto
 	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
-		r0 = rf(houseId)
+		r0 = rf(id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.PaymentDto)
@@ -87,17 +100,47 @@ func (_m *PaymentService) FindById(id uuid.UUID) (model.PaymentDto, error) {
 	return r0, r1
 }
 
-// FindByUserId provides a mock function with given fields: UserId
-func (_m *PaymentService) FindByUserId(userId uuid.UUID) []model.PaymentDto {
-	ret := _m.Called(userId)
+// FindByProviderId provides a mock function with given fields: id
+func (_m *PaymentService) FindByProviderId(id uuid.UUID) []model.PaymentDto {
+	ret := _m.Called(id)
 
 	var r0 []model.PaymentDto
 	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
-		r0 = rf(userId)
+		r0 = rf(id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.PaymentDto)
 		}
+	}
+
+	return r0
+}
+
+// FindByUserId provides a mock function with given fields: id
+func (_m *PaymentService) FindByUserId(id uuid.UUID) []model.PaymentDto {
+	ret := _m.Called(id)
+
+	var r0 []model.PaymentDto
+	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
+		r0 = rf(id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.PaymentDto)
+		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields: id, request
+func (_m *PaymentService) Update(id uuid.UUID, request model.UpdatePaymentRequest) error {
+	ret := _m.Called(id, request)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdatePaymentRequest) error); ok {
+		r0 = rf(id, request)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

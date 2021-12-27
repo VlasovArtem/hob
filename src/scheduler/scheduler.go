@@ -7,7 +7,10 @@ import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
+	"reflect"
 )
+
+var SchedulerServiceType = reflect.TypeOf(SchedulerServiceObject{})
 
 type SchedulingSpecification string
 
@@ -34,8 +37,8 @@ func NewSchedulerService() ServiceScheduler {
 	return schedulerService
 }
 
-func (s *SchedulerServiceObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewSchedulerService())
+func (s *SchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+	return NewSchedulerService()
 }
 
 type ServiceScheduler interface {

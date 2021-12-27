@@ -17,8 +17,8 @@ func NewIncomeHandler(incomeService service.IncomeService) IncomeHandler {
 	return &IncomeHandlerObject{incomeService}
 }
 
-func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewIncomeHandler(factory.FindRequiredByObject(service.IncomeServiceObject{}).(service.IncomeService)))
+func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+	return NewIncomeHandler(factory.FindRequiredByObject(service.IncomeServiceObject{}).(service.IncomeService))
 }
 
 func (i *IncomeHandlerObject) Init(router *mux.Router) {
@@ -39,7 +39,7 @@ func (i *IncomeHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var requestBody model.CreateIncomeRequest
 
-		if err := rest.PerformRequest(&requestBody, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&requestBody, writer, request); err != nil {
 			return
 		}
 
@@ -52,11 +52,11 @@ func (i *IncomeHandlerObject) Add() http.HandlerFunc {
 func (i *IncomeHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			meterResponse, err := i.incomeService.FindById(id)
 
-			rest.PerformResponse(writer, meterResponse, err)
+			rest.PerformResponseWithBody(writer, meterResponse, err)
 		}
 	}
 }
@@ -64,9 +64,9 @@ func (i *IncomeHandlerObject) FindById() http.HandlerFunc {
 func (i *IncomeHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponse(writer, i.incomeService.FindByHouseId(id), err)
+			rest.PerformResponseWithBody(writer, i.incomeService.FindByHouseId(id), err)
 		}
 	}
 }

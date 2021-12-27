@@ -1,18 +1,18 @@
 package validator
 
-import "github.com/VlasovArtem/hob/src/common/errors"
+import "github.com/VlasovArtem/hob/src/common/int-errors"
 
 type Validator struct {
-	errors errors.ErrorResponse
+	errors int_errors.ErrorResponseBuilder
 }
 
 func NewBaseValidator() BaseValidator {
-	return &Validator{errors.New()}
+	return &Validator{int_errors.NewBuilder()}
 }
 
 type BaseValidator interface {
 	ValidateStringFieldNotEmpty(value string, message string) BaseValidator
-	Result(error string) errors.ErrorResponse
+	Result(error string) int_errors.ErrorResponse
 }
 
 func (v *Validator) ValidateStringFieldNotEmpty(value string, message string) BaseValidator {
@@ -22,8 +22,8 @@ func (v *Validator) ValidateStringFieldNotEmpty(value string, message string) Ba
 	return v
 }
 
-func (v *Validator) Result(error string) errors.ErrorResponse {
+func (v *Validator) Result(error string) int_errors.ErrorResponse {
 	v.errors.AddErrorIfMessagesExists(error)
 
-	return v.errors.Result()
+	return v.errors.Build()
 }

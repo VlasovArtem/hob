@@ -28,7 +28,7 @@ func Test_AddMeter(t *testing.T) {
 
 	request := mocks.GenerateCreateMeterRequest()
 
-	meters.On("Add", request).Return(request.ToEntity().ToResponse(), nil)
+	meters.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/meter").
@@ -38,11 +38,11 @@ func Test_AddMeter(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusCreated)
 
-	actual := model.MeterResponse{}
+	actual := model.MeterDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, model.MeterResponse{
+	assert.Equal(t, model.MeterDto{
 		Id:   actual.Id,
 		Name: "Name",
 		Details: map[string]float64{
@@ -72,7 +72,7 @@ func Test_AddMeter_WithErrorFromService(t *testing.T) {
 	request := mocks.GenerateCreateMeterRequest()
 
 	err := errors.New("error")
-	meters.On("Add", request).Return(model.MeterResponse{}, err)
+	meters.On("Add", request).Return(model.MeterDto{}, err)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/meter").
@@ -103,7 +103,7 @@ func Test_FindById(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := model.MeterResponse{}
+	actual := model.MeterDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -118,7 +118,7 @@ func Test_FindById_WithError(t *testing.T) {
 	expected := errors.New("error")
 
 	meters.On("FindById", id).
-		Return(model.MeterResponse{}, expected)
+		Return(model.MeterDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/meter/{id}").
@@ -163,7 +163,7 @@ func Test_FindByPaymentId(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	actual := model.MeterResponse{}
+	actual := model.MeterDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -178,7 +178,7 @@ func Test_FindByPaymentId_WithError(t *testing.T) {
 	expected := errors.New("error")
 
 	meters.On("FindByPaymentId", id).
-		Return(model.MeterResponse{}, expected)
+		Return(model.MeterDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/meter/payment/{id}").
@@ -210,7 +210,7 @@ func Test_FindByHouseId(t *testing.T) {
 
 	id := uuid.New()
 
-	meterResponse := []model.MeterResponse{mocks.GenerateMeterResponse(id)}
+	meterResponse := []model.MeterDto{mocks.GenerateMeterResponse(id)}
 
 	meters.On("FindByHouseId", meterResponse[0].HouseId).
 		Return(meterResponse, nil)
@@ -223,7 +223,7 @@ func Test_FindByHouseId(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	var actual []model.MeterResponse
+	var actual []model.MeterDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
@@ -235,7 +235,7 @@ func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
 
 	id := uuid.New()
 
-	var meterResponse []model.MeterResponse
+	var meterResponse []model.MeterDto
 
 	meters.On("FindByHouseId", id).
 		Return(meterResponse, nil)
@@ -248,7 +248,7 @@ func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
 
 	responseByteArray := testRequest.Verify(t, http.StatusOK)
 
-	var actual []model.MeterResponse
+	var actual []model.MeterDto
 
 	json.Unmarshal(responseByteArray, &actual)
 

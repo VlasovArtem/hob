@@ -17,8 +17,8 @@ func NewIncomeSchedulerHandler(incomeSchedulerService service.IncomeSchedulerSer
 	return &IncomeSchedulerHandlerObject{incomeSchedulerService}
 }
 
-func (i *IncomeSchedulerHandlerObject) Initialize(factory dependency.DependenciesFactory) {
-	factory.Add(NewIncomeSchedulerHandler(factory.FindRequiredByObject(service.IncomeSchedulerServiceObject{}).(service.IncomeSchedulerService)))
+func (i *IncomeSchedulerHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+	return NewIncomeSchedulerHandler(factory.FindRequiredByObject(service.IncomeSchedulerServiceObject{}).(service.IncomeSchedulerService))
 }
 
 func (i *IncomeSchedulerHandlerObject) Init(router *mux.Router) {
@@ -26,12 +26,14 @@ func (i *IncomeSchedulerHandlerObject) Init(router *mux.Router) {
 
 	incomeSchedulerRouter.Path("").HandlerFunc(i.Add()).Methods("POST")
 	incomeSchedulerRouter.Path("/{id}").HandlerFunc(i.FindById()).Methods("GET")
+	incomeSchedulerRouter.Path("/{id}").HandlerFunc(i.Update()).Methods("PUT")
 	incomeSchedulerRouter.Path("/{id}").HandlerFunc(i.Remove()).Methods("DELETE")
 	incomeSchedulerRouter.Path("/house/{id}").HandlerFunc(i.FindByHouseId()).Methods("GET")
 }
 
 type IncomeSchedulerHandler interface {
 	Add() http.HandlerFunc
+	Update() http.HandlerFunc
 	Remove() http.HandlerFunc
 	FindById() http.HandlerFunc
 	FindByHouseId() http.HandlerFunc
@@ -41,7 +43,7 @@ func (i *IncomeSchedulerHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		incomeRequest := model.CreateIncomeSchedulerRequest{}
 
-		if err := rest.PerformRequest(&incomeRequest, writer, request); err != nil {
+		if err := rest.ReadRequestBody(&incomeRequest, writer, request); err != nil {
 			return
 		}
 
@@ -51,12 +53,30 @@ func (i *IncomeSchedulerHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
+func (i *IncomeSchedulerHandlerObject) Update() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if id, err := rest.GetIdRequestParameter(request); err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			incomeRequest := model.UpdateIncomeSchedulerRequest{}
+
+			if err := rest.ReadRequestBody(&incomeRequest, writer, request); err != nil {
+				return
+			}
+
+			err := i.incomeSchedulerService.Update(id, incomeRequest)
+
+			rest.PerformResponseWithBody(writer, nil, err)
+		}
+	}
+}
+
 func (i *IncomeSchedulerHandlerObject) Remove() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
-			err = i.incomeSchedulerService.Remove(id)
+			err = i.incomeSchedulerService.DeleteById(id)
 
 			rest.PerformResponseWithCode(writer, nil, http.StatusNoContent, err)
 		}
@@ -66,11 +86,11 @@ func (i *IncomeSchedulerHandlerObject) Remove() http.HandlerFunc {
 func (i *IncomeSchedulerHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			response, err := i.incomeSchedulerService.FindById(id)
 
-			rest.PerformResponse(writer, response, err)
+			rest.PerformResponseWithBody(writer, response, err)
 		}
 	}
 }
@@ -78,11 +98,11 @@ func (i *IncomeSchedulerHandlerObject) FindById() http.HandlerFunc {
 func (i *IncomeSchedulerHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleBadRequestWithError(writer, err)
+			rest.HandleWithError(writer, err)
 		} else {
 			response := i.incomeSchedulerService.FindByHouseId(id)
 
-			rest.PerformResponse(writer, response, nil)
+			rest.PerformResponseWithBody(writer, response, nil)
 		}
 	}
 }

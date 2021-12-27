@@ -4,8 +4,10 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
+	incomeModel "github.com/VlasovArtem/hob/src/income/model"
 	"github.com/VlasovArtem/hob/src/income/scheduler/mocks"
 	"github.com/VlasovArtem/hob/src/income/scheduler/model"
+	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -34,17 +36,10 @@ func (i *IncomeSchedulerRepositoryTestSuite) SetupSuite() {
 		AddMigrators(userModel.User{}, houseModel.House{}, model.IncomeScheduler{})
 
 	i.createdUser = userMocks.GenerateUser()
-	i.CreateEntity(&i.createdUser)
+	i.CreateConstantEntity(&i.createdUser)
 
-	i.AddBeforeTest(
-		func(service db.DatabaseService) {
-			i.createdHouse = houseMocks.GenerateHouse(i.createdUser.Id)
-			i.CreateEntity(&i.createdHouse)
-		})
-}
-
-func (i *IncomeSchedulerRepositoryTestSuite) TearDownSuite() {
-	i.TearDown()
+	i.createdHouse = houseMocks.GenerateHouse(i.createdUser.Id)
+	i.CreateConstantEntity(&i.createdHouse)
 }
 
 func TestPaymentRepositorySchedulerTestSuite(t *testing.T) {
@@ -58,6 +53,8 @@ func (i *IncomeSchedulerRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), incomeScheduler, actual)
+
+	i.Delete(incomeScheduler)
 }
 
 func (i *IncomeSchedulerRepositoryTestSuite) Test_Creat_WithMissingHouse() {
@@ -86,17 +83,19 @@ func (i *IncomeSchedulerRepositoryTestSuite) Test_FindById_WithMissingId() {
 }
 
 func (i *IncomeSchedulerRepositoryTestSuite) Test_FindByHouseId() {
-	payment := i.createIncomeScheduler()
+	payment := i.createIncomeSchedulerWithNewHouse()
 
-	actual := i.repository.FindByHouseId(payment.HouseId)
+	actual, err := i.repository.FindByHouseId(payment.HouseId)
 
-	assert.Equal(i.T(), []model.IncomeScheduler{payment}, actual)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []model.IncomeSchedulerDto{payment.ToDto()}, actual)
 }
 
 func (i *IncomeSchedulerRepositoryTestSuite) Test_FindByHouseId_WithMissingId() {
-	actual := i.repository.FindByHouseId(uuid.New())
+	actual, err := i.repository.FindByHouseId(uuid.New())
 
-	assert.Equal(i.T(), []model.IncomeScheduler{}, actual)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []model.IncomeSchedulerDto{}, actual)
 }
 
 func (i *IncomeSchedulerRepositoryTestSuite) Test_ExistsById() {
@@ -114,21 +113,62 @@ func (i *IncomeSchedulerRepositoryTestSuite) Test_DeleteById() {
 
 	assert.True(i.T(), i.repository.ExistsById(payment.Id))
 
-	i.repository.DeleteById(payment.Id)
+	err := i.repository.DeleteById(payment.Id)
+
+	assert.Nil(i.T(), err)
 
 	assert.False(i.T(), i.repository.ExistsById(payment.Id))
 }
 
 func (i *IncomeSchedulerRepositoryTestSuite) Test_DeleteById_WithMissingId() {
-	i.repository.DeleteById(uuid.New())
+	err := i.repository.DeleteById(uuid.New())
+
+	assert.Nil(i.T(), err)
+}
+
+func (i *IncomeSchedulerRepositoryTestSuite) Test_Update() {
+	incomeScheduler := i.createIncomeScheduler()
+
+	updatedIncomeScheduler := model.UpdateIncomeSchedulerRequest{
+		Name:        "New Name",
+		Description: "New Description",
+		Sum:         1010,
+		Spec:        scheduler.WEEKLY,
+	}
+
+	actual, err := i.repository.Update(incomeScheduler.Id, updatedIncomeScheduler)
+
+	assert.Nil(i.T(), err)
+
+	assert.Equal(i.T(), model.IncomeScheduler{
+		Income: incomeModel.Income{
+			Id:          incomeScheduler.Id,
+			Name:        "New Name",
+			Description: "New Description",
+			Date:        incomeScheduler.Date,
+			Sum:         1010,
+			HouseId:     incomeScheduler.HouseId,
+			House:       incomeScheduler.House,
+		},
+		Spec: scheduler.WEEKLY,
+	}, actual)
+}
+
+func (i *IncomeSchedulerRepositoryTestSuite) createIncomeSchedulerWithNewHouse() model.IncomeScheduler {
+	createdHouse := houseMocks.GenerateHouse(i.createdUser.Id)
+	i.CreateEntity(&createdHouse)
+
+	payment := mocks.GenerateIncomeScheduler(createdHouse.Id)
+
+	i.CreateEntity(payment)
+
+	return payment
 }
 
 func (i *IncomeSchedulerRepositoryTestSuite) createIncomeScheduler() model.IncomeScheduler {
 	payment := mocks.GenerateIncomeScheduler(i.createdHouse.Id)
 
-	create, err := i.repository.Create(payment)
+	i.CreateEntity(payment)
 
-	assert.Nil(i.T(), err)
-
-	return create
+	return payment
 }

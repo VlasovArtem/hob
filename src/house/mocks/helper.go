@@ -13,7 +13,6 @@ func GenerateHouse(userId uuid.UUID) model.House {
 		City:        "City",
 		StreetLine1: "Street Line 1",
 		StreetLine2: "Street Line 2",
-		Deleted:     false,
 		UserId:      userId,
 	}
 }
@@ -38,5 +37,16 @@ func GenerateHouseResponse() model.HouseDto {
 		StreetLine1: "StreetLine1",
 		StreetLine2: "StreetLine2",
 		UserId:      uuid.New(),
+	}
+}
+
+func GenerateUpdateHouseRequest() model.UpdateHouseRequest {
+	return model.UpdateHouseRequest{
+		Id:          uuid.New(),
+		Name:        "Test House NEW",
+		Country:     "UA",
+		City:        "City NEW",
+		StreetLine1: "StreetLine1 NEW",
+		StreetLine2: "StreetLine2 NEW",
 	}
 }

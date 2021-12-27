@@ -29,6 +29,22 @@ func (_m *PaymentHandler) Add() http.HandlerFunc {
 	return r0
 }
 
+// Delete provides a mock function with given fields:
+func (_m *PaymentHandler) Delete() http.HandlerFunc {
+	ret := _m.Called()
+
+	var r0 http.HandlerFunc
+	if rf, ok := ret.Get(0).(func() http.HandlerFunc); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(http.HandlerFunc)
+		}
+	}
+
+	return r0
+}
+
 // FindByHouseId provides a mock function with given fields:
 func (_m *PaymentHandler) FindByHouseId() http.HandlerFunc {
 	ret := _m.Called()
@@ -61,8 +77,40 @@ func (_m *PaymentHandler) FindById() http.HandlerFunc {
 	return r0
 }
 
+// FindByProviderId provides a mock function with given fields:
+func (_m *PaymentHandler) FindByProviderId() http.HandlerFunc {
+	ret := _m.Called()
+
+	var r0 http.HandlerFunc
+	if rf, ok := ret.Get(0).(func() http.HandlerFunc); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(http.HandlerFunc)
+		}
+	}
+
+	return r0
+}
+
 // FindByUserId provides a mock function with given fields:
 func (_m *PaymentHandler) FindByUserId() http.HandlerFunc {
+	ret := _m.Called()
+
+	var r0 http.HandlerFunc
+	if rf, ok := ret.Get(0).(func() http.HandlerFunc); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(http.HandlerFunc)
+		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields:
+func (_m *PaymentHandler) Update() http.HandlerFunc {
 	ret := _m.Called()
 
 	var r0 http.HandlerFunc

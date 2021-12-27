@@ -29,8 +29,40 @@ func (_m *UserHandler) Add() http.HandlerFunc {
 	return r0
 }
 
+// Delete provides a mock function with given fields:
+func (_m *UserHandler) Delete() http.HandlerFunc {
+	ret := _m.Called()
+
+	var r0 http.HandlerFunc
+	if rf, ok := ret.Get(0).(func() http.HandlerFunc); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(http.HandlerFunc)
+		}
+	}
+
+	return r0
+}
+
 // FindById provides a mock function with given fields:
 func (_m *UserHandler) FindById() http.HandlerFunc {
+	ret := _m.Called()
+
+	var r0 http.HandlerFunc
+	if rf, ok := ret.Get(0).(func() http.HandlerFunc); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(http.HandlerFunc)
+		}
+	}
+
+	return r0
+}
+
+// Update provides a mock function with given fields:
+func (_m *UserHandler) Update() http.HandlerFunc {
 	ret := _m.Called()
 
 	var r0 http.HandlerFunc

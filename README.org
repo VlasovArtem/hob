@@ -1,0 +1,104 @@
+#+TITLE House of Bills
+
+The main idea of the project is to handle all information of your house's. Income, Bills and other details.
+The project allow to have scheduled payments or incomes.
+
+Clone application
+#+BEGIN_SRC shell
+git clone https://github.com/VlasovArtem/hob
+#+END_SRC
+
+* Table of the contents
+1. [[#views][Views]]
+2. [[#configuration][Configuration]]
+3. [[#how-to-start][How to start]]
+
+* Views
+:PROPERTIES:
+:CUSTOM_ID: views
+:END:
+
+The application is allow to use it in two ways:
+1. API
+2. Terminal
+
+Default view is *Terminal*
+
+[[./img/terminal.png][./img/terminal.png]]
+
+Check [[#configuration][configuration]] for more details.
+
+* Configuration
+:PROPERTIES:
+:CUSTOM_ID: configuration
+:END:
+
+The application allow to use the next type of configuration:
+1. [[#yaml][Yaml configuration]]
+2. [[#flags][Flags]]
+
+The flags is overrides Yaml configuration.
+
+** Yaml
+:PROPERTIES:
+:CUSTOM_ID: yaml
+:END:
+
+Be default the application will try to find environment variable `HOBCONFIG`. If the variable is not found, then the application try to use [[https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html][XDG]].
+
+#+BEGIN_SRC yaml
+user:
+ # default user authorization for terminal view ONLY. If the configuration is not provided then the app show sign up and sign in feature.
+ email: email@mail.com
+ # default user password for terminal view ONLY.
+ password: 123456
+app:
+ # Path to the log file. Log file has default value for terminal view
+ logfile: /Users/avlasov/org/logs/hob/application.log
+ # Log level. Default: info. Possible values: info, debug, warn, error, fatal
+ logleve: info
+ # Application view. Default: terminal. Possible values: terminal (shorthand - 't'), api (shorthand - 'a')
+ view: terminal
+#+END_SRC
+
+** Flags
+:PROPERTIES:
+:CUSTOM_ID: flags
+:END:
+
+|Flags                         |Values                         |Description                                                 |
+|+-----------------------------+-------------------------------+-----------------------------------------------------------+|
+|-f, --log-file                |                               |Log file path. Default: Empty for api and temp for terminal.|
+|-l, --log-level               |info, debug, warn, error, fatal|Log level. Default: 'info'                                  |
+|-u, --user-email              |                               |Default user email. Only for terminal view                  |
+|-p, --user-password           |                               |Default user password                                       |
+|-v, --view                    |terminal, t, api, a            |Application view                                            |
+
+* How to start
+:PROPERTIES:
+:CUSTOM_ID: how-to-start
+:END:
+
+** Database
+#+BEGIN_SRC shell
+docker run --name hob -e POSTGRES_USERNAME=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=hob -d -p 5432:5432 postgres
+#+END_SRC
+
+Database properties is configurable view environment variables:
+- *DB_HOST* - host of a database. Default: *localhost*
+- *DB_PORT* - post of a database. Default: *5432*
+- *DB_USER* - username of a database. Default: *postgres*
+- *DB_PASSWORD* - password of a database. Default: *postgres*
+- *DB_NAME* - database name. Default: *hob*
+
+** Start application
+
+*** Using shell
+#+BEGIN_SRC shell
+go run github.com/VlasovArtem/hob
+#+END_SRC
+
+*** Docker container
+#+BEGIN_SRC shell
+docker compose up -d
+#+END_SRC
