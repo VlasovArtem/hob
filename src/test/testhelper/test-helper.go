@@ -34,7 +34,7 @@ func InitCountryService() countries.CountryService {
 type TestRequest struct {
 	Method   string
 	URL      string
-	Body     interface{}
+	Body     any
 	Vars     map[string]string
 	Handler  http.HandlerFunc
 	Request  *http.Request
@@ -52,7 +52,7 @@ func NewTestRequest() *TestRequest {
 type TestRequestBuilder interface {
 	WithMethod(method string) *TestRequest
 	WithURL(target string) *TestRequest
-	WithBody(body interface{}) *TestRequest
+	WithBody(body any) *TestRequest
 	WithHandler(handler http.HandlerFunc) *TestRequest
 	WithVar(key string, value string) *TestRequest
 	Build() *TestRequest
@@ -73,7 +73,7 @@ func (t *TestRequest) WithURL(URL string) *TestRequest {
 	return t
 }
 
-func (t *TestRequest) WithBody(body interface{}) *TestRequest {
+func (t *TestRequest) WithBody(body any) *TestRequest {
 	t.Body = body
 	return t
 }

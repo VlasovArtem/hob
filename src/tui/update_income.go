@@ -25,12 +25,12 @@ type UpdateIncome struct {
 	updateContent context.Context
 }
 
-func (u *UpdateIncome) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (u *UpdateIncome) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(UpdateIncomePageName, func() tview.Primitive { return NewUpdateIncome(app, variables["id"].(uuid.UUID)) })
 }
 
 func (u *UpdateIncome) enrichNavigation(app *TerminalApp, incomeId uuid.UUID) {
-	u.Navigation = NewNavigation(app, u.NavigationInfo(app, map[string]interface{}{"id": incomeId}))
+	u.Navigation = NewNavigation(app, u.NavigationInfo(app, map[string]any{"id": incomeId}))
 }
 
 func NewUpdateIncome(app *TerminalApp, incomeId uuid.UUID) *UpdateIncome {

@@ -1,14 +1,11 @@
 package handler
 
 import (
-	"encoding/json"
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	projectErrors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/common/rest"
 	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/VlasovArtem/hob/src/user/service"
 	"github.com/VlasovArtem/hob/src/user/validator"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -22,9 +19,9 @@ func NewUserHandler(userService service.UserService, userValidator validator.Use
 	return &UserHandlerObject{userService, userValidator}
 }
 
-func (u *UserHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (u *UserHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewUserHandler(
-		factory.FindRequiredByObject(service.UserServiceObject{}).(service.UserService),
+		factory.FindRequiredByObject(service.UserServiceType).(service.UserService),
 		factory.FindRequiredByObject(validator.UserRequestValidatorObject{}).(validator.UserRequestValidator),
 	)
 }
@@ -47,38 +44,27 @@ func (u *UserHandlerObject) Init(router *mux.Router) {
 
 func (u *UserHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		requestEntity := model.CreateUserRequest{}
-
-		if err := rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
+		if body, err := rest.ReadRequestBody[model.CreateUserRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
-			return
-		}
-		if rest.HandleBadRequestWithErrorResponse(writer, u.userValidator.ValidateCreateRequest(requestEntity)) {
-			return
-		}
-
-		if userResponse, err := u.userService.Add(requestEntity); err != nil {
-			rest.HandleBadRequestWithErrorResponse(writer, projectErrors.NewWithDetails(err.Error()))
 		} else {
-			writer.WriteHeader(http.StatusCreated)
-			json.NewEncoder(writer).Encode(userResponse)
+			if rest.HandleBadRequestWithErrorResponse(writer, u.userValidator.ValidateCreateRequest(body)) {
+				return
+			}
+			rest.NewAPIResponse(writer).
+				Created(u.userService.Add(body)).
+				Perform()
 		}
 	}
 }
 
 func (u *UserHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		if parameter, err := rest.GetRequestParameter(request, "id"); err != nil {
+		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
-
-			return
 		} else {
-			if id, err := uuid.Parse(parameter); err != nil {
-				rest.HandleWithError(writer, err)
-			} else {
-				userResponse, err := u.userService.FindById(id)
-				rest.PerformResponseWithBody(writer, userResponse, err)
-			}
+			rest.NewAPIResponse(writer).
+				Ok(u.userService.FindById(id)).
+				Perform()
 		}
 	}
 }
@@ -88,7 +74,9 @@ func (u *UserHandlerObject) Delete() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponseWithCode(writer, nil, http.StatusNoContent, u.userService.Delete(id))
+			rest.NewAPIResponse(writer).
+				NoContent(u.userService.Delete(id)).
+				Perform()
 		}
 	}
 }
@@ -98,21 +86,16 @@ func (u *UserHandlerObject) Update() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			requestEntity := model.UpdateUserRequest{}
-
-			if err := rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
+			if body, err := rest.ReadRequestBody[model.UpdateUserRequest](request); err != nil {
 				rest.HandleWithError(writer, err)
-				return
-			}
-
-			if rest.HandleBadRequestWithErrorResponse(writer, u.userValidator.ValidateUpdateRequest(requestEntity)) {
-				return
-			}
-
-			if err = u.userService.Update(id, requestEntity); err != nil {
-				rest.HandleBadRequestWithErrorResponse(writer, projectErrors.NewWithDetails(err.Error()))
 			} else {
-				rest.PerformResponseWithBody(writer, nil, nil)
+				if rest.HandleBadRequestWithErrorResponse(writer, u.userValidator.ValidateUpdateRequest(body)) {
+					return
+				}
+
+				rest.NewAPIResponse(writer).
+					Error(u.userService.Update(id, body)).
+					Perform()
 			}
 		}
 	}

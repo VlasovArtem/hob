@@ -16,7 +16,7 @@ var (
 )
 
 type Navigator interface {
-	NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo
+	NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo
 }
 
 type NavigationRules struct {
@@ -51,7 +51,7 @@ func NewNavigation(app *TerminalApp, my *NavigationInfo) *Navigation {
 	}
 }
 
-func (n *Navigation) AddCustomPageWithVars(navigator Navigator, variables map[string]interface{}) *Navigation {
+func (n *Navigation) AddCustomPageWithVars(navigator Navigator, variables map[string]any) *Navigation {
 	navigationInfo := navigator.NavigationInfo(n.App, variables)
 	n.additional[navigationInfo.pageName] = navigationInfo
 	return n

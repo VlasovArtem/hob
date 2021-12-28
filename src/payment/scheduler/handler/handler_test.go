@@ -80,7 +80,7 @@ func Test_Remove(t *testing.T) {
 
 	id := uuid.New()
 
-	paymentsScheduler.On("DeleteById", id).Return(nil)
+	paymentsScheduler.On("Remove", id).Return(nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
@@ -379,8 +379,7 @@ func Test_FindByProviderId_WithInvalidParameter(t *testing.T) {
 func Test_Update(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
-	id := uuid.New()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
 
 	paymentsScheduler.On("Update", id, request).Return(nil)
 
@@ -397,7 +396,7 @@ func Test_Update(t *testing.T) {
 func Test_Update_WithInvalidId(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	_, request := mocks.GenerateUpdatePaymentSchedulerRequest()
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/scheduler/{id}").
@@ -428,8 +427,7 @@ func Test_Update_WithInvalidRequest(t *testing.T) {
 func Test_Update_WithErrorFromService(t *testing.T) {
 	handler := handlerGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
-	id := uuid.New()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
 
 	expected := errors.New("error")
 

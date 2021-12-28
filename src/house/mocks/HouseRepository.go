@@ -101,12 +101,12 @@ func (_m *HouseRepository) FindResponseByUserId(id uuid.UUID) []model.HouseDto {
 }
 
 // Update provides a mock function with given fields: entity
-func (_m *HouseRepository) Update(entity model.House) error {
-	ret := _m.Called(entity)
+func (_m *HouseRepository) Update(id uuid.UUID, request model.UpdateHouseRequest) error {
+	ret := _m.Called(id, request)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(model.House) error); ok {
-		r0 = rf(entity)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateHouseRequest) error); ok {
+		r0 = rf(id, request)
 	} else {
 		r0 = ret.Error(0)
 	}

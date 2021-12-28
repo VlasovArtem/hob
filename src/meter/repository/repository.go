@@ -26,11 +26,11 @@ func NewMeterRepository(database db.DatabaseService) MeterRepository {
 	}
 }
 
-func (m *MeterRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (m *MeterRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewMeterRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
-func (m *MeterRepositoryObject) GetEntity() interface{} {
+func (m *MeterRepositoryObject) GetEntity() any {
 	return entity
 }
 
@@ -39,7 +39,6 @@ type MeterRepository interface {
 	ExistsById(id uuid.UUID) bool
 	FindById(id uuid.UUID) (model.Meter, error)
 	FindByPaymentId(paymentId uuid.UUID) (model.Meter, error)
-	FindByHouseId(houseId uuid.UUID) []model.Meter
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, meter model.Meter) error
 }
@@ -63,16 +62,10 @@ func (m *MeterRepositoryObject) FindByPaymentId(id uuid.UUID) (response model.Me
 	return response, m.database.FirstBy(&response, "payment_id = ?", id)
 }
 
-func (m *MeterRepositoryObject) FindByHouseId(houseId uuid.UUID) (response []model.Meter) {
-	_ = m.database.FindBy(&response, "house_id = ?", houseId)
-
-	return response
-}
-
 func (m *MeterRepositoryObject) DeleteById(id uuid.UUID) error {
 	return m.database.Delete(id)
 }
 
 func (m *MeterRepositoryObject) Update(id uuid.UUID, entity model.Meter) error {
-	return m.database.Update(id, entity, "HouseId", "House", "PaymentId", "Payment")
+	return m.database.Update(id, entity, "PaymentId", "Payment")
 }

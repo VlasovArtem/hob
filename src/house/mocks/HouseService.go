@@ -101,12 +101,12 @@ func (_m *HouseService) FindByUserId(userId uuid.UUID) []model.HouseDto {
 }
 
 // Update provides a mock function with given fields: house
-func (_m *HouseService) Update(house model.UpdateHouseRequest) error {
-	ret := _m.Called(house)
+func (_m *HouseService) Update(id uuid.UUID, house model.UpdateHouseRequest) error {
+	ret := _m.Called(id, house)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(model.UpdateHouseRequest) error); ok {
-		r0 = rf(house)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateHouseRequest) error); ok {
+		r0 = rf(id, house)
 	} else {
 		r0 = ret.Error(0)
 	}

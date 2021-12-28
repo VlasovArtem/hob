@@ -14,7 +14,7 @@ type SignInForm struct {
 	password string
 }
 
-func (s *SignInForm) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (s *SignInForm) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(SignInPageName, func() tview.Primitive { return NewSignIn(app) })
 }
 

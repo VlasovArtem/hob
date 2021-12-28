@@ -25,8 +25,8 @@ func GenerateCreatePaymentSchedulerRequest() model.CreatePaymentSchedulerRequest
 	}
 }
 
-func GenerateUpdatePaymentSchedulerRequest() model.UpdatePaymentSchedulerRequest {
-	return model.UpdatePaymentSchedulerRequest{
+func GenerateUpdatePaymentSchedulerRequest() (uuid.UUID, model.UpdatePaymentSchedulerRequest) {
+	return uuid.New(), model.UpdatePaymentSchedulerRequest{
 		Name:        "Test Payment Updated",
 		Description: "Test Payment Description Updated",
 		ProviderId:  uuid.New(),

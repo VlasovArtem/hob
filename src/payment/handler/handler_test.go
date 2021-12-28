@@ -99,7 +99,7 @@ func Test_Update(t *testing.T) {
 		WithBody(request).
 		WithVar("id", id.String())
 
-	testRequest.Verify(t, http.StatusNoContent)
+	testRequest.Verify(t, http.StatusOK)
 }
 
 func Test_Update_WithInvalidId(t *testing.T) {

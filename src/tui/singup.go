@@ -15,7 +15,7 @@ type SignUp struct {
 	request userModel.CreateUserRequest
 }
 
-func (s *SignUp) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (s *SignUp) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(SingUpPageName, func() tview.Primitive { return NewSignUp(app) })
 }
 

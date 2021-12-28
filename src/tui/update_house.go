@@ -17,11 +17,11 @@ type UpdateHouse struct {
 	updateContent context.Context
 }
 
-func (u *UpdateHouse) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (u *UpdateHouse) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(UpdateHousePageName, func() tview.Primitive { return NewUpdateHouse(app, variables["id"].(uuid.UUID)) })
 }
 
-func (u *UpdateHouse) enrichNavigation(app *TerminalApp, variables map[string]interface{}) {
+func (u *UpdateHouse) enrichNavigation(app *TerminalApp, variables map[string]any) {
 	u.Navigation = NewNavigation(
 		app,
 		u.NavigationInfo(app, variables),
@@ -33,7 +33,7 @@ func NewUpdateHouse(app *TerminalApp, houseId uuid.UUID) *UpdateHouse {
 		FlexApp: NewFlexApp(),
 		app:     app,
 	}
-	f.enrichNavigation(app, map[string]interface{}{"id": houseId})
+	f.enrichNavigation(app, map[string]any{"id": houseId})
 	f.InitFlexApp(app)
 	f.bindKeys()
 
@@ -54,7 +54,7 @@ func NewUpdateHouse(app *TerminalApp, houseId uuid.UUID) *UpdateHouse {
 
 	form := tview.NewForm().
 		AddInputField("Name", houseDto.Name, 20, nil, func(text string) { request.Name = text }).
-		AddDropDown("Country", f.app.CountriesCodes, currentCountryCodeIndex, func(option string, optionIndex int) { request.Country = option }).
+		AddDropDown("CountryCode", f.app.CountriesCodes, currentCountryCodeIndex, func(option string, optionIndex int) { request.CountryCode = option }).
 		AddInputField("City", houseDto.City, 20, nil, func(text string) { request.City = text }).
 		AddInputField("Street Line 1", houseDto.StreetLine1, 20, nil, func(text string) { request.StreetLine1 = text }).
 		AddInputField("Street Line 2", houseDto.StreetLine2, 20, nil, func(text string) { request.StreetLine2 = text }).

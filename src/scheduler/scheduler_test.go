@@ -3,6 +3,7 @@ package scheduler
 import (
 	"errors"
 	"fmt"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +59,7 @@ func Test_Add_WithExistingScheduler(t *testing.T) {
 	entryId, err = service.Add(itemId, "* * * * *", func() { log.Println("Function") })
 
 	assert.Equal(t, cron.EntryID(0), entryId)
-	assert.Equal(t, errors.New(fmt.Sprintf("scheduler for the entity id %s exists", itemId)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("scheduler for the entity id %s exists", itemId), err)
 }
 
 func Test_Add_WithInvalidScheduler(t *testing.T) {

@@ -23,7 +23,7 @@ type Providers struct {
 	providers *TableFiller
 }
 
-func (p *Providers) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (p *Providers) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(ProvidersPageName, func() tview.Primitive { return NewProviders(app) })
 }
 

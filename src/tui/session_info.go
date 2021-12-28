@@ -43,7 +43,7 @@ func (s *SessionInfo) init() {
 		content.
 			add(NewDataInfo().withData("House Info").withColor(tcell.ColorDefault)).
 			add(NewDataInfo().withHeader("Name:").withData(s.app.House.Name)).
-			add(NewDataInfo().withHeader("Country:").withData(s.app.House.CountryCode)).
+			add(NewDataInfo().withHeader("CountryCode:").withData(s.app.House.CountryCode)).
 			add(NewDataInfo().withHeader("City:").withData(s.app.House.City))
 	} else {
 		content.add(NewDataInfo().withData("House not selected").withColor(tcell.ColorDefault))
@@ -82,7 +82,7 @@ func (d *dataInfo) withData(data string) *dataInfo {
 	return d
 }
 
-func (d *dataInfo) withDataf(format string, a ...interface{}) *dataInfo {
+func (d *dataInfo) withDataf(format string, a ...any) *dataInfo {
 	d.data = fmt.Sprintf(format, a...)
 	return d
 }

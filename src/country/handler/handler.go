@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/rest"
 	"github.com/VlasovArtem/hob/src/country/service"
@@ -17,7 +16,7 @@ func NewCountryHandler(countryService service.CountryService) CountryHandler {
 	return &CountryHandlerObject{countryService}
 }
 
-func (c *CountryHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (c *CountryHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewCountryHandler(factory.FindRequiredByObject(service.CountryServiceObject{}).(service.CountryService))
 }
 
@@ -35,7 +34,7 @@ type CountryHandler interface {
 
 func (c *CountryHandlerObject) FindAll() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		json.NewEncoder(writer).Encode(c.countryService.FindAllCountries())
+		rest.PerformResponse(writer, c.countryService.FindAllCountries(), nil)
 	}
 }
 
@@ -44,11 +43,8 @@ func (c *CountryHandlerObject) FindByCode() http.HandlerFunc {
 		if parameter, err := rest.GetRequestParameter(request, "code"); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			if err, country := c.countryService.FindCountryByCode(parameter); err != nil {
-				rest.HandleErrorResponseWithError(writer, http.StatusNotFound, err)
-			} else {
-				json.NewEncoder(writer).Encode(country)
-			}
+			country, err := c.countryService.FindCountryByCode(parameter)
+			rest.PerformResponse(writer, country, err)
 		}
 	}
 }

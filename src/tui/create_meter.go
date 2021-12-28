@@ -22,12 +22,12 @@ type CreateMeter struct {
 	app *TerminalApp
 }
 
-func (c *CreateMeter) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (c *CreateMeter) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(CreateMeterPageName, func() tview.Primitive { return NewCreateMeter(app, variables["paymentId"].(uuid.UUID)) })
 }
 
 func (c *CreateMeter) enrichNavigation(app *TerminalApp, paymentId uuid.UUID) {
-	c.Navigation = NewNavigation(app, c.NavigationInfo(app, map[string]interface{}{"paymentId": paymentId}))
+	c.Navigation = NewNavigation(app, c.NavigationInfo(app, map[string]any{"paymentId": paymentId}))
 }
 
 func NewCreateMeter(app *TerminalApp, paymentId uuid.UUID) *CreateMeter {

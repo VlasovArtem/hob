@@ -2,12 +2,11 @@ package service
 
 import (
 	"errors"
-	"fmt"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
-	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -58,7 +57,7 @@ func Test_FindById(t *testing.T) {
 
 	house := mocks.GenerateHouseResponse()
 
-	repository.On("FindById", house.Id).Return(house, nil)
+	repository.On("FindDtoById", house.Id).Return(house, nil)
 
 	actual, err := houseService.FindById(house.Id)
 
@@ -71,11 +70,11 @@ func Test_FindById_WithRecordNotFound(t *testing.T) {
 
 	id := uuid.New()
 
-	repository.On("FindById", id).Return(model.HouseDto{}, gorm.ErrRecordNotFound)
+	repository.On("FindDtoById", id).Return(model.HouseDto{}, gorm.ErrRecordNotFound)
 
 	actual, err := houseService.FindById(id)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s not found", id)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not found", id), err)
 	assert.Equal(t, model.HouseDto{}, actual)
 }
 
@@ -85,7 +84,7 @@ func Test_FindById_WithRecordNotFoundExists(t *testing.T) {
 	id := uuid.New()
 
 	expectedError := errors.New("error")
-	repository.On("FindById", id).Return(model.HouseDto{}, expectedError)
+	repository.On("FindDtoById", id).Return(model.HouseDto{}, expectedError)
 
 	actual, err := houseService.FindById(id)
 
@@ -155,7 +154,7 @@ func Test_DeleteById_WithNotExists(t *testing.T) {
 
 	repository.On("ExistsById", id).Return(false)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s not found", id)), houseService.DeleteById(id))
+	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not found", id), houseService.DeleteById(id))
 
 	repository.AssertNotCalled(t, "DeleteById", id)
 }
@@ -163,60 +162,49 @@ func Test_DeleteById_WithNotExists(t *testing.T) {
 func Test_Update(t *testing.T) {
 	houseService := serviceGenerator()
 
-	request := mocks.GenerateUpdateHouseRequest()
+	id, request := mocks.GenerateUpdateHouseRequest()
 
-	repository.On("ExistsById", request.Id).Return(true)
-	repository.On("Update", mock.Anything).Return(nil)
+	repository.On("ExistsById", id).Return(true)
+	repository.On("Update", id, request).Return(nil)
 
-	assert.Nil(t, houseService.Update(request))
-
-	repository.AssertCalled(t, "Update", model.House{
-		Id:          request.Id,
-		Name:        request.Name,
-		CountryCode: request.Country,
-		City:        request.City,
-		StreetLine1: request.StreetLine1,
-		StreetLine2: request.StreetLine2,
-		UserId:      uuid.UUID{},
-		User:        userModel.User{},
-	})
+	assert.Nil(t, houseService.Update(id, request))
 }
 
 func Test_Update_WithErrorFromDatabase(t *testing.T) {
 	houseService := serviceGenerator()
 
-	request := mocks.GenerateUpdateHouseRequest()
+	id, request := mocks.GenerateUpdateHouseRequest()
 
-	repository.On("ExistsById", request.Id).Return(true)
-	repository.On("Update", mock.Anything).Return(errors.New("test"))
+	repository.On("ExistsById", id).Return(true)
+	repository.On("Update", id, request).Return(errors.New("test"))
 
-	err := houseService.Update(request)
+	err := houseService.Update(id, request)
 	assert.Equal(t, errors.New("test"), err)
 }
 
 func Test_Update_WithNotExists(t *testing.T) {
 	houseService := serviceGenerator()
 
-	request := mocks.GenerateUpdateHouseRequest()
+	id, request := mocks.GenerateUpdateHouseRequest()
 
-	repository.On("ExistsById", request.Id).Return(false)
+	repository.On("ExistsById", id).Return(false)
 
-	err := houseService.Update(request)
-	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s not found", request.Id)), err)
+	err := houseService.Update(id, request)
+	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not found", id), err)
 
-	repository.AssertNotCalled(t, "Update", mock.Anything)
+	repository.AssertNotCalled(t, "Update", id, request)
 }
 
 func Test_Update_WithNotMatchingCountry(t *testing.T) {
 	houseService := serviceGenerator()
 
-	request := mocks.GenerateUpdateHouseRequest()
-	request.Country = "invalid"
+	id, request := mocks.GenerateUpdateHouseRequest()
+	request.CountryCode = "invalid"
 
-	repository.On("ExistsById", request.Id).Return(true)
+	repository.On("ExistsById", id).Return(true)
 
-	err := houseService.Update(request)
-	assert.Equal(t, errors.New(fmt.Sprintf("country with code %s is not found", request.Country)), err)
+	err := houseService.Update(id, request)
+	assert.Equal(t, int_errors.NewErrNotFound("country with code %s is not found", request.CountryCode), err)
 
-	repository.AssertNotCalled(t, "Update", mock.Anything)
+	repository.AssertNotCalled(t, "Update", id, request)
 }

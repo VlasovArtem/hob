@@ -37,7 +37,7 @@ func NewPaymentService(
 	}
 }
 
-func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentService(
 		factory.FindRequiredByType(users.UserServiceType).(users.UserService),
 		factory.FindRequiredByType(houses.HouseServiceType).(houses.HouseService),

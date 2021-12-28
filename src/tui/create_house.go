@@ -15,7 +15,7 @@ type CreateHouse struct {
 	request houseModel.CreateHouseRequest
 }
 
-func (c *CreateHouse) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (c *CreateHouse) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(CreateHousePageName, func() tview.Primitive { return NewCreateHouse(app) })
 }
 

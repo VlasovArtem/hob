@@ -25,7 +25,7 @@ type CreateScheduledPayment struct {
 	app *TerminalApp
 }
 
-func (c *CreateScheduledPayment) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (c *CreateScheduledPayment) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(CreateScheduledPaymentPageName, func() tview.Primitive { return NewCreateScheduledPayment(app) })
 }
 

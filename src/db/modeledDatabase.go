@@ -6,22 +6,22 @@ import (
 
 type ModeledDatabase struct {
 	DatabaseService
-	Model interface{}
+	Model any
 }
 
-func (m *ModeledDatabase) Find(receiver interface{}, id uuid.UUID) error {
+func (m *ModeledDatabase) Find(receiver any, id uuid.UUID) error {
 	return m.FindByIdModeled(m.Model, receiver, id)
 }
 
-func (m *ModeledDatabase) FindBy(receiver interface{}, query interface{}, conditions ...interface{}) error {
+func (m *ModeledDatabase) FindBy(receiver any, query any, conditions ...any) error {
 	return m.FindByModeled(m.Model, receiver, query, conditions...)
 }
 
-func (m *ModeledDatabase) First(receiver interface{}, id uuid.UUID) error {
+func (m *ModeledDatabase) First(receiver any, id uuid.UUID) error {
 	return m.FindByIdModeled(m.Model, receiver, id)
 }
 
-func (m *ModeledDatabase) FirstBy(receiver interface{}, query interface{}, conditions ...interface{}) error {
+func (m *ModeledDatabase) FirstBy(receiver any, query any, conditions ...any) error {
 	return m.FirstByModeled(m.Model, receiver, query, conditions...)
 }
 
@@ -29,7 +29,7 @@ func (m *ModeledDatabase) Exists(id uuid.UUID) bool {
 	return m.ExistsById(m.Model, id)
 }
 
-func (m *ModeledDatabase) ExistsBy(query interface{}, args ...interface{}) (exists bool) {
+func (m *ModeledDatabase) ExistsBy(query any, args ...any) (exists bool) {
 	return m.ExistsByQuery(m.Model, query, args...)
 }
 
@@ -37,6 +37,6 @@ func (m *ModeledDatabase) Delete(id uuid.UUID) error {
 	return m.DeleteById(m.Model, id)
 }
 
-func (m *ModeledDatabase) Update(id uuid.UUID, entity interface{}, omit ...string) error {
+func (m *ModeledDatabase) Update(id uuid.UUID, entity any, omit ...string) error {
 	return m.UpdateById(m.Model, id, entity, omit...)
 }

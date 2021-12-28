@@ -178,25 +178,18 @@ func (p *PaymentRepositorySchedulerTestSuite) Test_Update() {
 
 	payment := p.createPaymentScheduler()
 
-	updatedIncome := model.PaymentScheduler{
-		Id:          payment.Id,
+	updatedIncome := model.UpdatePaymentSchedulerRequest{
 		Name:        fmt.Sprintf("%s-new", payment.Name),
 		Description: fmt.Sprintf("%s-new", payment.Description),
 		Sum:         payment.Sum + 100.0,
 		Spec:        scheduler.WEEKLY,
 		ProviderId:  newProvider.Id,
-		HouseId:     payment.HouseId,
-		House:       payment.House,
-		User:        payment.User,
-		UserId:      payment.UserId,
 	}
 
-	err := p.repository.Update(updatedIncome)
+	updatePayment, err := p.repository.Update(payment.Id, updatedIncome)
 
 	assert.Nil(p.T(), err)
 
-	response, err := p.repository.FindById(payment.Id)
-	assert.Nil(p.T(), err)
 	assert.Equal(p.T(), model.PaymentScheduler{
 		Id:          payment.Id,
 		Name:        "Test Payment-new",
@@ -208,11 +201,7 @@ func (p *PaymentRepositorySchedulerTestSuite) Test_Update() {
 		House:       payment.House,
 		User:        payment.User,
 		UserId:      payment.UserId,
-	}, response)
-}
-
-func (p *PaymentRepositorySchedulerTestSuite) Test_Update_WithMissingId() {
-	assert.Nil(p.T(), p.repository.Update(model.PaymentScheduler{Id: uuid.New()}))
+	}, updatePayment)
 }
 
 func (p *PaymentRepositorySchedulerTestSuite) createPaymentScheduler() model.PaymentScheduler {

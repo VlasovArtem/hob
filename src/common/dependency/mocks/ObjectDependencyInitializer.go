@@ -13,15 +13,15 @@ type ObjectDependencyInitializer struct {
 }
 
 // Initialize provides a mock function with given fields: factory
-func (_m *ObjectDependencyInitializer) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (_m *ObjectDependencyInitializer) Initialize(factory dependency.DependenciesProvider) any {
 	ret := _m.Called(factory)
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(dependency.DependenciesProvider) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(dependency.DependenciesProvider) any); ok {
 		r0 = rf(factory)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 

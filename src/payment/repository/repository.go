@@ -24,11 +24,11 @@ func NewPaymentRepository(service db.DatabaseService) PaymentRepository {
 	}
 }
 
-func (p *PaymentRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (p *PaymentRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
-func (p *PaymentRepositoryObject) GetEntity() interface{} {
+func (p *PaymentRepositoryObject) GetEntity() any {
 	return entity
 }
 
@@ -68,7 +68,7 @@ func (p *PaymentRepositoryObject) FindByProviderId(providerId uuid.UUID) []model
 	return p.findBy("provider_id = ?", providerId)
 }
 
-func (p *PaymentRepositoryObject) findBy(query interface{}, conditions ...interface{}) (response []model.PaymentDto) {
+func (p *PaymentRepositoryObject) findBy(query any, conditions ...any) (response []model.PaymentDto) {
 	_ = p.database.FindBy(&response, query, conditions...)
 
 	return response

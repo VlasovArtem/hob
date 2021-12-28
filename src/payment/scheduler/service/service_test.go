@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"fmt"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	paymentMocks "github.com/VlasovArtem/hob/src/payment/mocks"
 	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
@@ -121,7 +121,7 @@ func Test_Add_WithUserNotExists(t *testing.T) {
 
 	payment, err := service.Add(request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("user with id %s in not exists", request.UserId)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("user with id %s in not exists", request.UserId), err)
 	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, payment)
 }
 
@@ -135,7 +135,7 @@ func Test_Add_WithHouseNotExists(t *testing.T) {
 
 	payment, err := service.Add(request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("house with id %s in not exists", request.HouseId)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("house with id %s in not exists", request.HouseId), err)
 	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, payment)
 }
 
@@ -150,7 +150,7 @@ func Test_Add_WithProviderNotExists(t *testing.T) {
 
 	payment, err := service.Add(request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("provider with id %s in not exists", request.ProviderId)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("provider with id %s in not exists", request.ProviderId), err)
 	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, payment)
 }
 
@@ -233,7 +233,7 @@ func Test_Remove(t *testing.T) {
 
 	paymentSchedulerRepository.On("ExistsById", id).Return(true)
 	paymentSchedulerRepository.On("DeleteById", id).Return()
-	serviceScheduler.On("DeleteById", id).Return(nil)
+	serviceScheduler.On("Remove", id).Return(nil)
 
 	err := service.Remove(id)
 
@@ -250,11 +250,11 @@ func Test_Remove_WithErrorFromScheduler(t *testing.T) {
 	paymentSchedulerRepository.On("ExistsById", id).Return(true)
 	paymentSchedulerRepository.On("DeleteById", id).Return()
 
-	serviceScheduler.On("DeleteById", id).Return(errors.New("error"))
+	serviceScheduler.On("Remove", id).Return(errors.New("error"))
 
 	err := service.Remove(id)
 
-	paymentSchedulerRepository.AssertCalled(t, "DeleteById", id)
+	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", id)
 
 	assert.Nil(t, err)
 }
@@ -270,7 +270,7 @@ func Test_Remove_WithMissingRecord(t *testing.T) {
 
 	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", id)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("payment scheduler with id %s not found", id)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("payment scheduler with id %s not found", id), err)
 }
 
 func Test_FindById(t *testing.T) {
@@ -295,7 +295,7 @@ func Test_FindById_WithNotExistingId(t *testing.T) {
 
 	actual, err := paymentService.FindById(id)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("payment scheduler with id %s not found", id)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("payment scheduler with id %s not found", id), err)
 	assert.Equal(t, paymentScheduler.PaymentSchedulerDto{}, actual)
 }
 
@@ -391,43 +391,26 @@ func Test_FindByProviderId_WithNotExistingRecords(t *testing.T) {
 func Test_Update(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
-	schedulerId := uuid.New()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	scheduler := mocks.GeneratePaymentScheduler(uuid.New(), uuid.New(), uuid.New())
+	scheduler.Id = id
 
-	paymentSchedulerRepository.On("ExistsById", schedulerId).Return(true)
+	paymentSchedulerRepository.On("ExistsById", id).Return(true)
 	providerService.On("ExistsById", request.ProviderId).Return(true)
-	paymentSchedulerRepository.On("Update", mock.Anything).Return(nil)
+	paymentSchedulerRepository.On("Update", id, request).Return(scheduler, nil)
 	serviceScheduler.On("Update", mock.AnythingOfType("uuid.UUID"), string(request.Spec), mock.Anything).
 		Return(cron.EntryID(0), nil)
 
-	entity := request.ToEntity(schedulerId)
+	entity := request.ToEntity(id)
 	entity.HouseId = mocks.HouseId
 	entity.UserId = mocks.UserId
 
-	paymentSchedulerRepository.On("FindById", schedulerId).Return(entity, nil)
+	paymentSchedulerRepository.On("FindById", id).Return(entity, nil)
 
-	err := service.Update(schedulerId, request)
+	err := service.Update(id, request)
 
 	assert.Nil(t, err)
-	paymentSchedulerRepository.AssertCalled(t, "Update", request.ToEntity(schedulerId))
-	serviceScheduler.AssertCalled(t, "Update", schedulerId, string(request.Spec), mock.Anything)
-
-	paymentService.On("Add", mock.Anything).Return(paymentModel.PaymentDto{}, nil)
-
-	function := serviceScheduler.Calls[0].Arguments.Get(2).(func())
-	function()
-
-	createPaymentRequest := paymentService.Calls[0].Arguments.Get(0).(paymentModel.CreatePaymentRequest)
-
-	assert.Equal(t, paymentModel.CreatePaymentRequest{
-		Name:        "Test Payment Updated",
-		Description: "Test Payment Description Updated",
-		HouseId:     mocks.HouseId,
-		UserId:      mocks.UserId,
-		ProviderId:  request.ProviderId,
-		Date:        createPaymentRequest.Date,
-		Sum:         1000,
-	}, createPaymentRequest)
+	serviceScheduler.AssertCalled(t, "Update", id, string(request.Spec), mock.Anything)
 
 	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
 }
@@ -435,15 +418,13 @@ func Test_Update(t *testing.T) {
 func Test_Update_WithMissingScheduler(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
-	request.Sum = 0
-	schedulerId := uuid.New()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
 
-	paymentSchedulerRepository.On("ExistsById", schedulerId).Return(false)
+	paymentSchedulerRepository.On("ExistsById", id).Return(false)
 
-	err := service.Update(schedulerId, request)
+	err := service.Update(id, request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("payment schedule with id %s not found", schedulerId)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("payment schedule with id %s not found", id), err)
 
 	paymentSchedulerRepository.AssertNotCalled(t, "Update", mock.Anything)
 	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
@@ -452,12 +433,12 @@ func Test_Update_WithMissingScheduler(t *testing.T) {
 func Test_Update_WithInvalidSum(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
 	request.Sum = 0
 
 	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
 
-	err := service.Update(uuid.New(), request)
+	err := service.Update(id, request)
 
 	assert.Equal(t, errors.New("sum should not be zero of negative"), err)
 
@@ -468,14 +449,14 @@ func Test_Update_WithInvalidSum(t *testing.T) {
 func Test_Update_WithNotExistsProvider(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
 
 	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
 	providerService.On("ExistsById", request.ProviderId).Return(false)
 
-	err := service.Update(uuid.New(), request)
+	err := service.Update(id, request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("provider with id %s not found", request.ProviderId)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("provider with id %s not found", request.ProviderId), err)
 
 	paymentSchedulerRepository.AssertNotCalled(t, "Update", mock.Anything)
 	paymentSchedulerRepository.AssertNotCalled(t, "DeleteById", mock.Anything)
@@ -484,13 +465,13 @@ func Test_Update_WithNotExistsProvider(t *testing.T) {
 func Test_Update_WithNotSchedulerSpec(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
 	request.Spec = ""
 
 	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
 	providerService.On("ExistsById", request.ProviderId).Return(true)
 
-	err := service.Update(uuid.New(), request)
+	err := service.Update(id, request)
 
 	assert.Equal(t, errors.New("scheduler configuration not provided"), err)
 
@@ -501,13 +482,13 @@ func Test_Update_WithNotSchedulerSpec(t *testing.T) {
 func Test_Update_WithErrorFromUpdate(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
 
 	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
 	providerService.On("ExistsById", request.ProviderId).Return(true)
-	paymentSchedulerRepository.On("Update", mock.Anything).Return(errors.New("error"))
+	paymentSchedulerRepository.On("Update", id, request).Return(paymentScheduler.PaymentScheduler{}, errors.New("error"))
 
-	err := service.Update(uuid.New(), request)
+	err := service.Update(id, request)
 
 	assert.Equal(t, errors.New("error"), err)
 
@@ -517,23 +498,23 @@ func Test_Update_WithErrorFromUpdate(t *testing.T) {
 func Test_Update_WithErrorFromScheduler(t *testing.T) {
 	service := serviceGenerator()
 
-	request := mocks.GenerateUpdatePaymentSchedulerRequest()
-	providerId := uuid.New()
+	id, request := mocks.GenerateUpdatePaymentSchedulerRequest()
+	scheduler := mocks.GeneratePaymentScheduler(uuid.New(), uuid.New(), uuid.New())
 
 	paymentSchedulerRepository.On("ExistsById", mock.Anything).Return(true)
 	providerService.On("ExistsById", request.ProviderId).Return(true)
-	paymentSchedulerRepository.On("Update", mock.Anything).Return(nil)
+	paymentSchedulerRepository.On("Update", id, request).Return(scheduler, nil)
 	serviceScheduler.On("Update", mock.AnythingOfType("uuid.UUID"), string(request.Spec), mock.Anything).
 		Return(cron.EntryID(0), errors.New("error"))
-	paymentSchedulerRepository.On("DeleteById", providerId).Return()
+	paymentSchedulerRepository.On("DeleteById", id).Return()
 
-	entity := request.ToEntity(providerId)
+	entity := request.ToEntity(id)
 	entity.HouseId = mocks.HouseId
 	entity.UserId = mocks.UserId
 
-	paymentSchedulerRepository.On("FindById", providerId).Return(entity, nil)
+	paymentSchedulerRepository.On("FindById", id).Return(entity, nil)
 
-	err := service.Update(providerId, request)
+	err := service.Update(id, request)
 
 	assert.Equal(t, errors.New("error"), err)
 }

@@ -11,7 +11,7 @@ type ErrNotFound struct {
 	message string
 }
 
-func NewErrNotFound(message string, args ...interface{}) error {
+func NewErrNotFound(message string, args ...any) error {
 	return &ErrNotFound{fmt.Sprintf(message, args...)}
 }
 

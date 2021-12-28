@@ -3,7 +3,7 @@ package service
 import (
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/house/respository"
@@ -27,7 +27,7 @@ func NewHouseService(
 	repository respository.HouseRepository,
 ) HouseService {
 	if countriesService == nil {
-		log.Fatal().Msg("Country service is required")
+		log.Fatal().Msg("CountryCode service is required")
 	}
 
 	return &HouseServiceObject{
@@ -37,7 +37,7 @@ func NewHouseService(
 	}
 }
 
-func (h *HouseServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (h *HouseServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHouseService(
 		factory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService),
 		factory.FindRequiredByType(userService.UserServiceType).(userService.UserService),
@@ -55,7 +55,7 @@ type HouseService interface {
 }
 
 func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response model.HouseDto, err error) {
-	if err, country := h.countriesService.FindCountryByCode(request.Country); err != nil {
+	if country, err := h.countriesService.FindCountryByCode(request.CountryCode); err != nil {
 		return response, err
 	} else if !h.userService.ExistsById(request.UserId) {
 		return response, int_errors.NewErrNotFound("user with id %s in not exists", request.UserId)
@@ -97,7 +97,7 @@ func (h *HouseServiceObject) Update(id uuid.UUID, request model.UpdateHouseReque
 	if !h.ExistsById(id) {
 		return int_errors.NewErrNotFound("house with id %s not found", id)
 	}
-	if err, _ := h.countriesService.FindCountryByCode(request.Country); err != nil {
+	if _, err := h.countriesService.FindCountryByCode(request.CountryCode); err != nil {
 		return err
 	} else {
 		return h.repository.Update(id, request)

@@ -18,7 +18,7 @@ type UserServiceObject struct {
 	repository repository.UserRepository
 }
 
-func (u *UserServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (u *UserServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewUserService(factory.FindRequiredByObject(repository.UserRepositoryObject{}).(repository.UserRepository))
 }
 
@@ -57,7 +57,7 @@ func (u *UserServiceObject) Update(id uuid.UUID, request model.UpdateUserRequest
 	if !u.ExistsById(id) {
 		return int_errors.NewErrNotFound("user with id %s not found", id)
 	}
-	return u.repository.Update(request.ToEntity(id))
+	return u.repository.Update(id, request)
 }
 
 func (u *UserServiceObject) Delete(id uuid.UUID) error {
