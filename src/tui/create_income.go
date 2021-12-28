@@ -23,7 +23,7 @@ type CreateIncome struct {
 	request model.CreateIncomeRequest
 }
 
-func (c *CreateIncome) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (c *CreateIncome) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(CreateIncomePageName, func() tview.Primitive { return NewCreateIncome(app) })
 }
 

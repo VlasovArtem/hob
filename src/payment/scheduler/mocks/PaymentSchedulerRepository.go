@@ -124,15 +124,22 @@ func (_m *PaymentSchedulerRepository) FindByUserId(userId uuid.UUID) []model.Pay
 }
 
 // Update provides a mock function with given fields: entity
-func (_m *PaymentSchedulerRepository) Update(entity model.PaymentScheduler) error {
-	ret := _m.Called(entity)
+func (_m *PaymentSchedulerRepository) Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) (model.PaymentScheduler, error) {
+	ret := _m.Called(id, request)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(model.PaymentScheduler) error); ok {
-		r0 = rf(entity)
+	var r0 model.PaymentScheduler
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdatePaymentSchedulerRequest) model.PaymentScheduler); ok {
+		r0 = rf(id, request)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(model.PaymentScheduler)
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uuid.UUID, model.UpdatePaymentSchedulerRequest) error); ok {
+		r1 = rf(id, request)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }

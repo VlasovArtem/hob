@@ -24,7 +24,7 @@ type CreatePayment struct {
 	app *TerminalApp
 }
 
-func (c *CreatePayment) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (c *CreatePayment) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(CreatePaymentPageName, func() tview.Primitive { return NewCreatePayment(app) })
 }
 

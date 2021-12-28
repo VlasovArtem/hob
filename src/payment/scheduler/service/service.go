@@ -49,7 +49,7 @@ func NewPaymentSchedulerService(
 	}
 }
 
-func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerService(
 		factory.FindRequiredByType(users.UserServiceType).(users.UserService),
 		factory.FindRequiredByType(houses.HouseServiceType).(houses.HouseService),
@@ -113,8 +113,9 @@ func (p *PaymentSchedulerServiceObject) Remove(id uuid.UUID) error {
 	} else {
 		if err := p.serviceScheduler.Remove(id); err != nil {
 			log.Error().Err(err).Msg("")
+		} else {
+			p.repository.DeleteById(id)
 		}
-		p.repository.DeleteById(id)
 	}
 	return nil
 }
@@ -150,8 +151,8 @@ func (p *PaymentSchedulerServiceObject) Update(id uuid.UUID, request model.Updat
 		return err
 	}
 
-	if _, err := p.serviceScheduler.Update(updatedEntity.Id, string(updatedEntity.Spec), p.schedulerFunc(updatedEntity)); err != nil {
-		p.repository.DeleteById(updatedEntity.Id)
+	if _, err := p.serviceScheduler.Update(id, string(updatedEntity.Spec), p.schedulerFunc(updatedEntity)); err != nil {
+		p.repository.DeleteById(id)
 
 		return err
 	}

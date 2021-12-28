@@ -1,8 +1,7 @@
 package service
 
 import (
-	"errors"
-	"fmt"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/country/model"
 	"github.com/rs/zerolog/log"
 )
@@ -13,7 +12,7 @@ type CountryServiceObject struct {
 }
 
 type CountryService interface {
-	FindCountryByCode(code string) (error, model.Country)
+	FindCountryByCode(code string) (model.Country, error)
 	FindAllCountries() []model.Country
 }
 
@@ -32,11 +31,11 @@ func NewCountryService(countries []model.Country) CountryService {
 	return object
 }
 
-func (c *CountryServiceObject) FindCountryByCode(code string) (error, model.Country) {
+func (c *CountryServiceObject) FindCountryByCode(code string) (country model.Country, err error) {
 	if country, ok := c.countriesMap[code]; ok {
-		return nil, country
+		return country, err
 	}
-	return errors.New(fmt.Sprintf("country with code %s is not found", code)), model.Country{}
+	return country, int_errors.NewErrNotFound("country with code %s is not found", code)
 }
 
 func (c *CountryServiceObject) FindAllCountries() []model.Country {

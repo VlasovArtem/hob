@@ -32,7 +32,7 @@ func NewProviderHandler(providerService service.ProviderService) ProviderHandler
 	return &ProviderHandlerObject{providerService}
 }
 
-func (p *ProviderHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (p *ProviderHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewProviderHandler(factory.FindRequiredByObject(service.ProviderServiceObject{}).(service.ProviderService))
 }
 
@@ -47,15 +47,13 @@ type ProviderHandler interface {
 
 func (p *ProviderHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		requestEntity := model.CreateProviderRequest{}
-
-		if err := rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
+		if body, err := rest.ReadRequestBody[model.CreateProviderRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
-
-			return
+		} else {
+			rest.NewAPIResponse(writer).
+				Created(p.providerService.Add(body)).
+				Perform()
 		}
-		dto, err := p.providerService.Add(requestEntity)
-		rest.PerformResponseWithCode(writer, dto, http.StatusCreated, err)
 	}
 }
 
@@ -66,9 +64,9 @@ func (p *ProviderHandlerObject) Delete() http.HandlerFunc {
 
 			return
 		} else {
-			dto, err := p.providerService.FindById(id)
-
-			rest.PerformResponseWithBody(writer, dto, err)
+			rest.NewAPIResponse(writer).
+				NoContent(p.providerService.Delete(id)).
+				Perform()
 		}
 	}
 }
@@ -77,17 +75,14 @@ func (p *ProviderHandlerObject) Update() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
-
-			return
 		} else {
-			requestEntity := model.UpdateProviderRequest{}
-
-			if err = rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
+			if body, err := rest.ReadRequestBody[model.UpdateProviderRequest](request); err != nil {
 				rest.HandleWithError(writer, err)
-
-				return
+			} else {
+				rest.NewAPIResponse(writer).
+					Error(p.providerService.Update(id, body)).
+					Perform()
 			}
-			rest.PerformResponseWithBody(writer, nil, p.providerService.Update(id, requestEntity))
 		}
 	}
 }
@@ -96,59 +91,52 @@ func (p *ProviderHandlerObject) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
-
-			return
 		} else {
-			dto, err := p.providerService.FindById(id)
-
-			rest.PerformResponseWithBody(writer, dto, err)
+			rest.NewAPIResponse(writer).
+				Ok(p.providerService.FindById(id)).
+				Perform()
 		}
 	}
 }
 
 func (p *ProviderHandlerObject) FindByUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		id, err := rest.GetIdRequestParameter(request)
-
-		if err != nil {
+		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
-
-			return
+		} else {
+			rest.NewAPIResponse(writer).
+				Body(p.providerService.FindByUserId(id)).
+				Perform()
 		}
-
-		rest.PerformResponseWithBody(writer, p.providerService.FindByUserId(id), nil)
 	}
 }
 
 func (p *ProviderHandlerObject) FindByNameLikeAndUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		requestEntity := FindByNameRequest{}
-
-		if err := rest.ReadRequestBody(&requestEntity, writer, request); err != nil {
-
-			return
-		}
-
-		page, err := rest.GetQueryIntParameterOrDefault(request, "page", 0)
-		if err != nil {
+		if body, err := rest.ReadRequestBody[FindByNameRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
-			return
+		} else {
+			page, err := rest.GetQueryIntParameterOrDefault(request, "page", 0)
+			if err != nil {
+				rest.HandleWithError(writer, err)
+				return
+			}
+
+			size, err := rest.GetQueryIntParameterOrDefault(request, "size", 25)
+			if err != nil {
+				rest.HandleWithError(writer, err)
+				return
+			}
+
+			id, err := rest.GetIdRequestParameter(request)
+			if err != nil {
+				rest.HandleWithError(writer, err)
+				return
+			}
+
+			rest.NewAPIResponse(writer).
+				Body(p.providerService.FindByNameLikeAndUserId(body.Name, id, page, size)).
+				Perform()
 		}
-
-		size, err := rest.GetQueryIntParameterOrDefault(request, "size", 25)
-		if err != nil {
-			rest.HandleWithError(writer, err)
-			return
-		}
-
-		id, err := rest.GetIdRequestParameter(request)
-
-		if err != nil {
-			rest.HandleWithError(writer, err)
-
-			return
-		}
-
-		rest.PerformResponseWithBody(writer, p.providerService.FindByNameLikeAndUserId(requestEntity.Name, id, page, size), nil)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/environment"
-	helper "github.com/VlasovArtem/hob/src/common/service"
 	"github.com/VlasovArtem/hob/src/config"
 	"github.com/VlasovArtem/hob/src/country/model"
 	countries "github.com/VlasovArtem/hob/src/country/service"
@@ -30,7 +29,6 @@ import (
 	userRequestValidator "github.com/VlasovArtem/hob/src/user/validator"
 	"github.com/rs/zerolog/log"
 	"io/ioutil"
-	"os"
 	"reflect"
 )
 
@@ -127,8 +125,8 @@ func (a *RootApplication) migrate(object dependency.ObjectDatabaseMigrator) {
 func (a *RootApplication) createCountriesService() {
 	file, err := ioutil.ReadFile(fmt.Sprintf("%scontent/countries.json", environment.GetEnvironmentVariable(countriesDirVariable, "./")))
 
-	if helper.LogError(err, "Countries is not found") {
-		os.Exit(1)
+	if err != nil {
+		log.Fatal().Msg("Countries is not found")
 	}
 
 	var countriesContent []model.Country

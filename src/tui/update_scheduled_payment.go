@@ -24,11 +24,11 @@ type UpdateScheduledPayment struct {
 	app *TerminalApp
 }
 
-func (u *UpdateScheduledPayment) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (u *UpdateScheduledPayment) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(UpdateScheduledPaymentPageName, func() tview.Primitive { return NewUpdateScheduledPayment(app, variables["id"].(uuid.UUID)) })
 }
 
-func (u *UpdateScheduledPayment) enrichNavigation(app *TerminalApp, variables map[string]interface{}) {
+func (u *UpdateScheduledPayment) enrichNavigation(app *TerminalApp, variables map[string]any) {
 	u.Navigation = NewNavigation(app, u.NavigationInfo(app, variables))
 }
 
@@ -37,7 +37,7 @@ func NewUpdateScheduledPayment(app *TerminalApp, scheduledPaymentId uuid.UUID) *
 		FlexApp: NewFlexApp(),
 		app:     app,
 	}
-	f.enrichNavigation(app, map[string]interface{}{"id": scheduledPaymentId})
+	f.enrichNavigation(app, map[string]any{"id": scheduledPaymentId})
 	f.InitFlexApp(app)
 	f.bindKeys()
 

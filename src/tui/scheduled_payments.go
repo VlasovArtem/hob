@@ -27,7 +27,7 @@ type ScheduledPayments struct {
 	payments *TableFiller
 }
 
-func (p *ScheduledPayments) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (p *ScheduledPayments) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(ScheduledPaymentsPageName, func() tview.Primitive { return NewScheduledPayments(app) })
 }
 
@@ -57,7 +57,7 @@ func (p *ScheduledPayments) fillTable() *TableFiller {
 	return p.payments
 }
 
-func (p *ScheduledPayments) findProviderName(payment interface{}) interface{} {
+func (p *ScheduledPayments) findProviderName(payment any) any {
 	providerId := payment.(model.PaymentSchedulerDto).ProviderId
 
 	providerDto, err := p.App.GetProviderService().FindById(providerId)

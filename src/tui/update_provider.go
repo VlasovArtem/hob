@@ -20,12 +20,12 @@ type UpdateProvider struct {
 	app *TerminalApp
 }
 
-func (u *UpdateProvider) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (u *UpdateProvider) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(UpdateProviderPageName, func() tview.Primitive { return NewUpdateProvider(app, variables["id"].(uuid.UUID)) })
 }
 
 func (u *UpdateProvider) enrichNavigation(app *TerminalApp, providerId uuid.UUID) {
-	u.Navigation = NewNavigation(app, u.NavigationInfo(app, map[string]interface{}{"id": providerId}))
+	u.Navigation = NewNavigation(app, u.NavigationInfo(app, map[string]any{"id": providerId}))
 }
 
 func NewUpdateProvider(app *TerminalApp, providerId uuid.UUID) *UpdateProvider {

@@ -28,7 +28,7 @@ type Payments struct {
 	payments *TableFiller
 }
 
-func (p *Payments) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (p *Payments) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(PaymentsPageName, func() tview.Primitive { return NewPayments(app) })
 }
 
@@ -59,7 +59,7 @@ func (p *Payments) fillTable() *TableFiller {
 	return p.payments
 }
 
-func (p *Payments) findProviderName(payment interface{}) interface{} {
+func (p *Payments) findProviderName(payment any) any {
 	providerId := payment.(model.PaymentDto).ProviderId
 
 	providerDto, err := p.App.GetProviderService().FindById(providerId)
@@ -73,7 +73,7 @@ func (p *Payments) findProviderName(payment interface{}) interface{} {
 	}
 }
 
-func (p *Payments) findMeterId(payment interface{}) interface{} {
+func (p *Payments) findMeterId(payment any) any {
 	paymentId := payment.(model.PaymentDto).Id
 
 	meterDto, err := p.App.GetMeterService().FindByPaymentId(paymentId)

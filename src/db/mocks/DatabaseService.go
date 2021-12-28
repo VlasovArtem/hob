@@ -14,11 +14,11 @@ type DatabaseService struct {
 }
 
 // Create provides a mock function with given fields: value
-func (_m *DatabaseService) Create(value interface{}) error {
+func (_m *DatabaseService) Create(value any) error {
 	ret := _m.Called(value)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}) error); ok {
+	if rf, ok := ret.Get(0).(func(any) error); ok {
 		r0 = rf(value)
 	} else {
 		r0 = ret.Error(0)
@@ -44,11 +44,11 @@ func (_m *DatabaseService) D() *gorm.DB {
 }
 
 // DM provides a mock function with given fields: model
-func (_m *DatabaseService) DM(model interface{}) *gorm.DB {
+func (_m *DatabaseService) DM(model any) *gorm.DB {
 	ret := _m.Called(model)
 
 	var r0 *gorm.DB
-	if rf, ok := ret.Get(0).(func(interface{}) *gorm.DB); ok {
+	if rf, ok := ret.Get(0).(func(any) *gorm.DB); ok {
 		r0 = rf(model)
 	} else {
 		if ret.Get(0) != nil {
@@ -60,11 +60,11 @@ func (_m *DatabaseService) DM(model interface{}) *gorm.DB {
 }
 
 // DeleteById provides a mock function with given fields: model, id
-func (_m *DatabaseService) DeleteById(model interface{}, id uuid.UUID) error {
+func (_m *DatabaseService) DeleteById(model any, id uuid.UUID) error {
 	ret := _m.Called(model, id)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}, uuid.UUID) error); ok {
+	if rf, ok := ret.Get(0).(func(any, uuid.UUID) error); ok {
 		r0 = rf(model, id)
 	} else {
 		r0 = ret.Error(0)
@@ -74,11 +74,11 @@ func (_m *DatabaseService) DeleteById(model interface{}, id uuid.UUID) error {
 }
 
 // ExistsById provides a mock function with given fields: model, id
-func (_m *DatabaseService) ExistsById(model interface{}, id uuid.UUID) bool {
+func (_m *DatabaseService) ExistsById(model any, id uuid.UUID) bool {
 	ret := _m.Called(model, id)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(interface{}, uuid.UUID) bool); ok {
+	if rf, ok := ret.Get(0).(func(any, uuid.UUID) bool); ok {
 		r0 = rf(model, id)
 	} else {
 		r0 = ret.Get(0).(bool)
@@ -88,14 +88,14 @@ func (_m *DatabaseService) ExistsById(model interface{}, id uuid.UUID) bool {
 }
 
 // ExistsByQuery provides a mock function with given fields: model, query, args
-func (_m *DatabaseService) ExistsByQuery(model interface{}, query interface{}, args ...interface{}) bool {
-	var _ca []interface{}
+func (_m *DatabaseService) ExistsByQuery(model any, query any, args ...any) bool {
+	var _ca []any
 	_ca = append(_ca, model, query)
 	_ca = append(_ca, args...)
 	ret := _m.Called(_ca...)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(interface{}, interface{}, ...interface{}) bool); ok {
+	if rf, ok := ret.Get(0).(func(any, any, ...any) bool); ok {
 		r0 = rf(model, query, args...)
 	} else {
 		r0 = ret.Get(0).(bool)
@@ -105,11 +105,11 @@ func (_m *DatabaseService) ExistsByQuery(model interface{}, query interface{}, a
 }
 
 // FindById provides a mock function with given fields: receiver, id
-func (_m *DatabaseService) FindById(receiver interface{}, id uuid.UUID) error {
+func (_m *DatabaseService) FindById(receiver any, id uuid.UUID) error {
 	ret := _m.Called(receiver, id)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}, uuid.UUID) error); ok {
+	if rf, ok := ret.Get(0).(func(any, uuid.UUID) error); ok {
 		r0 = rf(receiver, id)
 	} else {
 		r0 = ret.Error(0)
@@ -119,11 +119,11 @@ func (_m *DatabaseService) FindById(receiver interface{}, id uuid.UUID) error {
 }
 
 // FindByIdModeled provides a mock function with given fields: model, receiver, id
-func (_m *DatabaseService) FindByIdModeled(model interface{}, receiver interface{}, id uuid.UUID) error {
+func (_m *DatabaseService) FindByIdModeled(model any, receiver any, id uuid.UUID) error {
 	ret := _m.Called(model, receiver, id)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}, interface{}, uuid.UUID) error); ok {
+	if rf, ok := ret.Get(0).(func(any, any, uuid.UUID) error); ok {
 		r0 = rf(model, receiver, id)
 	} else {
 		r0 = ret.Error(0)
@@ -133,14 +133,14 @@ func (_m *DatabaseService) FindByIdModeled(model interface{}, receiver interface
 }
 
 // FindByModeled provides a mock function with given fields: model, receiver, query, conditions
-func (_m *DatabaseService) FindByModeled(model interface{}, receiver interface{}, query interface{}, conditions ...interface{}) error {
-	var _ca []interface{}
+func (_m *DatabaseService) FindByModeled(model any, receiver any, query any, conditions ...any) error {
+	var _ca []any
 	_ca = append(_ca, model, receiver, query)
 	_ca = append(_ca, conditions...)
 	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}, interface{}, interface{}, ...interface{}) error); ok {
+	if rf, ok := ret.Get(0).(func(any, any, any, ...any) error); ok {
 		r0 = rf(model, receiver, query, conditions...)
 	} else {
 		r0 = ret.Error(0)
@@ -150,14 +150,14 @@ func (_m *DatabaseService) FindByModeled(model interface{}, receiver interface{}
 }
 
 // FindByQuery provides a mock function with given fields: receiver, query, conditions
-func (_m *DatabaseService) FindByQuery(receiver interface{}, query interface{}, conditions ...interface{}) error {
-	var _ca []interface{}
+func (_m *DatabaseService) FindByQuery(receiver any, query any, conditions ...any) error {
+	var _ca []any
 	_ca = append(_ca, receiver, query)
 	_ca = append(_ca, conditions...)
 	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}, interface{}, ...interface{}) error); ok {
+	if rf, ok := ret.Get(0).(func(any, any, ...any) error); ok {
 		r0 = rf(receiver, query, conditions...)
 	} else {
 		r0 = ret.Error(0)
@@ -167,18 +167,18 @@ func (_m *DatabaseService) FindByQuery(receiver interface{}, query interface{}, 
 }
 
 // UpdateById provides a mock function with given fields: model, id, entity, omit
-func (_m *DatabaseService) UpdateById(model interface{}, id uuid.UUID, entity interface{}, omit ...string) error {
-	_va := make([]interface{}, len(omit))
+func (_m *DatabaseService) UpdateById(model any, id uuid.UUID, entity any, omit ...string) error {
+	_va := make([]any, len(omit))
 	for _i := range omit {
 		_va[_i] = omit[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, model, id, entity)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(interface{}, uuid.UUID, interface{}, ...string) error); ok {
+	if rf, ok := ret.Get(0).(func(any, uuid.UUID, any, ...string) error); ok {
 		r0 = rf(model, id, entity, omit...)
 	} else {
 		r0 = ret.Error(0)

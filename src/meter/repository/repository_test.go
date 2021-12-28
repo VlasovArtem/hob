@@ -61,7 +61,7 @@ func TestPaymentRepositorySchedulerTestSuite(t *testing.T) {
 }
 
 func (m *MeterRepositoryTestSuite) Test_Create() {
-	meter := meterMocks.GenerateMeter(m.createdPayment.Id, m.createdHouse.Id)
+	meter := meterMocks.GenerateMeter(m.createdPayment.Id)
 
 	actual, err := m.repository.Create(meter)
 
@@ -72,16 +72,7 @@ func (m *MeterRepositoryTestSuite) Test_Create() {
 }
 
 func (m *MeterRepositoryTestSuite) Test_Creat_WithMissingPayment() {
-	meter := meterMocks.GenerateMeter(uuid.New(), m.createdHouse.Id)
-
-	actual, err := m.repository.Create(meter)
-
-	assert.NotNil(m.T(), err)
-	assert.Equal(m.T(), meter, actual)
-}
-
-func (m *MeterRepositoryTestSuite) Test_Creat_WithMissingHouse() {
-	meter := meterMocks.GenerateMeter(m.createdUser.Id, uuid.New())
+	meter := meterMocks.GenerateMeter(uuid.New())
 
 	actual, err := m.repository.Create(meter)
 
@@ -131,20 +122,6 @@ func (m *MeterRepositoryTestSuite) Test_ExistsById_WithMissingId() {
 	assert.False(m.T(), m.repository.ExistsById(uuid.New()))
 }
 
-func (m *MeterRepositoryTestSuite) Test_FindByHouseId() {
-	meter := m.createMeter()
-
-	meters := m.repository.FindByHouseId(meter.HouseId)
-
-	assert.Equal(m.T(), []model.Meter{meter}, meters)
-}
-
-func (m *MeterRepositoryTestSuite) Test_FindByHouseId_WithMissingRecords() {
-	meters := m.repository.FindByHouseId(uuid.New())
-
-	assert.Equal(m.T(), []model.Meter{}, meters)
-}
-
 func (m *MeterRepositoryTestSuite) Test_DeleteById() {
 	meter := m.createMeter()
 
@@ -185,13 +162,11 @@ func (m *MeterRepositoryTestSuite) Test_Update() {
 		Details:     marshal,
 		PaymentId:   meter.PaymentId,
 		Payment:     meter.Payment,
-		HouseId:     meter.HouseId,
-		House:       meter.House,
 	}, updatedMeter)
 }
 
 func (m *MeterRepositoryTestSuite) createMeter() model.Meter {
-	meter := meterMocks.GenerateMeter(m.createdPayment.Id, m.createdHouse.Id)
+	meter := meterMocks.GenerateMeter(m.createdPayment.Id)
 
 	m.CreateEntity(meter)
 

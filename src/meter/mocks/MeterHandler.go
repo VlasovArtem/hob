@@ -29,22 +29,6 @@ func (_m *MeterHandler) Add() http.HandlerFunc {
 	return r0
 }
 
-// FindByHouseId provides a mock function with given fields:
-func (_m *MeterHandler) FindByHouseId() http.HandlerFunc {
-	ret := _m.Called()
-
-	var r0 http.HandlerFunc
-	if rf, ok := ret.Get(0).(func() http.HandlerFunc); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(http.HandlerFunc)
-		}
-	}
-
-	return r0
-}
-
 // FindById provides a mock function with given fields:
 func (_m *MeterHandler) FindById() http.HandlerFunc {
 	ret := _m.Called()

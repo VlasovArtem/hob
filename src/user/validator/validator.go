@@ -11,7 +11,7 @@ type UserRequestValidatorObject struct {
 	baseValidator.BaseValidator
 }
 
-func (u *UserRequestValidatorObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (u *UserRequestValidatorObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewUserRequestValidator()
 }
 
@@ -31,7 +31,6 @@ func (u *UserRequestValidatorObject) ValidateCreateRequest(request userModel.Cre
 }
 
 func (u *UserRequestValidatorObject) ValidateUpdateRequest(request userModel.UpdateUserRequest) int_errors.ErrorResponse {
-	return u.ValidateStringFieldNotEmpty(request.Email, "email should not be empty").
-		ValidateStringFieldNotEmpty(request.Password, "password should not be empty").
+	return u.ValidateStringFieldNotEmpty(request.Password, "password should not be empty").
 		Result("Create User Request Validation Error")
 }

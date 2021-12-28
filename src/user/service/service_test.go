@@ -3,7 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
-	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
@@ -60,8 +60,7 @@ func Test_Add_WithExistingEmail(t *testing.T) {
 func Test_Update(t *testing.T) {
 	service := generateService()
 
-	request := mocks.GenerateUpdateUserRequest()
-	id := uuid.New()
+	id, request := mocks.GenerateUpdateUserRequest()
 
 	userRepository.On("ExistsById", id).Return(true)
 	userRepository.On("Update", id, mock.Anything).Return(nil)
@@ -69,21 +68,12 @@ func Test_Update(t *testing.T) {
 	err := service.Update(id, request)
 
 	assert.Nil(t, err)
-
-	userRepository.AssertCalled(t, "Update", id, model.User{
-		Id:        id,
-		FirstName: request.FirstName,
-		LastName:  request.LastName,
-		Password:  []byte(request.Password),
-		Email:     request.Email,
-	})
 }
 
 func Test_Update_WithNotExists(t *testing.T) {
 	service := generateService()
 
-	request := mocks.GenerateUpdateUserRequest()
-	id := uuid.New()
+	id, request := mocks.GenerateUpdateUserRequest()
 
 	userRepository.On("ExistsById", id).Return(false)
 
@@ -116,7 +106,7 @@ func Test_FindById_WithNotExistsUser(t *testing.T) {
 
 	response, err := service.FindById(id)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("user with id %s in not exists", id)), err)
+	assert.Equal(t, int_errors.NewErrNotFound("user with id %s not found", id), err)
 	assert.Equal(t, model.UserDto{}, response)
 }
 

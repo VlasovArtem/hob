@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func GenerateMeter(paymentId uuid.UUID, houseId uuid.UUID) model.Meter {
+func GenerateMeter(paymentId uuid.UUID) model.Meter {
 	details := map[string]float64{
 		"first":  1.1,
 		"second": 2.2,
@@ -22,7 +22,6 @@ func GenerateMeter(paymentId uuid.UUID, houseId uuid.UUID) model.Meter {
 			Details:     detailsBytes,
 			Description: "Description",
 			PaymentId:   paymentId,
-			HouseId:     houseId,
 		}
 	}
 }
@@ -36,7 +35,6 @@ func GenerateCreateMeterRequest() model.CreateMeterRequest {
 		},
 		Description: "Description",
 		PaymentId:   uuid.New(),
-		HouseId:     uuid.New(),
 	}
 }
 
@@ -62,6 +60,5 @@ func GenerateMeterResponse(id uuid.UUID) model.MeterDto {
 		},
 		Description: "Description",
 		PaymentId:   uuid.New(),
-		HouseId:     uuid.New(),
 	}
 }

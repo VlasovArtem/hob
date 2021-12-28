@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
-	"github.com/VlasovArtem/hob/src/common/service"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"io/ioutil"
@@ -13,25 +12,68 @@ import (
 	"strconv"
 )
 
-func ReadRequestBody(target interface{}, w http.ResponseWriter, r *http.Request) error {
-	reqBody, err := ioutil.ReadAll(r.Body)
+type APIResponse struct {
+	writer     http.ResponseWriter
+	body       any
+	err        error
+	statusCode int
+}
 
-	service.LogError(err, "")
+func NewAPIResponse(writer http.ResponseWriter) *APIResponse {
+	return &APIResponse{
+		writer:     writer,
+		statusCode: http.StatusOK,
+	}
+}
 
-	err = json.Unmarshal(reqBody, &target)
+func (a *APIResponse) Body(body any) *APIResponse {
+	a.body = body
+	return a
+}
 
-	if target == nil {
-		err = errors.New("request not parsed")
+func (a *APIResponse) Error(err error) *APIResponse {
+	a.err = err
+	return a
+}
+
+func (a *APIResponse) StatusCode(statusCode int) *APIResponse {
+	a.statusCode = statusCode
+	return a
+}
+
+func (a *APIResponse) Ok(body any, err error) *APIResponse {
+	return a.Body(body).
+		Error(err)
+}
+
+func (a *APIResponse) NoContent(err error) *APIResponse {
+	return a.
+		Error(err).
+		StatusCode(http.StatusNoContent)
+}
+
+func (a *APIResponse) Created(body any, err error) *APIResponse {
+	return a.StatusCode(http.StatusCreated).
+		Error(err).
+		Body(body)
+}
+
+func (a *APIResponse) Perform() {
+	PerformResponseWithCode(a.writer, a.body, a.statusCode, a.err)
+}
+
+func ReadRequestBody[T any](r *http.Request) (requestBody T, err error) {
+	if body, err := ioutil.ReadAll(r.Body); err != nil {
+		return requestBody, err
+	} else if string(body) == "null" {
+		return requestBody, errors.New("body not found")
+	} else {
+		if err = json.Unmarshal(body, &requestBody); err != nil {
+			return requestBody, err
+		}
 	}
 
-	if service.LogError(err, "") {
-		w.WriteHeader(http.StatusBadRequest)
-		_, err = w.Write([]byte(err.Error()))
-
-		return err
-	}
-
-	return err
+	return requestBody, err
 }
 
 func GetRequestParameter(request *http.Request, name string) (string, error) {
@@ -53,22 +95,22 @@ func GetQueryIntParameterOrDefault(request *http.Request, name string, defaultVa
 	return strconv.Atoi(parameter)
 }
 
-func GetIdRequestParameter(request *http.Request) (uuid.UUID, error) {
+func GetIdRequestParameter(request *http.Request) (id uuid.UUID, err error) {
 	if parameter, err := GetRequestParameter(request, "id"); err != nil {
-		return [16]byte{}, err
+		return id, err
 	} else {
 
-		id, err := uuid.Parse(parameter)
+		id, err = uuid.Parse(parameter)
 
 		if err != nil {
-			return [16]byte{}, errors.New(fmt.Sprintf("the id is not valid %s", parameter))
+			return id, errors.New(fmt.Sprintf("the id is not valid %s", parameter))
 		}
 
-		return id, nil
+		return id, err
 	}
 }
 
-func PerformResponseWithBody(writer http.ResponseWriter, body interface{}, err error) {
+func PerformResponse(writer http.ResponseWriter, body any, err error) {
 	if err != nil {
 		HandleWithError(writer, err)
 	} else if body != nil {
@@ -78,14 +120,14 @@ func PerformResponseWithBody(writer http.ResponseWriter, body interface{}, err e
 	}
 }
 
-func PerformResponseWithCode(writer http.ResponseWriter, response interface{}, statusCode int, err error) {
+func PerformResponseWithCode(writer http.ResponseWriter, body any, statusCode int, err error) {
 	if err != nil {
 		HandleWithError(writer, err)
 	} else {
 		writer.WriteHeader(statusCode)
 
-		if response != nil {
-			if err = json.NewEncoder(writer).Encode(response); err != nil {
+		if body != nil {
+			if err = json.NewEncoder(writer).Encode(body); err != nil {
 				HandleErrorResponseWithError(writer, http.StatusInternalServerError, err)
 			}
 		}

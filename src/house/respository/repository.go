@@ -27,11 +27,11 @@ func NewHouseRepository(database db.DatabaseService) HouseRepository {
 	}
 }
 
-func (h *HouseRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (h *HouseRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHouseRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
-func (h *HouseRepositoryObject) GetEntity() interface{} {
+func (h *HouseRepositoryObject) GetEntity() any {
 	return entity
 }
 

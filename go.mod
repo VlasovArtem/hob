@@ -1,6 +1,6 @@
 module github.com/VlasovArtem/hob
 
-go 1.17
+go 1.18
 
 require (
 	github.com/adrg/xdg v0.4.0
@@ -13,6 +13,7 @@ require (
 	github.com/rs/zerolog v1.26.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gorm.io/driver/postgres v1.2.2
 	gorm.io/gorm v1.22.3
 )
@@ -39,5 +40,4 @@ require (
 	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

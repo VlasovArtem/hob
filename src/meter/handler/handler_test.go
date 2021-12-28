@@ -51,7 +51,6 @@ func Test_AddMeter(t *testing.T) {
 		},
 		Description: "Description",
 		PaymentId:   request.PaymentId,
-		HouseId:     request.HouseId,
 	}, actual)
 }
 
@@ -186,9 +185,9 @@ func Test_FindByPaymentId_WithError(t *testing.T) {
 		WithHandler(handler.FindByPaymentId()).
 		WithVar("id", id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
+	body := testRequest.Verify(t, http.StatusBadRequest)
 
-	assert.Empty(t, responseByteArray)
+	assert.Equal(t, fmt.Sprintf("%s\n", expected.Error()), string(body))
 }
 
 func Test_FindByPaymentId_WithInvalidParameter(t *testing.T) {
@@ -203,81 +202,4 @@ func Test_FindByPaymentId_WithInvalidParameter(t *testing.T) {
 	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
 
 	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
-}
-
-func Test_FindByHouseId(t *testing.T) {
-	handler := generateHandler()
-
-	id := uuid.New()
-
-	meterResponse := []model.MeterDto{mocks.GenerateMeterResponse(id)}
-
-	meters.On("FindByHouseId", meterResponse[0].HouseId).
-		Return(meterResponse, nil)
-
-	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}").
-		WithMethod("GET").
-		WithHandler(handler.FindByHouseId()).
-		WithVar("id", meterResponse[0].HouseId.String())
-
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
-
-	var actual []model.MeterDto
-
-	json.Unmarshal(responseByteArray, &actual)
-
-	assert.Equal(t, meterResponse, actual)
-}
-
-func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
-	handler := generateHandler()
-
-	id := uuid.New()
-
-	var meterResponse []model.MeterDto
-
-	meters.On("FindByHouseId", id).
-		Return(meterResponse, nil)
-
-	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}").
-		WithMethod("GET").
-		WithHandler(handler.FindByHouseId()).
-		WithVar("id", id.String())
-
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
-
-	var actual []model.MeterDto
-
-	json.Unmarshal(responseByteArray, &actual)
-
-	assert.Equal(t, meterResponse, actual)
-}
-
-func Test_FindByHouseId_WithInvalidParameter(t *testing.T) {
-	handler := generateHandler()
-
-	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}").
-		WithMethod("GET").
-		WithHandler(handler.FindByPaymentId()).
-		WithVar("id", "id")
-
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
-
-	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
-}
-
-func Test_FindByHouseId_WithMissingParameter(t *testing.T) {
-	handler := generateHandler()
-
-	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}").
-		WithMethod("GET").
-		WithHandler(handler.FindByPaymentId())
-
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
-
-	assert.Equal(t, "parameter 'id' not found\n", string(responseByteArray))
 }

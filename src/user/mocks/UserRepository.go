@@ -120,12 +120,12 @@ func (_m *UserRepository) FindById(id uuid.UUID) (model.User, error) {
 }
 
 // Update provides a mock function with given fields: user
-func (_m *UserRepository) Update(user model.User) error {
-	ret := _m.Called(user)
+func (_m *UserRepository) Update(id uuid.UUID, request model.UpdateUserRequest) error {
+	ret := _m.Called(id, request)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(model.User) error); ok {
-		r0 = rf(user)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, model.UpdateUserRequest) error); ok {
+		r0 = rf(id, request)
 	} else {
 		r0 = ret.Error(0)
 	}

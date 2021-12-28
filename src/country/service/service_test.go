@@ -2,7 +2,7 @@ package service
 
 import (
 	"encoding/json"
-	"errors"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/country/model"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -62,18 +62,18 @@ func TestFindCountryByCode(t *testing.T) {
 			args: args{
 				"INVALID",
 			},
-			err:     errors.New("country with code INVALID is not found"),
+			err:     int_errors.NewErrNotFound("country with code INVALID is not found"),
 			country: model.Country{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := countriesService.FindCountryByCode(tt.args.code)
-			if !reflect.DeepEqual(got, tt.err) {
-				t.Errorf("FindByCode() got = %v, want %v", got, tt.err)
+			if !reflect.DeepEqual(got1, tt.err) {
+				t.Errorf("FindByCode() got = %v, want %v", got1, tt.err)
 			}
-			if !reflect.DeepEqual(got1, tt.country) {
-				t.Errorf("FindByCode() got1 = %v, want %v", got1, tt.country)
+			if !reflect.DeepEqual(got, tt.country) {
+				t.Errorf("FindByCode() got1 = %v, want %v", got, tt.country)
 			}
 		})
 	}

@@ -26,11 +26,11 @@ func NewIncomeSchedulerRepository(database db.DatabaseService) IncomeSchedulerRe
 	}
 }
 
-func (i *IncomeSchedulerRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (i *IncomeSchedulerRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeSchedulerRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
-func (i *IncomeSchedulerRepositoryObject) GetEntity() interface{} {
+func (i *IncomeSchedulerRepositoryObject) GetEntity() any {
 	return entity
 }
 

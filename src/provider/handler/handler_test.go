@@ -300,5 +300,5 @@ func Test_FindByUserIdAndNameLike_WithoutBody(t *testing.T) {
 
 	content := testRequest.Verify(t, http.StatusBadRequest)
 
-	assert.Equal(t, "request not parsed", string(content))
+	assert.Equal(t, "body not found\n", string(content))
 }

@@ -3,6 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/test"
@@ -104,22 +106,51 @@ func Test_FindById(t *testing.T) {
 	assert.Equal(t, houseResponse, responses)
 }
 
+func Test(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		// TODO: test cases
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+		})
+	}
+}
+
 func Test_FindById_WithErrorFromService(t *testing.T) {
-	handler := handlerGenerator()
+	tests := []struct {
+		err        error
+		statusCode int
+	}{
+		{
+			err:        errors.New("error"),
+			statusCode: http.StatusBadRequest,
+		},
+		{
+			err:        int_errors.NewErrNotFound("error %s", "test"),
+			statusCode: http.StatusNotFound,
+		},
+	}
 
-	id := uuid.New()
+	for _, test := range tests {
+		handler := handlerGenerator()
 
-	houses.On("FindById", id).Return(model.HouseDto{}, errors.New("error"))
+		id := uuid.New()
 
-	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/{id}").
-		WithMethod("GET").
-		WithHandler(handler.FindById()).
-		WithVar("id", id.String())
+		houses.On("FindById", id).Return(model.HouseDto{}, test.err)
 
-	body := testRequest.Verify(t, http.StatusNotFound)
+		testRequest := testhelper.NewTestRequest().
+			WithURL("https://test.com/api/v1/house/{id}").
+			WithMethod("GET").
+			WithHandler(handler.FindById()).
+			WithVar("id", id.String())
 
-	assert.Equal(t, "error\n", string(body))
+		body := testRequest.Verify(t, test.statusCode)
+
+		assert.Equal(t, fmt.Sprintf("%s\n", test.err.Error()), string(body))
+	}
 }
 
 func Test_FindById_WithInvalidId(t *testing.T) {

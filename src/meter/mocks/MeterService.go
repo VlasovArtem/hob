@@ -49,22 +49,6 @@ func (_m *MeterService) DeleteById(id uuid.UUID) error {
 	return r0
 }
 
-// FindByHouseId provides a mock function with given fields: id
-func (_m *MeterService) FindByHouseId(id uuid.UUID) []model.MeterDto {
-	ret := _m.Called(id)
-
-	var r0 []model.MeterDto
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.MeterDto); ok {
-		r0 = rf(id)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.MeterDto)
-		}
-	}
-
-	return r0
-}
-
 // FindById provides a mock function with given fields: id
 func (_m *MeterService) FindById(id uuid.UUID) (model.MeterDto, error) {
 	ret := _m.Called(id)
