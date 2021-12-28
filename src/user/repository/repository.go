@@ -26,11 +26,11 @@ func NewUserRepository(service db.DatabaseService) UserRepository {
 	}
 }
 
-func (u *UserRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (u *UserRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewUserRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
-func (u *UserRepositoryObject) GetEntity() interface{} {
+func (u *UserRepositoryObject) GetEntity() any {
 	return entity
 }
 
@@ -40,7 +40,7 @@ type UserRepository interface {
 	ExistsById(id uuid.UUID) bool
 	ExistsByEmail(email string) bool
 	FindByEmail(email string) (model.User, error)
-	Update(user model.User) error
+	Update(id uuid.UUID, user model.UpdateUserRequest) error
 	Delete(id uuid.UUID) error
 }
 
@@ -68,6 +68,14 @@ func (u *UserRepositoryObject) Delete(id uuid.UUID) error {
 	return u.database.Delete(id)
 }
 
-func (u *UserRepositoryObject) Update(user model.User) error {
-	return u.database.Update(user.Id, user)
+func (u *UserRepositoryObject) Update(id uuid.UUID, user model.UpdateUserRequest) error {
+	return u.database.Update(id, struct {
+		FirstName string
+		LastName  string
+		Password  []byte
+	}{
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Password:  []byte(user.Password),
+	})
 }

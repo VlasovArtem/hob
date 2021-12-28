@@ -103,7 +103,7 @@ func Test_Add_WithErrorFromService(t *testing.T) {
 
 	response := testRequest.Verify(t, http.StatusBadRequest)
 
-	assert.Equal(t, helperModel.ErrorResponseObject{Error: "error"}, testhelper.ReadErrorResponse(response))
+	assert.Equal(t, []byte("error\n"), response)
 }
 
 func Test_FindById(t *testing.T) {
@@ -171,14 +171,13 @@ func Test_FindById_WithInvalidUUID(t *testing.T) {
 
 	content := testRequest.Verify(t, http.StatusBadRequest)
 
-	assert.Equal(t, "invalid UUID length: 2\n", string(content))
+	assert.Equal(t, "the id is not valid id\n", string(content))
 }
 
 func Test_Update(t *testing.T) {
 	handler := generateHandler()
 
-	request := mocks.GenerateUpdateUserRequest()
-	id := uuid.New()
+	id, request := mocks.GenerateUpdateUserRequest()
 
 	userValidator.On("ValidateUpdateRequest", request).Return(nil)
 	userService.On("Update", id, request).Return(nil)
@@ -239,11 +238,10 @@ func Test_Update_WithMissingIdParameter(t *testing.T) {
 func Test_Update_WithMissingDetails(t *testing.T) {
 	handler := generateHandler()
 
-	request := mocks.GenerateUpdateUserRequest()
+	id, request := mocks.GenerateUpdateUserRequest()
 
 	errorResponse := helperModel.NewWithDetails("error", "details")
 	userValidator.On("ValidateUpdateRequest", request).Return(errorResponse)
-	id := uuid.New()
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
@@ -261,8 +259,7 @@ func Test_Update_WithMissingDetails(t *testing.T) {
 func Test_Update_WithErrorFromService(t *testing.T) {
 	handler := generateHandler()
 
-	request := mocks.GenerateUpdateUserRequest()
-	id := uuid.New()
+	id, request := mocks.GenerateUpdateUserRequest()
 
 	userValidator.On("ValidateUpdateRequest", request).Return(nil)
 	userService.On("Update", id, request).Return(errors.New("error"))
@@ -276,5 +273,5 @@ func Test_Update_WithErrorFromService(t *testing.T) {
 
 	response := testRequest.Verify(t, http.StatusBadRequest)
 
-	assert.Equal(t, helperModel.ErrorResponseObject{Error: "error"}, testhelper.ReadErrorResponse(response))
+	assert.Equal(t, []byte("error\n"), response)
 }

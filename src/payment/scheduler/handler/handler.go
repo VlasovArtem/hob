@@ -17,7 +17,7 @@ func NewPaymentSchedulerHandler(paymentSchedulerService service.PaymentScheduler
 	return &PaymentSchedulerHandlerObject{paymentSchedulerService}
 }
 
-func (p *PaymentSchedulerHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (p *PaymentSchedulerHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerHandler(factory.FindRequiredByObject(service.PaymentSchedulerServiceObject{}).(service.PaymentSchedulerService))
 }
 
@@ -45,15 +45,13 @@ type PaymentSchedulerHandler interface {
 
 func (p *PaymentSchedulerHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		paymentRequest := model.CreatePaymentSchedulerRequest{}
-
-		if err := rest.ReadRequestBody(&paymentRequest, writer, request); err != nil {
-			return
+		if body, err := rest.ReadRequestBody[model.CreatePaymentSchedulerRequest](request); err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			rest.NewAPIResponse(writer).
+				Created(p.paymentSchedulerService.Add(body)).
+				Perform()
 		}
-
-		payment, err := p.paymentSchedulerService.Add(paymentRequest)
-
-		rest.PerformResponseWithCode(writer, payment, http.StatusCreated, err)
 	}
 }
 
@@ -62,9 +60,25 @@ func (p *PaymentSchedulerHandlerObject) Remove() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			err = p.paymentSchedulerService.Remove(id)
+			rest.NewAPIResponse(writer).
+				NoContent(p.paymentSchedulerService.Remove(id)).
+				Perform()
+		}
+	}
+}
 
-			rest.PerformResponseWithCode(writer, nil, http.StatusNoContent, err)
+func (p *PaymentSchedulerHandlerObject) Update() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if id, err := rest.GetIdRequestParameter(request); err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			if body, err := rest.ReadRequestBody[model.UpdatePaymentSchedulerRequest](request); err != nil {
+				rest.HandleWithError(writer, err)
+			} else {
+				rest.NewAPIResponse(writer).
+					Error(p.paymentSchedulerService.Update(id, body)).
+					Perform()
+			}
 		}
 	}
 }
@@ -74,9 +88,9 @@ func (p *PaymentSchedulerHandlerObject) FindById() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			response, err := p.paymentSchedulerService.FindById(id)
-
-			rest.PerformResponseWithBody(writer, response, err)
+			rest.NewAPIResponse(writer).
+				Ok(p.paymentSchedulerService.FindById(id)).
+				Perform()
 		}
 	}
 }
@@ -86,7 +100,9 @@ func (p *PaymentSchedulerHandlerObject) FindByHouseId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponseWithBody(writer, p.paymentSchedulerService.FindByHouseId(id), nil)
+			rest.NewAPIResponse(writer).
+				Body(p.paymentSchedulerService.FindByHouseId(id)).
+				Perform()
 		}
 	}
 }
@@ -96,7 +112,9 @@ func (p *PaymentSchedulerHandlerObject) FindByUserId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponseWithBody(writer, p.paymentSchedulerService.FindByUserId(id), nil)
+			rest.NewAPIResponse(writer).
+				Body(p.paymentSchedulerService.FindByUserId(id)).
+				Perform()
 		}
 	}
 }
@@ -106,27 +124,9 @@ func (p *PaymentSchedulerHandlerObject) FindByProviderId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			rest.PerformResponseWithBody(writer, p.paymentSchedulerService.FindByProviderId(id), nil)
-		}
-	}
-}
-
-func (p *PaymentSchedulerHandlerObject) Update() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if id, err := rest.GetIdRequestParameter(r); err != nil {
-			rest.HandleWithError(w, err)
-		} else {
-			request := model.UpdatePaymentSchedulerRequest{}
-
-			if err := rest.ReadRequestBody(&request, w, r); err != nil {
-				return
-			}
-
-			if err := p.paymentSchedulerService.Update(id, request); err != nil {
-				rest.HandleWithError(w, err)
-			} else {
-				w.WriteHeader(http.StatusOK)
-			}
+			rest.NewAPIResponse(writer).
+				Body(p.paymentSchedulerService.FindByProviderId(id)).
+				Perform()
 		}
 	}
 }

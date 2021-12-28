@@ -16,7 +16,7 @@ type CreateHouse struct {
 	request houseModel.CreateHouseRequest
 }
 
-func (c *CreateHouse) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (c *CreateHouse) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(CreateHousePageName, func() tview.Primitive { return NewCreateHouse(app) })
 }
 
@@ -37,7 +37,7 @@ func NewCreateHouse(app *TerminalApp) *CreateHouse {
 
 	form := tview.NewForm().
 		AddInputField("Name", "", 20, nil, func(text string) { f.request.Name = text }).
-		AddDropDown("Country", f.app.CountriesCodes, -1, func(option string, optionIndex int) { f.request.Country = option }).
+		AddDropDown("CountryCode", f.app.CountriesCodes, -1, func(option string, optionIndex int) { f.request.CountryCode = option }).
 		AddInputField("City", "", 20, nil, func(text string) { f.request.City = text }).
 		AddInputField("Street Line 1", "", 20, nil, func(text string) { f.request.StreetLine1 = text }).
 		AddInputField("Street Line 2", "", 20, nil, func(text string) { f.request.StreetLine2 = text }).

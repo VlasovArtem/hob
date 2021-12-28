@@ -29,7 +29,7 @@ type HouseDto struct {
 
 type CreateHouseRequest struct {
 	Name        string
-	Country     string
+	CountryCode string
 	City        string
 	StreetLine1 string
 	StreetLine2 string
@@ -38,7 +38,7 @@ type CreateHouseRequest struct {
 
 type UpdateHouseRequest struct {
 	Name        string
-	Country     string
+	CountryCode string
 	City        string
 	StreetLine1 string
 	StreetLine2 string

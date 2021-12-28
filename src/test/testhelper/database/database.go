@@ -10,7 +10,7 @@ import (
 	"reflect"
 )
 
-func DropTable(db *gorm.DB, model interface{}) {
+func DropTable(db *gorm.DB, model any) {
 	err := db.Migrator().DropTable(model)
 
 	if err != nil {
@@ -18,7 +18,7 @@ func DropTable(db *gorm.DB, model interface{}) {
 	}
 }
 
-func CreateTable(db *gorm.DB, model interface{}) {
+func CreateTable(db *gorm.DB, model any) {
 	err := db.AutoMigrate(model)
 
 	if err != nil {
@@ -26,7 +26,7 @@ func CreateTable(db *gorm.DB, model interface{}) {
 	}
 }
 
-func RecreateTable(db *gorm.DB, model interface{}) {
+func RecreateTable(db *gorm.DB, model any) {
 	DropTable(db, model)
 	CreateTable(db, model)
 }
@@ -34,10 +34,10 @@ func RecreateTable(db *gorm.DB, model interface{}) {
 type DBTestSuite struct {
 	suite.Suite
 	Database         database.DatabaseService
-	migrators        []interface{}
+	migrators        []any
 	beforeTest       []func(service database.DatabaseService)
-	createdEntities  []interface{}
-	constantEntities []interface{}
+	createdEntities  []any
+	constantEntities []any
 }
 
 func (db *DBTestSuite) InitDBTestSuite() {
@@ -52,7 +52,7 @@ func (db *DBTestSuite) CreateRepository(provider func(service database.DatabaseS
 	return db
 }
 
-func (db *DBTestSuite) AddMigrators(migrators ...interface{}) {
+func (db *DBTestSuite) AddMigrators(migrators ...any) {
 	for _, migrator := range migrators {
 		if err := db.Database.D().AutoMigrate(migrator); err != nil {
 			log.Fatal().Err(err).Msg("Cannot create table")
@@ -62,7 +62,7 @@ func (db *DBTestSuite) AddMigrators(migrators ...interface{}) {
 	}
 }
 
-func (db *DBTestSuite) CreateEntity(entity interface{}) {
+func (db *DBTestSuite) CreateEntity(entity any) {
 	if err := db.Database.Create(entity); err != nil {
 		log.Fatal().Err(err).Msg("Cannot create entity")
 	}
@@ -70,7 +70,7 @@ func (db *DBTestSuite) CreateEntity(entity interface{}) {
 	db.createdEntities = append(db.createdEntities, reflect.Indirect(reflect.ValueOf(entity)).Interface())
 }
 
-func (db *DBTestSuite) CreateConstantEntity(entity interface{}) {
+func (db *DBTestSuite) CreateConstantEntity(entity any) {
 	if err := db.Database.Create(entity); err != nil {
 		log.Fatal().Err(err).Msg("Cannot create entity")
 	}
@@ -98,7 +98,7 @@ func (db *DBTestSuite) TearDownTest() {
 	db.deleteCreated()
 }
 
-func (db *DBTestSuite) Delete(entity interface{}) {
+func (db *DBTestSuite) Delete(entity any) {
 	entityValue := reflect.Indirect(reflect.ValueOf(entity))
 	idValue := entityValue.FieldByName("Id")
 	valueId := fmt.Sprintf("%v", idValue)

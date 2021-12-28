@@ -24,11 +24,11 @@ func NewPaymentSchedulerRepository(database db.DatabaseService) PaymentScheduler
 	}
 }
 
-func (p *PaymentSchedulerRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (p *PaymentSchedulerRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
-func (p *PaymentSchedulerRepositoryObject) GetEntity() interface{} {
+func (p *PaymentSchedulerRepositoryObject) GetEntity() any {
 	return entity
 }
 
@@ -71,7 +71,7 @@ func (p *PaymentSchedulerRepositoryObject) FindByProviderId(providerId uuid.UUID
 	return p.findBy("provider_id = ?", providerId)
 }
 
-func (p *PaymentSchedulerRepositoryObject) findBy(query interface{}, conditions ...interface{}) (response []model.PaymentSchedulerDto) {
+func (p *PaymentSchedulerRepositoryObject) findBy(query any, conditions ...any) (response []model.PaymentSchedulerDto) {
 	_ = p.database.FindBy(&response, query, conditions...)
 	return response
 }

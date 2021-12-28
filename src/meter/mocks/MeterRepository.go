@@ -63,22 +63,6 @@ func (_m *MeterRepository) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindByHouseId provides a mock function with given fields: houseId
-func (_m *MeterRepository) FindByHouseId(houseId uuid.UUID) []model.Meter {
-	ret := _m.Called(houseId)
-
-	var r0 []model.Meter
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.Meter); ok {
-		r0 = rf(houseId)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.Meter)
-		}
-	}
-
-	return r0
-}
-
 // FindById provides a mock function with given fields: id
 func (_m *MeterRepository) FindById(id uuid.UUID) (model.Meter, error) {
 	ret := _m.Called(id)

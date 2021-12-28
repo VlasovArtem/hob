@@ -15,12 +15,11 @@ func GenerateCreateUserRequest() model.CreateUserRequest {
 	}
 }
 
-func GenerateUpdateUserRequest() model.UpdateUserRequest {
-	return model.UpdateUserRequest{
+func GenerateUpdateUserRequest() (uuid.UUID, model.UpdateUserRequest) {
+	return uuid.New(), model.UpdateUserRequest{
 		FirstName: "First Name New",
 		LastName:  "Last Name New",
 		Password:  "password-new",
-		Email:     "mail@mail-new.com",
 	}
 }
 

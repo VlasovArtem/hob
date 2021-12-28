@@ -17,7 +17,7 @@ type TableHeader struct {
 	header          string
 	headerModifier  func(cell *tview.TableCell) *tview.TableCell
 	contentModifier func(cell *tview.TableCell) *tview.TableCell
-	customProvider  func(content interface{}) interface{}
+	customProvider  func(content any) any
 }
 
 func NewTableHeader(header string) *TableHeader {
@@ -48,7 +48,7 @@ func (t *TableHeader) SetContentModifier(modifier func(cell *tview.TableCell) *t
 	return t
 }
 
-func (t *TableHeader) SetContentProvider(provider func(content interface{}) interface{}) *TableHeader {
+func (t *TableHeader) SetContentProvider(provider func(content any) any) *TableHeader {
 	t.customProvider = provider
 	return t
 }
@@ -99,7 +99,7 @@ func NewTableFiller(tableHeaders []*TableHeader) *TableFiller {
 	return filler
 }
 
-func (t *TableFiller) Fill(content interface{}) {
+func (t *TableFiller) Fill(content any) {
 	array := reflect.ValueOf(content)
 	if array.Kind() != reflect.Slice || array.IsNil() {
 		log.Fatal().Msgf("Table filler content is not a slice")
@@ -136,7 +136,7 @@ func (t *TableFiller) Fill(content interface{}) {
 	}
 }
 
-func (t *TableFiller) fillRowContent(currentRow int, data interface{}) {
+func (t *TableFiller) fillRowContent(currentRow int, data any) {
 	for i, contentHeader := range t.TableHeaders {
 		var value string
 		header := contentHeader.header

@@ -39,7 +39,7 @@ func NewIncomeSchedulerService(
 	}
 }
 
-func (i *IncomeSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (i *IncomeSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeSchedulerService(
 		factory.FindRequiredByType(houseService.HouseServiceType).(houseService.HouseService),
 		factory.FindRequiredByType(incomeService.IncomeServiceType).(incomeService.IncomeService),

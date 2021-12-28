@@ -32,15 +32,11 @@ func (h *HouseRepositoryTestSuite) SetupSuite() {
 		AddMigrators(userModel.User{}, model.House{})
 
 	h.createdUser = userMocks.GenerateUser()
-	h.CreateEntity(&h.createdUser)
+	h.CreateConstantEntity(&h.createdUser)
 }
 
 func TestHouseRepositoryTestSuite(t *testing.T) {
 	suite.Run(t, new(HouseRepositoryTestSuite))
-}
-
-func (h *HouseRepositoryTestSuite) TearDownSuite() {
-	h.TearDown()
 }
 
 func (h *HouseRepositoryTestSuite) Test_Create() {
@@ -128,18 +124,15 @@ func (h *HouseRepositoryTestSuite) Test_DeleteById_WithMissingId() {
 func (h *HouseRepositoryTestSuite) Test_Update() {
 	house := h.createHouse()
 
-	updatedHouse := model.House{
-		Id:          house.Id,
+	updatedHouse := model.UpdateHouseRequest{
 		Name:        fmt.Sprintf("%s-new", house.Name),
-		CountryCode: fmt.Sprintf("%s-new", house.CountryCode),
+		CountryCode: "US",
 		City:        fmt.Sprintf("%s-new", house.City),
 		StreetLine1: fmt.Sprintf("%s-new", house.StreetLine1),
 		StreetLine2: fmt.Sprintf("%s-new", house.StreetLine2),
-		UserId:      house.UserId,
-		User:        house.User,
 	}
 
-	err := h.repository.Update(updatedHouse)
+	err := h.repository.Update(house.Id, updatedHouse)
 
 	assert.Nil(h.T(), err)
 
@@ -148,7 +141,7 @@ func (h *HouseRepositoryTestSuite) Test_Update() {
 	assert.Equal(h.T(), model.HouseDto{
 		Id:          house.Id,
 		Name:        "Name-new",
-		CountryCode: "UA-new",
+		CountryCode: "US",
 		City:        "City-new",
 		StreetLine1: "Street Line 1-new",
 		StreetLine2: "Street Line 2-new",

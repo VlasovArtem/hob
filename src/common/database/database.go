@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func HandlerFindError(err error, message string, args ...interface{}) error {
+func HandlerFindError(err error, message string, args ...any) error {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return int_errors.NewErrNotFound(message, args...)
 	}

@@ -21,12 +21,12 @@ type UpdateMeter struct {
 	app *TerminalApp
 }
 
-func (u *UpdateMeter) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (u *UpdateMeter) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(UpdateMeterPageName, func() tview.Primitive { return NewUpdateMeter(app, variables["id"].(uuid.UUID)) })
 }
 
 func (u *UpdateMeter) enrichNavigation(app *TerminalApp, meterId uuid.UUID) {
-	u.Navigation = NewNavigation(app, u.NavigationInfo(app, map[string]interface{}{"id": meterId}))
+	u.Navigation = NewNavigation(app, u.NavigationInfo(app, map[string]any{"id": meterId}))
 }
 
 func NewUpdateMeter(app *TerminalApp, meterId uuid.UUID) *UpdateMeter {

@@ -105,21 +105,25 @@ func (p *UserRepositoryTestSuite) Test_Delete() {
 }
 
 func (p *UserRepositoryTestSuite) Test_Update() {
-	provider := p.createUser()
+	user := p.createUser()
 
-	updated := model.User{
-		Id:        provider.Id,
+	updated := model.UpdateUserRequest{
+		FirstName: "New First Name",
+		LastName:  "New Last Name",
+		Password:  "new",
+	}
+	err := p.repository.Update(user.Id, updated)
+
+	assert.Nil(p.T(), err)
+	user1, err := p.repository.FindById(user.Id)
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), model.User{
+		Id:        user.Id,
 		FirstName: "New First Name",
 		LastName:  "New Last Name",
 		Password:  []byte("new"),
-		Email:     provider.Email,
-	}
-	err := p.repository.Update(updated)
-
-	assert.Nil(p.T(), err)
-	user, err := p.repository.FindById(provider.Id)
-	assert.Nil(p.T(), err)
-	assert.Equal(p.T(), updated, user)
+		Email:     user.Email,
+	}, user1)
 }
 
 func (p *UserRepositoryTestSuite) createUser() model.User {

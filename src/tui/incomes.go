@@ -23,7 +23,7 @@ type Incomes struct {
 	incomes *TableFiller
 }
 
-func (i *Incomes) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (i *Incomes) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(IncomesPageName, func() tview.Primitive { return NewIncomes(app) })
 }
 

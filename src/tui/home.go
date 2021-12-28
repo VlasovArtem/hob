@@ -29,7 +29,7 @@ type Home struct {
 	incomes  *TableFiller
 }
 
-func (h *Home) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (h *Home) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(HomePageName, func() tview.Primitive { return NewHome(app) })
 }
 

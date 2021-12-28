@@ -11,8 +11,8 @@ import (
 
 var (
 	PaymentRepositoryType = reflect.TypeOf(ProviderRepositoryObject{})
-	entity      = model.Provider{}
-	DefaultUser = uuid.UUID{}
+	entity                = model.Provider{}
+	DefaultUser           = uuid.UUID{}
 )
 
 type ProviderRepositoryObject struct {
@@ -28,11 +28,11 @@ func NewProviderRepository(database db.DatabaseService) ProviderRepository {
 	}
 }
 
-func (p *ProviderRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (p *ProviderRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewProviderRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
-func (p *ProviderRepositoryObject) GetEntity() interface{} {
+func (p *ProviderRepositoryObject) GetEntity() any {
 	return entity
 }
 

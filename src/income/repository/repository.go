@@ -17,11 +17,11 @@ type IncomeRepositoryObject struct {
 	database db.ModeledDatabase
 }
 
-func (i *IncomeRepositoryObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (i *IncomeRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
 }
 
-func (i *IncomeRepositoryObject) GetEntity() interface{} {
+func (i *IncomeRepositoryObject) GetEntity() any {
 	return entity
 }
 

@@ -24,7 +24,7 @@ type Houses struct {
 	houses *TableFiller
 }
 
-func (h *Houses) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (h *Houses) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(HousesPageName, func() tview.Primitive { return NewHouses(app) })
 }
 

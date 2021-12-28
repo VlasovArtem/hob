@@ -30,22 +30,11 @@ type UpdateUserRequest struct {
 	FirstName string
 	LastName  string
 	Password  string
-	Email     string
 }
 
 func (u CreateUserRequest) ToEntity() User {
 	return User{
 		Id:        uuid.New(),
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Password:  []byte(u.Password),
-		Email:     u.Email,
-	}
-}
-
-func (u UpdateUserRequest) ToEntity(id uuid.UUID) User {
-	return User{
-		Id:        id,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
 		Password:  []byte(u.Password),

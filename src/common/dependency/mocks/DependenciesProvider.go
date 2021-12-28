@@ -15,15 +15,15 @@ type DependenciesProvider struct {
 }
 
 // Add provides a mock function with given fields: _a0
-func (_m *DependenciesProvider) Add(_a0 interface{}) interface{} {
+func (_m *DependenciesProvider) Add(_a0 any) any {
 	ret := _m.Called(_a0)
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(interface{}) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(any) any); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 
@@ -47,15 +47,15 @@ func (_m *DependenciesProvider) AddAutoDependency(initializer dependency.ObjectD
 }
 
 // FindByName provides a mock function with given fields: dependencyName, required
-func (_m *DependenciesProvider) FindByName(dependencyName string, required bool) interface{} {
+func (_m *DependenciesProvider) FindByName(dependencyName string, required bool) any {
 	ret := _m.Called(dependencyName, required)
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(string, bool) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(string, bool) any); ok {
 		r0 = rf(dependencyName, required)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 
@@ -63,15 +63,15 @@ func (_m *DependenciesProvider) FindByName(dependencyName string, required bool)
 }
 
 // FindByObject provides a mock function with given fields: object
-func (_m *DependenciesProvider) FindByObject(object interface{}) interface{} {
+func (_m *DependenciesProvider) FindByObject(object any) any {
 	ret := _m.Called(object)
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(interface{}) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(any) any); ok {
 		r0 = rf(object)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 
@@ -79,15 +79,15 @@ func (_m *DependenciesProvider) FindByObject(object interface{}) interface{} {
 }
 
 // FindByType provides a mock function with given fields: typeOf, required
-func (_m *DependenciesProvider) FindByType(typeOf reflect.Type, required bool) interface{} {
+func (_m *DependenciesProvider) FindByType(typeOf reflect.Type, required bool) any {
 	ret := _m.Called(typeOf, required)
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(reflect.Type, bool) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(reflect.Type, bool) any); ok {
 		r0 = rf(typeOf, required)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 
@@ -95,15 +95,15 @@ func (_m *DependenciesProvider) FindByType(typeOf reflect.Type, required bool) i
 }
 
 // FindRequired provides a mock function with given fields: dependencyName
-func (_m *DependenciesProvider) FindRequired(dependencyName string) interface{} {
+func (_m *DependenciesProvider) FindRequired(dependencyName string) any {
 	ret := _m.Called(dependencyName)
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(string) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(string) any); ok {
 		r0 = rf(dependencyName)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 
@@ -111,15 +111,15 @@ func (_m *DependenciesProvider) FindRequired(dependencyName string) interface{} 
 }
 
 // FindRequiredByObject provides a mock function with given fields: object
-func (_m *DependenciesProvider) FindRequiredByObject(object interface{}) interface{} {
+func (_m *DependenciesProvider) FindRequiredByObject(object any) any {
 	ret := _m.Called(object)
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(interface{}) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(any) any); ok {
 		r0 = rf(object)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 
@@ -127,15 +127,15 @@ func (_m *DependenciesProvider) FindRequiredByObject(object interface{}) interfa
 }
 
 // FindRequiredByType provides a mock function with given fields: typeOf
-func (_m *DependenciesProvider) FindRequiredByType(typeOf reflect.Type) interface{} {
+func (_m *DependenciesProvider) FindRequiredByType(typeOf reflect.Type) any {
 	ret := _m.Called(typeOf)
 
-	var r0 interface{}
-	if rf, ok := ret.Get(0).(func(reflect.Type) interface{}); ok {
+	var r0 any
+	if rf, ok := ret.Get(0).(func(reflect.Type) any); ok {
 		r0 = rf(typeOf)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
+			r0 = ret.Get(0).(any)
 		}
 	}
 

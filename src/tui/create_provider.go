@@ -20,12 +20,12 @@ type CreateProvider struct {
 	app *TerminalApp
 }
 
-func (c *CreateProvider) NavigationInfo(app *TerminalApp, variables map[string]interface{}) *NavigationInfo {
+func (c *CreateProvider) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
 	return NewNavigationInfo(CreateProviderPageName, func() tview.Primitive { return NewCreateProvider(app, variables["userId"].(uuid.UUID)) })
 }
 
 func (c *CreateProvider) enrichNavigation(app *TerminalApp, userId uuid.UUID) {
-	c.Navigation = NewNavigation(app, c.NavigationInfo(app, map[string]interface{}{"userId": userId}))
+	c.Navigation = NewNavigation(app, c.NavigationInfo(app, map[string]any{"userId": userId}))
 }
 
 func NewCreateProvider(app *TerminalApp, userId uuid.UUID) *CreateProvider {

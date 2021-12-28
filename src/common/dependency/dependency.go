@@ -6,35 +6,35 @@ import (
 )
 
 type dependenciesProviderObject struct {
-	dependenciesByName map[string]interface{}
-	dependenciesByType map[reflect.Type]interface{}
+	dependenciesByName map[string]any
+	dependenciesByType map[reflect.Type]any
 }
 
 func NewDependenciesProvider() DependenciesProvider {
-	return &dependenciesProviderObject{make(map[string]interface{}), make(map[reflect.Type]interface{})}
+	return &dependenciesProviderObject{make(map[string]any), make(map[reflect.Type]any)}
 }
 
 type DependenciesProvider interface {
-	Add(interface{}) interface{}
+	Add(any) any
 	AddAutoDependency(initializer ObjectDependencyInitializer) ObjectDependencyInitializer
-	FindByName(dependencyName string, required bool) interface{}
-	FindByType(typeOf reflect.Type, required bool) interface{}
-	FindRequiredByType(typeOf reflect.Type) interface{}
-	FindByObject(object interface{}) interface{}
-	FindRequired(dependencyName string) interface{}
-	FindRequiredByObject(object interface{}) interface{}
+	FindByName(dependencyName string, required bool) any
+	FindByType(typeOf reflect.Type, required bool) any
+	FindRequiredByType(typeOf reflect.Type) any
+	FindByObject(object any) any
+	FindRequired(dependencyName string) any
+	FindRequiredByObject(object any) any
 }
 
 type ObjectDependencyInitializer interface {
-	Initialize(factory DependenciesProvider) interface{}
+	Initialize(factory DependenciesProvider) any
 }
 
 type ObjectDatabaseMigrator interface {
 	ObjectDependencyInitializer
-	GetEntity() interface{}
+	GetEntity() any
 }
 
-func (d *dependenciesProviderObject) Add(dependency interface{}) interface{} {
+func (d *dependenciesProviderObject) Add(dependency any) any {
 	name, typeOf := findNameAndType(dependency)
 
 	if _, exists := d.dependenciesByName[name]; !exists {
@@ -47,7 +47,7 @@ func (d *dependenciesProviderObject) Add(dependency interface{}) interface{} {
 	return dependency
 }
 
-func (d *dependenciesProviderObject) FindByName(dependencyName string, required bool) interface{} {
+func (d *dependenciesProviderObject) FindByName(dependencyName string, required bool) any {
 	dependency := d.dependenciesByName[dependencyName]
 	if required && dependency == nil {
 		log.Fatal().Msgf("dependency with name %s not found", dependencyName)
@@ -55,7 +55,7 @@ func (d *dependenciesProviderObject) FindByName(dependencyName string, required 
 	return dependency
 }
 
-func (d *dependenciesProviderObject) FindByType(typeOf reflect.Type, required bool) interface{} {
+func (d *dependenciesProviderObject) FindByType(typeOf reflect.Type, required bool) any {
 	dependency := d.dependenciesByType[typeOf]
 	if required && dependency == nil {
 		log.Fatal().Msgf("dependency with type %s not found", typeOf)
@@ -63,19 +63,19 @@ func (d *dependenciesProviderObject) FindByType(typeOf reflect.Type, required bo
 	return dependency
 }
 
-func (d *dependenciesProviderObject) FindRequiredByType(typeOf reflect.Type) interface{} {
+func (d *dependenciesProviderObject) FindRequiredByType(typeOf reflect.Type) any {
 	return d.FindByType(typeOf, true)
 }
 
-func (d *dependenciesProviderObject) FindByObject(object interface{}) interface{} {
+func (d *dependenciesProviderObject) FindByObject(object any) any {
 	return d.FindByName(findName(object), false)
 }
 
-func (d *dependenciesProviderObject) FindRequired(dependencyName string) interface{} {
+func (d *dependenciesProviderObject) FindRequired(dependencyName string) any {
 	return d.FindByName(dependencyName, true)
 }
 
-func (d *dependenciesProviderObject) FindRequiredByObject(object interface{}) interface{} {
+func (d *dependenciesProviderObject) FindRequiredByObject(object any) any {
 	return d.FindRequired(findName(object))
 }
 
@@ -83,7 +83,7 @@ func (d *dependenciesProviderObject) AddAutoDependency(initializer ObjectDepende
 	return d.Add(initializer.Initialize(d)).(ObjectDependencyInitializer)
 }
 
-func findName(dependency interface{}) (name string) {
+func findName(dependency any) (name string) {
 	typeOf := reflect.TypeOf(dependency)
 
 	switch typeOf.Kind() {
@@ -98,7 +98,7 @@ func findName(dependency interface{}) (name string) {
 	return name
 }
 
-func findNameAndType(dependency interface{}) (name string, dependencyType reflect.Type) {
+func findNameAndType(dependency any) (name string, dependencyType reflect.Type) {
 	valueOf := reflect.Indirect(reflect.ValueOf(dependency))
 	typeOf := valueOf.Type()
 

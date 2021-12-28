@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 	"reflect"
@@ -37,7 +38,7 @@ func NewSchedulerService() ServiceScheduler {
 	return schedulerService
 }
 
-func (s *SchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (s *SchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewSchedulerService()
 }
 
@@ -50,7 +51,7 @@ type ServiceScheduler interface {
 
 func (s *SchedulerServiceObject) Add(scheduledItemId uuid.UUID, scheduleSpec string, scheduleFunc func()) (entryID cron.EntryID, err error) {
 	if _, ok := s.entries[scheduledItemId]; ok {
-		return entryID, errors.New(fmt.Sprintf("scheduler for the entity id %s exists", scheduledItemId))
+		return entryID, int_errors.NewErrNotFound("scheduler for the entity id %s exists", scheduledItemId)
 	}
 	if entryID, err = s.cron.AddFunc(scheduleSpec, scheduleFunc); err != nil {
 		return entryID, err

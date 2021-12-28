@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/payment/mocks"
 	"github.com/VlasovArtem/hob/src/payment/model"
@@ -121,7 +122,7 @@ func Test_FindById_WithNotExistingId(t *testing.T) {
 
 	actual, err := paymentService.FindById(id)
 
-	assert.Equal(t, fmt.Errorf("payment with id %s not found", id), err)
+	assert.Equal(t, int_errors.NewErrNotFound("payment with id %s not found", id), err)
 	assert.Equal(t, model.PaymentDto{}, actual)
 }
 

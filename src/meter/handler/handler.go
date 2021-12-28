@@ -17,7 +17,7 @@ func NewMeterHandler(meterService service.MeterService) MeterHandler {
 	return &MeterHandlerObject{meterService}
 }
 
-func (m *MeterHandlerObject) Initialize(factory dependency.DependenciesProvider) interface{} {
+func (m *MeterHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewMeterHandler(factory.FindRequiredByType(service.MeterServiceType).(service.MeterService))
 }
 
@@ -29,7 +29,6 @@ func (m *MeterHandlerObject) Init(router *mux.Router) {
 	meterRouter.Path("/{id}").HandlerFunc(m.FindById()).Methods("PUT")
 	meterRouter.Path("/{id}").HandlerFunc(m.FindById()).Methods("DELETE")
 	meterRouter.Path("/payment/{id}").HandlerFunc(m.FindByPaymentId()).Methods("GET")
-	meterRouter.Path("/house/{id}").HandlerFunc(m.FindByHouseId()).Methods("GET")
 }
 
 type MeterHandler interface {
@@ -38,20 +37,17 @@ type MeterHandler interface {
 	Delete() http.HandlerFunc
 	FindById() http.HandlerFunc
 	FindByPaymentId() http.HandlerFunc
-	FindByHouseId() http.HandlerFunc
 }
 
 func (m *MeterHandlerObject) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		var requestBody model.CreateMeterRequest
-
-		if err := rest.ReadRequestBody(&requestBody, writer, request); err != nil {
-			return
+		if body, err := rest.ReadRequestBody[model.CreateMeterRequest](request); err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			rest.NewAPIResponse(writer).
+				Created(m.meterService.Add(body)).
+				Perform()
 		}
-
-		meter, err := m.meterService.Add(requestBody)
-
-		rest.PerformResponseWithCode(writer, meter, http.StatusCreated, err)
 	}
 }
 
@@ -60,9 +56,9 @@ func (m *MeterHandlerObject) FindById() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			meterResponse, err := m.meterService.FindById(id)
-
-			rest.PerformResponseWithBody(writer, meterResponse, err)
+			rest.NewAPIResponse(writer).
+				Ok(m.meterService.FindById(id)).
+				Perform()
 		}
 	}
 }
@@ -72,13 +68,13 @@ func (m *MeterHandlerObject) Update() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			var requestBody model.UpdateMeterRequest
-
-			if err := rest.ReadRequestBody(&requestBody, writer, request); err != nil {
-				return
+			if body, err := rest.ReadRequestBody[model.UpdateMeterRequest](request); err != nil {
+				rest.HandleWithError(writer, err)
+			} else {
+				rest.NewAPIResponse(writer).
+					Error(m.meterService.Update(id, body)).
+					Perform()
 			}
-
-			rest.PerformResponseWithBody(writer, nil, m.meterService.Update(id, requestBody))
 		}
 	}
 }
@@ -88,8 +84,9 @@ func (m *MeterHandlerObject) Delete() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-
-			rest.PerformResponseWithCode(writer, nil, http.StatusNoContent, m.meterService.DeleteById(id))
+			rest.NewAPIResponse(writer).
+				NoContent(m.meterService.DeleteById(id)).
+				Perform()
 		}
 	}
 }
@@ -99,19 +96,9 @@ func (m *MeterHandlerObject) FindByPaymentId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			if meterResponse, err := m.meterService.FindByPaymentId(id); err == nil {
-				rest.PerformResponseWithBody(writer, meterResponse, err)
-			}
-		}
-	}
-}
-
-func (m *MeterHandlerObject) FindByHouseId() http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleWithError(writer, err)
-		} else {
-			rest.PerformResponseWithBody(writer, m.meterService.FindByHouseId(id), err)
+			rest.NewAPIResponse(writer).
+				Ok(m.meterService.FindByPaymentId(id)).
+				Perform()
 		}
 	}
 }
