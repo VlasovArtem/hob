@@ -15,6 +15,7 @@ const Index = "#"
 
 type TableHeader struct {
 	header          string
+	displayName     string
 	headerModifier  func(cell *tview.TableCell) *tview.TableCell
 	contentModifier func(cell *tview.TableCell) *tview.TableCell
 	customProvider  func(content any) any
@@ -23,6 +24,16 @@ type TableHeader struct {
 func NewTableHeader(header string) *TableHeader {
 	return &TableHeader{
 		header:          header,
+		displayName:     header,
+		headerModifier:  AlignCenterColored(tcell.ColorLightGray),
+		contentModifier: AlignLeftExpansion(),
+	}
+}
+
+func NewTableHeaderWithDisplayName(header, displayName string) *TableHeader {
+	return &TableHeader{
+		header:          header,
+		displayName:     displayName,
 		headerModifier:  AlignCenterColored(tcell.ColorLightGray),
 		contentModifier: AlignLeftExpansion(),
 	}
@@ -79,15 +90,28 @@ func AlignLeftExpansion() func(cell *tview.TableCell) *tview.TableCell {
 
 type TableFiller struct {
 	*tview.Table
-	TableHeaders []*TableHeader
-	ignoreHeader bool
-	empty        bool
+	TableHeaders    []*TableHeader
+	tableHeadersMap map[string]*TableHeader
+	ignoreHeader    bool
+	empty           bool
+}
+
+func (t *TableFiller) AddContentProvider(name string, provider func(content any) any) {
+	if header, ok := t.tableHeadersMap[name]; ok {
+		header.customProvider = provider
+	}
 }
 
 func NewTableFiller(tableHeaders []*TableHeader) *TableFiller {
 	filler := &TableFiller{
 		Table:        tview.NewTable(),
 		TableHeaders: tableHeaders,
+	}
+
+	filler.tableHeadersMap = make(map[string]*TableHeader, len(tableHeaders))
+
+	for _, header := range tableHeaders {
+		filler.tableHeadersMap[header.header] = header
 	}
 
 	filler.SetFixed(1, 0)
@@ -109,7 +133,7 @@ func (t *TableFiller) Fill(content any) {
 	var row int
 	if !t.ignoreHeader {
 		for index, tableHeader := range t.TableHeaders {
-			t.SetCell(0, index, tableHeader.headerModifier(tview.NewTableCell(tableHeader.header)))
+			t.SetCell(0, index, tableHeader.headerModifier(tview.NewTableCell(tableHeader.displayName)))
 		}
 		row++
 	}

@@ -30,6 +30,7 @@ func (i *Incomes) NavigationInfo(app *TerminalApp, variables map[string]any) *Na
 func (i *Incomes) enrichNavigation(app *TerminalApp) {
 	i.Navigation = NewNavigation(app, i.NavigationInfo(app, nil))
 	i.AddCustomPage(&CreateIncome{})
+	i.AddCustomPage(&ScheduledIncomes{})
 }
 
 func NewIncomes(app *TerminalApp) *Incomes {
@@ -62,6 +63,7 @@ func (i *Incomes) bindKeys() {
 		tcell.KeyCtrlP:  NewKeyAction("Create Income", i.createIncome),
 		tcell.KeyCtrlD:  NewKeyAction("Delete Income", i.deleteIncome),
 		tcell.KeyCtrlU:  NewKeyAction("Update Income", i.updateIncome),
+		tcell.KeyCtrlS:  NewKeyAction("Show Scheduled", i.showScheduled),
 		tcell.KeyEscape: NewKeyAction("Back Home", i.KeyHome),
 	}
 }
@@ -97,6 +99,11 @@ func (i *Incomes) updateIncome(key *tcell.EventKey) *tcell.EventKey {
 		i.ShowErrorTo(err)
 	}
 
+	return key
+}
+
+func (i *Incomes) showScheduled(key *tcell.EventKey) *tcell.EventKey {
+	i.NavigateTo(ScheduledIncomesPageName)
 	return key
 }
 

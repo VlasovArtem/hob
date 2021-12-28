@@ -3,7 +3,7 @@ package tui
 import (
 	"errors"
 	"fmt"
-	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
+	"github.com/VlasovArtem/hob/src/income/scheduler/model"
 	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
@@ -11,29 +11,28 @@ import (
 	"strconv"
 )
 
-const UpdateScheduledPaymentPageName = "scheduled-payment-update-page"
+const UpdateScheduledIncomePageName = "scheduled-income-update-page"
 
-type updateScheduledPaymentReq struct {
+type updateScheduledIncomeReq struct {
 	name, description, sum, spec string
-	providerId                   uuid.UUID
 }
 
-type UpdateScheduledPayment struct {
+type UpdateScheduledIncome struct {
 	*FlexApp
 	*Navigation
 	app *TerminalApp
 }
 
-func (u *UpdateScheduledPayment) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
-	return NewNavigationInfo(UpdateScheduledPaymentPageName, func() tview.Primitive { return NewUpdateScheduledPayment(app, variables["id"].(uuid.UUID)) })
+func (u *UpdateScheduledIncome) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
+	return NewNavigationInfo(UpdateScheduledIncomePageName, func() tview.Primitive { return NewUpdateScheduledIncome(app, variables["id"].(uuid.UUID)) })
 }
 
-func (u *UpdateScheduledPayment) enrichNavigation(app *TerminalApp, variables map[string]any) {
+func (u *UpdateScheduledIncome) enrichNavigation(app *TerminalApp, variables map[string]any) {
 	u.Navigation = NewNavigation(app, u.NavigationInfo(app, variables))
 }
 
-func NewUpdateScheduledPayment(app *TerminalApp, scheduledPaymentId uuid.UUID) *UpdateScheduledPayment {
-	f := &UpdateScheduledPayment{
+func NewUpdateScheduledIncome(app *TerminalApp, scheduledPaymentId uuid.UUID) *UpdateScheduledIncome {
+	f := &UpdateScheduledIncome{
 		FlexApp: NewFlexApp(),
 		app:     app,
 	}
@@ -46,9 +45,7 @@ func NewUpdateScheduledPayment(app *TerminalApp, scheduledPaymentId uuid.UUID) *
 		f.ShowInfoReturnBack(err.Error())
 	}
 
-	providers, providerOptions := GetProviders(app)
-
-	var request updateScheduledPaymentReq
+	var request updateScheduledIncomeReq
 
 	form := tview.NewForm().
 		AddInputField("Name", paymentDto.Name, 20, nil, func(text string) { request.name = text }).
@@ -56,9 +53,6 @@ func NewUpdateScheduledPayment(app *TerminalApp, scheduledPaymentId uuid.UUID) *
 		AddInputField("Sum", fmt.Sprintf("%.2f", paymentDto.Sum), 20, nil, func(text string) { request.sum = text }).
 		AddDropDown("Spec", specs, 1, func(option string, optionIndex int) {
 			request.spec = option
-		}).
-		AddDropDown("Provider", providerOptions, -1, func(option string, optionIndex int) {
-			request.providerId = providers[optionIndex].Id
 		}).
 		AddButton("Update", f.update(request, scheduledPaymentId)).
 		AddButton("Cancel", f.BackFunc())
@@ -72,15 +66,15 @@ func NewUpdateScheduledPayment(app *TerminalApp, scheduledPaymentId uuid.UUID) *
 	return f
 }
 
-func (u *UpdateScheduledPayment) bindKeys() {
+func (u *UpdateScheduledIncome) bindKeys() {
 	u.Actions = KeyActions{
 		tcell.KeyEscape: NewKeyAction("Back", u.KeyBack),
 	}
 }
 
-func (u *UpdateScheduledPayment) update(update updateScheduledPaymentReq, id uuid.UUID) func() {
+func (u *UpdateScheduledIncome) update(update updateScheduledIncomeReq, id uuid.UUID) func() {
 	return func() {
-		request := model.UpdatePaymentSchedulerRequest{
+		request := model.UpdateIncomeSchedulerRequest{
 			Name:        update.name,
 			Description: update.description,
 			Spec:        scheduler.SchedulingSpecification(update.spec),
@@ -93,17 +87,10 @@ func (u *UpdateScheduledPayment) update(update updateScheduledPaymentReq, id uui
 			request.Sum = float32(newSum)
 		}
 
-		if request.ProviderId == DefaultUUID {
-			u.ShowErrorTo(errors.New("provider id is not valid"))
-
-			return
-		}
-		request.ProviderId = update.providerId
-
-		if err := u.app.GetPaymentSchedulerService().Update(id, request); err != nil {
+		if err := u.app.GetIncomeSchedulerService().Update(id, request); err != nil {
 			u.ShowErrorTo(err)
 		} else {
-			u.ShowInfoReturnBack("Scheduled Payment %s successfully updated.", request.Name)
+			u.ShowInfoReturnBack("Scheduled Income %s successfully updated.", request.Name)
 		}
 	}
 }

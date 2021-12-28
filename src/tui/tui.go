@@ -5,6 +5,7 @@ import (
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	houses "github.com/VlasovArtem/hob/src/house/service"
+	incomeSchedulers "github.com/VlasovArtem/hob/src/income/scheduler/service"
 	incomes "github.com/VlasovArtem/hob/src/income/service"
 	meters "github.com/VlasovArtem/hob/src/meter/service"
 	paymentSchedulers "github.com/VlasovArtem/hob/src/payment/scheduler/service"
@@ -18,6 +19,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var DefaultInputFieldWidth = 60
 var DefaultUUID = uuid.UUID{}
 
 type TerminalApp struct {
@@ -26,6 +28,7 @@ type TerminalApp struct {
 	root           *app.RootApplication
 	AuthorizedUser *userModel.UserDto
 	House          *houseModel.HouseDto
+	Countries      map[string]string
 	CountriesCodes []string
 	CountriesNames []string
 	actions        KeyActions
@@ -40,9 +43,12 @@ func NewTApp(rootApplication *app.RootApplication) *TerminalApp {
 
 	tapp.SetUpBorders()
 
-	for _, country := range tapp.getCountryService().FindAllCountries() {
-		tapp.CountriesCodes = append(tapp.CountriesCodes, country.Code)
+	allCountries := tapp.getCountryService().FindAllCountries()
+	tapp.Countries = make(map[string]string, len(allCountries))
+	for _, country := range allCountries {
+		tapp.Countries[country.Code] = country.Name
 		tapp.CountriesNames = append(tapp.CountriesNames, country.Name)
+		tapp.CountriesCodes = append(tapp.CountriesCodes, country.Code)
 	}
 
 	return tapp
@@ -102,6 +108,10 @@ func (t *TerminalApp) GetMeterService() meters.MeterService {
 
 func (t *TerminalApp) GetPaymentSchedulerService() paymentSchedulers.PaymentSchedulerService {
 	return t.root.DependenciesFactory.FindRequiredByType(paymentSchedulers.PaymentSchedulerServiceType).(paymentSchedulers.PaymentSchedulerService)
+}
+
+func (t *TerminalApp) GetIncomeSchedulerService() incomeSchedulers.IncomeSchedulerService {
+	return t.root.DependenciesFactory.FindRequiredByType(incomeSchedulers.IncomeSchedulerServiceType).(incomeSchedulers.IncomeSchedulerService)
 }
 
 func AsKey(evt *tcell.EventKey) tcell.Key {

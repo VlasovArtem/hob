@@ -52,8 +52,8 @@ func NewPayments(app *TerminalApp) *Payments {
 func (p *Payments) fillTable() *TableFiller {
 	p.payments.SetSelectable(true, false)
 	p.payments.SetTitle("Payments")
-	p.payments.TableHeaders[6].SetContentProvider(p.findProviderName)
-	p.payments.TableHeaders[7].SetContentProvider(p.findMeterId)
+	p.payments.AddContentProvider("Provider", p.findProviderName)
+	p.payments.AddContentProvider("Meter Id", p.findMeterId)
 	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id)
 	p.payments.Fill(content)
 	return p.payments
@@ -87,6 +87,7 @@ func (p *Payments) findMeterId(payment any) any {
 func (p *Payments) enrichNavigation(app *TerminalApp) {
 	p.Navigation = NewNavigation(app, p.NavigationInfo(app, nil))
 	p.AddCustomPage(&CreatePayment{})
+	p.AddCustomPage(&ScheduledPayments{})
 }
 
 func (p *Payments) bindKeys() {
@@ -96,7 +97,7 @@ func (p *Payments) bindKeys() {
 		tcell.KeyCtrlU:  NewKeyAction("Update Payment", p.updatePayment),
 		tcell.KeyCtrlJ:  NewKeyAction("Add Meter", p.createMeter),
 		tcell.KeyCtrlF:  NewKeyAction("Update Meter", p.updateMeter),
-		tcell.KeyCtrlM:  NewKeyAction("Show Meter", p.showMeter),
+		tcell.KeyCtrlL:  NewKeyAction("Show Meter", p.showMeter),
 		tcell.KeyCtrlS:  NewKeyAction("Show Scheduled", p.showScheduled),
 		tcell.KeyEscape: NewKeyAction("Back Home", p.KeyHome),
 	}
@@ -161,7 +162,7 @@ func (p *Payments) showMeter(key *tcell.EventKey) *tcell.EventKey {
 }
 
 func (p *Payments) showScheduled(key *tcell.EventKey) *tcell.EventKey {
-	p.NavigateTo(CreatePaymentPageName)
+	p.NavigateTo(ScheduledPaymentsPageName)
 	return key
 }
 

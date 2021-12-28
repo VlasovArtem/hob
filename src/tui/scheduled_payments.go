@@ -51,7 +51,7 @@ func NewScheduledPayments(app *TerminalApp) *ScheduledPayments {
 func (p *ScheduledPayments) fillTable() *TableFiller {
 	p.payments.SetSelectable(true, false)
 	p.payments.SetTitle("Scheduled Payments")
-	p.payments.TableHeaders[6].SetContentProvider(p.findProviderName)
+	p.payments.AddContentProvider("Provider", p.findProviderName)
 	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id)
 	p.payments.Fill(content)
 	return p.payments
@@ -73,7 +73,7 @@ func (p *ScheduledPayments) findProviderName(payment any) any {
 
 func (p *ScheduledPayments) enrichNavigation(app *TerminalApp) {
 	p.Navigation = NewNavigation(app, p.NavigationInfo(app, nil))
-	p.AddCustomPage(&CreateScheduledPayment{})
+	p.AddCustomPage(&CreateScheduledIncome{})
 }
 
 func (p *ScheduledPayments) bindKeys() {
@@ -124,8 +124,8 @@ func (p *ScheduledPayments) createDeleteModalButton(paymentName string, paymentI
 
 func (p *ScheduledPayments) updateScheduledPayment(key *tcell.EventKey) *tcell.EventKey {
 	err := p.payments.PerformWithSelectedId(1, func(row int, id uuid.UUID) {
-		p.Navigate(NewNavigationInfo(UpdatePaymentPageName, func() tview.Primitive {
-			return NewUpdatePayment(p.App, id)
+		p.Navigate(NewNavigationInfo(UpdateScheduledPaymentPageName, func() tview.Primitive {
+			return NewUpdateScheduledIncome(p.App, id)
 		}))
 	})
 

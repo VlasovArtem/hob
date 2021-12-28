@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/VlasovArtem/hob/src/country/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
 	"github.com/rivo/tview"
@@ -13,10 +14,10 @@ var housesTableHeader = []*TableHeader{
 	NewIndexHeader(),
 	NewTableHeader("Id").SetContentModifier(AlignCenterExpansion()),
 	NewTableHeader("Name"),
-	NewTableHeader("CountryCode").SetContentModifier(AlignCenterExpansion()),
+	NewTableHeaderWithDisplayName("CountryCode", "Country").SetContentModifier(AlignCenterExpansion()),
 	NewTableHeader("City").SetContentModifier(AlignCenterExpansion()),
-	NewTableHeader("StreetLine1"),
-	NewTableHeader("StreetLine2")}
+	NewTableHeaderWithDisplayName("StreetLine1", "Street Line 1"),
+	NewTableHeaderWithDisplayName("StreetLine2", "Street Line 2")}
 
 type Houses struct {
 	*FlexApp
@@ -56,6 +57,9 @@ func NewHouses(app *TerminalApp) *Houses {
 func (h *Houses) fillTable() *TableFiller {
 	h.houses.SetSelectable(true, false)
 	h.houses.SetTitle("Houses")
+	h.houses.AddContentProvider("CountryCode", func(content any) any {
+		return content.(model.Country).Name
+	})
 	content := h.App.GetHouseService().FindByUserId(h.App.AuthorizedUser.Id)
 	h.houses.Fill(content)
 	return h.houses

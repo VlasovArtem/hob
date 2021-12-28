@@ -35,14 +35,19 @@ func NewCreateHouse(app *TerminalApp) *CreateHouse {
 	f.bindKeys()
 
 	form := tview.NewForm().
-		AddInputField("Name", "", 20, nil, func(text string) { f.request.Name = text }).
+		AddInputField("Name", "", DefaultInputFieldWidth, nil, func(text string) { f.request.Name = text }).
 		AddDropDown("Country", f.app.CountriesNames, -1, func(option string, optionIndex int) {
-			f.request.Country = f.app.CountriesCodes[optionIndex]
+			if optionIndex > 0 {
+				f.request.CountryCode = f.app.CountriesCodes[optionIndex]
+			}
 		}).
-		AddInputField("City", "", 20, nil, func(text string) { f.request.City = text }).
-		AddInputField("Street Line 1", "", 20, nil, func(text string) { f.request.StreetLine1 = text }).
-		AddInputField("Street Line 2", "", 20, nil, func(text string) { f.request.StreetLine2 = text }).
+		AddInputField("City", "", DefaultInputFieldWidth, nil, func(text string) { f.request.City = text }).
+		AddInputField("Street Line 1", "", DefaultInputFieldWidth, nil, func(text string) { f.request.StreetLine1 = text }).
+		AddInputField("Street Line 2", "", DefaultInputFieldWidth, nil, func(text string) { f.request.StreetLine2 = text }).
 		AddButton("Create", func() {
+			if f.request.Name == "" {
+				f.request.Name = f.request.StreetLine1
+			}
 			if houseResponse, err := f.app.GetHouseService().Add(f.request); err != nil {
 				f.ShowErrorTo(err)
 			} else {

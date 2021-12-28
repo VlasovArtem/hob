@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var actionsPerColumn = 5
+
 type MenuBlock struct {
 	*tview.Flex
 	app  *TerminalApp
@@ -35,8 +37,13 @@ func NewMenu(actions KeyActions) *Menu {
 	menu := Menu{tview.NewTable()}
 
 	for i, hint := range actions.Hints() {
-		menu.SetCell(i, 0, tview.NewTableCell(fmt.Sprintf("<%s>", strings.ToLower(hint.Mnemonic))).SetAlign(tview.AlignLeft).SetTextColor(tcell.ColorLightBlue))
-		menu.SetCell(i, 1, tview.NewTableCell(hint.Description))
+		var column int
+		if i > actionsPerColumn-1 {
+			column = i/actionsPerColumn + 1
+		}
+		row := i % actionsPerColumn
+		menu.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("<%s>", strings.ToLower(hint.Mnemonic))).SetAlign(tview.AlignLeft).SetTextColor(tcell.ColorLightBlue))
+		menu.SetCell(row, column+1, tview.NewTableCell(hint.Description))
 	}
 
 	menu.SetTitle("Menu")

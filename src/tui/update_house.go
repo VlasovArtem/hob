@@ -54,7 +54,11 @@ func NewUpdateHouse(app *TerminalApp, houseId uuid.UUID) *UpdateHouse {
 
 	form := tview.NewForm().
 		AddInputField("Name", houseDto.Name, 20, nil, func(text string) { request.Name = text }).
-		AddDropDown("CountryCode", f.app.CountriesCodes, currentCountryCodeIndex, func(option string, optionIndex int) { request.CountryCode = option }).
+		AddDropDown("Country", f.app.CountriesNames, currentCountryCodeIndex, func(option string, optionIndex int) {
+			if optionIndex > 0 {
+				request.CountryCode = f.app.CountriesCodes[optionIndex]
+			}
+		}).
 		AddInputField("City", houseDto.City, 20, nil, func(text string) { request.City = text }).
 		AddInputField("Street Line 1", houseDto.StreetLine1, 20, nil, func(text string) { request.StreetLine1 = text }).
 		AddInputField("Street Line 2", houseDto.StreetLine2, 20, nil, func(text string) { request.StreetLine2 = text }).
