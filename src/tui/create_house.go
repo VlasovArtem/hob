@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -37,7 +36,9 @@ func NewCreateHouse(app *TerminalApp) *CreateHouse {
 
 	form := tview.NewForm().
 		AddInputField("Name", "", 20, nil, func(text string) { f.request.Name = text }).
-		AddDropDown("Country", f.app.CountriesCodes, -1, func(option string, optionIndex int) { f.request.Country = option }).
+		AddDropDown("Country", f.app.CountriesNames, -1, func(option string, optionIndex int) {
+			f.request.Country = f.app.CountriesCodes[optionIndex]
+		}).
 		AddInputField("City", "", 20, nil, func(text string) { f.request.City = text }).
 		AddInputField("Street Line 1", "", 20, nil, func(text string) { f.request.StreetLine1 = text }).
 		AddInputField("Street Line 2", "", 20, nil, func(text string) { f.request.StreetLine2 = text }).
@@ -46,7 +47,7 @@ func NewCreateHouse(app *TerminalApp) *CreateHouse {
 				f.ShowErrorTo(err)
 			} else {
 				f.app.House = &houseResponse
-				f.ShowInfoReturnHome(fmt.Sprintf("House %s successfully added.", houseResponse.Name))
+				f.ShowInfoReturnHome("House %s successfully added.", houseResponse.Name)
 			}
 		})
 	form.SetBorder(true).SetTitle("Add House").SetTitleAlign(tview.AlignCenter).SetRect(150, 30, 60, 15)

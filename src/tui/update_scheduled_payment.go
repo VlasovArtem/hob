@@ -103,7 +103,7 @@ func (u *UpdateScheduledPayment) update(update updateScheduledPaymentReq, id uui
 		if err := u.app.GetPaymentSchedulerService().Update(id, request); err != nil {
 			u.ShowErrorTo(err)
 		} else {
-			u.ShowInfoReturnBack(fmt.Sprintf("Scheduled Payment %s successfully updated.", request.Name))
+			u.ShowInfoReturnBack("Scheduled Payment %s successfully updated.", request.Name)
 		}
 	}
 }

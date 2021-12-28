@@ -107,7 +107,7 @@ func (i *Incomes) createDeleteModalButton(name string, id uuid.UUID) ModalButton
 			if err := i.App.GetIncomeService().DeleteById(id); err != nil {
 				i.ShowErrorTo(err)
 			} else {
-				i.ShowInfoRefresh(fmt.Sprintf("Income %s (%s) successfully deleted.", name, id))
+				i.ShowInfoRefresh("Income %s (%s) successfully deleted.", name, id)
 			}
 		},
 	}

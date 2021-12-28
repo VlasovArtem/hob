@@ -96,7 +96,7 @@ func (u *UpdateIncome) update(update updateIncomeReq, id uuid.UUID) func() {
 		if err := u.app.GetIncomeService().Update(id, request); err != nil {
 			u.ShowErrorTo(err)
 		} else {
-			u.ShowInfoReturnBack(fmt.Sprintf("Income %s successfully updated.", request.Name))
+			u.ShowInfoReturnBack("Income %s successfully updated.", request.Name)
 		}
 	}
 }

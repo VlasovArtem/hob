@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"fmt"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
@@ -108,7 +107,7 @@ func (c *CreatePayment) create(request createPaymentReq) func() {
 		if _, err := c.app.GetPaymentService().Add(paymentRequest); err != nil {
 			c.ShowErrorTo(err)
 		} else {
-			c.ShowInfoReturnBack(fmt.Sprintf("Payment for the house %s successfully added.", c.app.House.Name))
+			c.ShowInfoReturnBack("Payment for the house %s successfully added.", c.app.House.Name)
 		}
 	}
 }

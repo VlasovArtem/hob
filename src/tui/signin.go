@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"github.com/rivo/tview"
 )
 
@@ -41,7 +40,7 @@ func NewSignIn(app *TerminalApp) *SignInForm {
 				f.ShowErrorTo(err)
 			} else {
 				app.AuthorizedUser = &user
-				f.ShowInfoReturnHome(fmt.Sprintf("Welcome, %s %s to 'House of Bills'!", user.LastName, user.FirstName))
+				f.ShowInfoReturnHome("Welcome, %s %s to 'House of Bills'!", user.LastName, user.FirstName)
 			}
 		}).
 		AddButton("Quit", func() {

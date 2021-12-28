@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
@@ -84,16 +85,16 @@ func (n *Navigation) NavigateTo(name PageName) {
 	}
 }
 
-func (n *Navigation) ShowInfoRefresh(msg string) {
-	n.ShowInfo(msg, n.DoneFuncRefresh)
+func (n *Navigation) ShowInfoRefresh(msg string, args ...any) {
+	n.ShowInfo(fmt.Sprintf(msg, args...), n.DoneFuncRefresh)
 }
 
-func (n *Navigation) ShowInfoReturnBack(msg string) {
-	n.ShowInfo(msg, n.DoneFuncBack)
+func (n *Navigation) ShowInfoReturnBack(msg string, args ...any) {
+	n.ShowInfo(fmt.Sprintf(msg, args...), n.DoneFuncBack)
 }
 
-func (n *Navigation) ShowInfoReturnHome(msg string) {
-	n.ShowInfo(msg, n.DoneFuncHome)
+func (n *Navigation) ShowInfoReturnHome(msg string, args ...any) {
+	n.ShowInfo(fmt.Sprintf(msg, args...), n.DoneFuncHome)
 }
 
 func (n *Navigation) ShowInfoReturnTo(msg string, name PageName) {

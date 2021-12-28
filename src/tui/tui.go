@@ -27,6 +27,7 @@ type TerminalApp struct {
 	AuthorizedUser *userModel.UserDto
 	House          *houseModel.HouseDto
 	CountriesCodes []string
+	CountriesNames []string
 	actions        KeyActions
 }
 
@@ -41,6 +42,7 @@ func NewTApp(rootApplication *app.RootApplication) *TerminalApp {
 
 	for _, country := range tapp.getCountryService().FindAllCountries() {
 		tapp.CountriesCodes = append(tapp.CountriesCodes, country.Code)
+		tapp.CountriesNames = append(tapp.CountriesNames, country.Name)
 	}
 
 	return tapp

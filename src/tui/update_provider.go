@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
@@ -75,7 +74,7 @@ func (u *UpdateProvider) update(id uuid.UUID, update updateProviderReq) func() {
 		if err := u.app.GetProviderService().Update(id, request); err != nil {
 			u.ShowErrorTo(err)
 		} else {
-			u.ShowInfoReturnBack(fmt.Sprintf("Provider %s (%s) successfully updated.", request.Name, id))
+			u.ShowInfoReturnBack("Provider %s (%s) successfully updated.", request.Name, id)
 		}
 	}
 }

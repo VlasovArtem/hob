@@ -91,7 +91,7 @@ func (u *UpdateMeter) update(update updateMeterReq, id uuid.UUID) func() {
 		if err := u.app.GetMeterService().Update(id, request); err != nil {
 			u.ShowErrorTo(err)
 		} else {
-			u.ShowInfoReturnBack(fmt.Sprintf("Payment %s successfully updated.", request.Name))
+			u.ShowInfoReturnBack("Payment %s successfully updated.", request.Name)
 		}
 	}
 }

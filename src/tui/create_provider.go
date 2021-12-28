@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
@@ -71,7 +70,7 @@ func (c *CreateProvider) create(userId uuid.UUID, request createProviderReq) fun
 		if _, err := c.app.GetProviderService().Add(paymentRequest); err != nil {
 			c.ShowErrorTo(err)
 		} else {
-			c.ShowInfoReturnBack(fmt.Sprintf("Payment for the user with id '%s' successfully added.", userId))
+			c.ShowInfoReturnBack("Payment for the user with id '%s' successfully added.", userId)
 		}
 	}
 }

@@ -111,7 +111,7 @@ func (h *Houses) createDeleteModalButton(houseName string, houseId uuid.UUID) Mo
 			if err := h.App.GetHouseService().DeleteById(houseId); err != nil {
 				h.ShowErrorTo(err)
 			} else {
-				h.ShowInfoRefresh(fmt.Sprintf("House %s (%s) successfully deleted.", houseName, houseId))
+				h.ShowInfoRefresh("House %s (%s) successfully deleted.", houseName, houseId)
 			}
 		},
 	}

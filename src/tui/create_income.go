@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"fmt"
 	"github.com/VlasovArtem/hob/src/income/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -84,7 +83,7 @@ func (c *CreateIncome) create(create createIncome) func() {
 		if _, err := c.App.GetIncomeService().Add(c.request); err != nil {
 			c.ShowErrorTo(err)
 		} else {
-			c.ShowInfoReturnBack(fmt.Sprintf("Income for the house %s successfully added.", c.App.House.Name))
+			c.ShowInfoReturnBack("Income for the house %s successfully added.", c.App.House.Name)
 		}
 	}
 }

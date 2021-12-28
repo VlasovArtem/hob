@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
@@ -63,7 +62,7 @@ func NewUpdateHouse(app *TerminalApp, houseId uuid.UUID) *UpdateHouse {
 			if err := f.app.GetHouseService().Update(houseId, request); err != nil {
 				f.ShowErrorTo(err)
 			} else {
-				f.ShowInfoReturnBack(fmt.Sprintf("House %s successfully updated.", request.Name))
+				f.ShowInfoReturnBack("House %s successfully updated.", request.Name)
 			}
 		}).AddButton("Cancel", f.BackFunc())
 

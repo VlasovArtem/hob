@@ -116,7 +116,7 @@ func (p *ScheduledPayments) createDeleteModalButton(paymentName string, paymentI
 			if err := p.App.GetPaymentSchedulerService().Remove(paymentId); err != nil {
 				p.ShowErrorTo(err)
 			} else {
-				p.ShowInfoRefresh(fmt.Sprintf("Payment scheduler %s (%s) successfully deleted.", paymentName, paymentId))
+				p.ShowInfoRefresh("Payment scheduler %s (%s) successfully deleted.", paymentName, paymentId)
 			}
 		},
 	}

@@ -114,7 +114,7 @@ func (p *Providers) createDeleteModalButton(paymentName string, paymentId uuid.U
 			if err := p.App.GetProviderService().Delete(paymentId); err != nil {
 				p.ShowErrorTo(err)
 			} else {
-				p.ShowInfoRefresh(fmt.Sprintf("Provider %s (%s) successfully deleted.", paymentName, paymentId))
+				p.ShowInfoRefresh("Provider %s (%s) successfully deleted.", paymentName, paymentId)
 			}
 		},
 	}

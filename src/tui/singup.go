@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -41,7 +40,7 @@ func NewSignUp(app *TerminalApp) *SignUp {
 				f.ShowErrorTo(err)
 			} else {
 				app.AuthorizedUser = &userResponse
-				f.ShowInfoReturnHome(fmt.Sprintf("Welcome, %s %s to 'House of Bills'!", userResponse.LastName, userResponse.FirstName))
+				f.ShowInfoReturnHome("Welcome, %s %s to 'House of Bills'!", userResponse.LastName, userResponse.FirstName)
 			}
 		}).
 		AddButton("Cancel", func() {

@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"fmt"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
 	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/gdamore/tcell/v2"
@@ -102,7 +101,7 @@ func (c *CreateScheduledPayment) create(request createScheduledPaymentReq) func(
 		if _, err := c.app.GetPaymentSchedulerService().Add(paymentRequest); err != nil {
 			c.ShowErrorTo(err)
 		} else {
-			c.ShowInfoReturnBack(fmt.Sprintf("Scheduled Payment for the house %s successfully added.", c.app.House.Name))
+			c.ShowInfoReturnBack("Scheduled Payment for the house %s successfully added.", c.app.House.Name)
 		}
 	}
 }
