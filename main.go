@@ -69,7 +69,7 @@ func startApplication(cfg *config.Config, rootApplication *app.RootApplication) 
 		}
 
 		log.Fatal().
-			Err(http.ListenAndServe(":3000", router)).
+			Err(http.ListenAndServe(":3030", router)).
 			Msg("HTTP Application error")
 	}
 }

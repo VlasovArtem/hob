@@ -1,8 +1,10 @@
-package respository
+package repository
 
 import (
+	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/db"
+	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -15,7 +17,7 @@ var (
 )
 
 type HouseRepositoryObject struct {
-	database db.ModeledDatabase
+	db db.ModeledDatabase
 }
 
 func NewHouseRepository(database db.DatabaseService) HouseRepository {
@@ -37,36 +39,72 @@ func (h *HouseRepositoryObject) GetEntity() any {
 
 type HouseRepository interface {
 	Create(entity model.House) (model.House, error)
-	FindDtoById(id uuid.UUID) (model.HouseDto, error)
-	FindResponseByUserId(id uuid.UUID) []model.HouseDto
+	FindById(id uuid.UUID) (model.House, error)
+	FindByUserId(id uuid.UUID) []model.House
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateHouseRequest) error
 }
 
 func (h *HouseRepositoryObject) Create(entity model.House) (model.House, error) {
-	return entity, h.database.Create(&entity)
+	return entity, h.db.Create(&entity)
 }
 
-func (h *HouseRepositoryObject) FindDtoById(id uuid.UUID) (response model.HouseDto, err error) {
-	return response, h.database.Find(&response, id)
-}
-
-func (h *HouseRepositoryObject) FindResponseByUserId(id uuid.UUID) (response []model.HouseDto) {
-	if err := h.database.FindBy(&response, "user_id = ?", id); err != nil {
-		log.Err(err)
+func (h *HouseRepositoryObject) FindById(id uuid.UUID) (response model.House, err error) {
+	response.Id = id
+	if err = h.db.D().Preload("Groups").First(&response).Error; err != nil {
+		return model.House{}, err
 	}
+	return response, err
+}
+
+func (h *HouseRepositoryObject) FindByUserId(id uuid.UUID) (response []model.House) {
+	if err := h.db.D().Preload("Groups").Where("user_id = ?", id).Find(&response).Error; err != nil {
+		log.Error().Err(err)
+	}
+
 	return response
 }
 
 func (h *HouseRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return h.database.Exists(id)
+	return h.db.Exists(id)
 }
 
 func (h *HouseRepositoryObject) DeleteById(id uuid.UUID) error {
-	return h.database.Delete(id)
+	return h.db.Delete(id)
 }
 
 func (h *HouseRepositoryObject) Update(id uuid.UUID, request model.UpdateHouseRequest) error {
-	return h.database.Update(id, request)
+	err := h.db.Update(id, struct {
+		Name        string
+		CountryCode string
+		City        string
+		StreetLine1 string
+		StreetLine2 string
+	}{
+		request.Name,
+		request.CountryCode,
+		request.City,
+		request.StreetLine1,
+		request.StreetLine2,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	entity, err := h.FindById(id)
+
+	if err != nil {
+		return err
+	}
+
+	var groups = common.Map(
+		request.GroupIds,
+		[]groupModel.Group{},
+		func(id uuid.UUID) groupModel.Group {
+			return groupModel.Group{Id: id}
+		})
+
+	return h.db.DM(&entity).Association("Groups").Replace(groups)
 }

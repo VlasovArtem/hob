@@ -9,7 +9,7 @@ import (
 	"github.com/VlasovArtem/hob/src/country/model"
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	"github.com/VlasovArtem/hob/src/db"
-	houseRepository "github.com/VlasovArtem/hob/src/house/respository"
+	houseRepository "github.com/VlasovArtem/hob/src/house/repository"
 	houseService "github.com/VlasovArtem/hob/src/house/service"
 	incomeRepository "github.com/VlasovArtem/hob/src/income/repository"
 	incomeSchedulerRepository "github.com/VlasovArtem/hob/src/income/scheduler/repository"

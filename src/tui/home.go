@@ -35,12 +35,11 @@ func (h *Home) NavigationInfo(app *TerminalApp, variables map[string]any) *Navig
 
 func (h *Home) enrichNavigation(app *TerminalApp) {
 	h.Navigation = NewNavigation(app, h.NavigationInfo(app, nil))
-	h.AddCustomPage(&CreateHouse{}).
-		AddCustomPage(&CreateIncome{}).
-		AddCustomPage(&CreatePayment{}).
+	h.
 		AddCustomPage(&Payments{}).
 		AddCustomPage(&Houses{}).
-		AddCustomPage(&Incomes{})
+		AddCustomPage(&Incomes{}).
+		AddCustomPage(&Providers{})
 }
 
 func NewHome(app *TerminalApp) *Home {
@@ -134,6 +133,7 @@ func (h *Home) bindKeys() {
 		tcell.KeyCtrlA: NewKeyAction("Show Payments", h.paymentsPage),
 		tcell.KeyCtrlE: NewKeyAction("Show Houses", h.housesPage),
 		tcell.KeyCtrlF: NewKeyAction("Show Incomes", h.incomesPage),
+		tcell.KeyCtrlP: NewKeyAction("Show Providers", h.providersPage),
 	}
 }
 
@@ -149,6 +149,11 @@ func (h *Home) housesPage(key *tcell.EventKey) *tcell.EventKey {
 
 func (h *Home) incomesPage(key *tcell.EventKey) *tcell.EventKey {
 	h.NavigateTo(IncomesPageName)
+	return key
+}
+
+func (h *Home) providersPage(key *tcell.EventKey) *tcell.EventKey {
+	h.NavigateTo(ProvidersPageName)
 	return key
 }
 

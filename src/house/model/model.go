@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/VlasovArtem/hob/src/country/model"
+	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 )
@@ -14,7 +15,8 @@ type House struct {
 	StreetLine1 string
 	StreetLine2 string
 	UserId      uuid.UUID
-	User        userModel.User `gorm:"foreignKey:UserId"`
+	User        userModel.User     `gorm:"foreignKey:UserId"`
+	Groups      []groupModel.Group `gorm:"many2many:house_groups"`
 }
 
 type HouseDto struct {
@@ -25,6 +27,7 @@ type HouseDto struct {
 	StreetLine1 string
 	StreetLine2 string
 	UserId      uuid.UUID
+	Groups      []groupModel.GroupDto
 }
 
 type CreateHouseRequest struct {
@@ -34,6 +37,7 @@ type CreateHouseRequest struct {
 	StreetLine1 string
 	StreetLine2 string
 	UserId      uuid.UUID
+	GroupIds    []uuid.UUID
 }
 
 type UpdateHouseRequest struct {
@@ -42,9 +46,15 @@ type UpdateHouseRequest struct {
 	City        string
 	StreetLine1 string
 	StreetLine2 string
+	GroupIds    []uuid.UUID
 }
 
 func (h House) ToDto() HouseDto {
+	var groups []groupModel.GroupDto
+	for _, group := range h.Groups {
+		groups = append(groups, group.ToDto())
+	}
+
 	return HouseDto{
 		Id:          h.Id,
 		Name:        h.Name,
@@ -53,10 +63,17 @@ func (h House) ToDto() HouseDto {
 		StreetLine1: h.StreetLine1,
 		StreetLine2: h.StreetLine2,
 		UserId:      h.UserId,
+		Groups:      groups,
 	}
 }
 
 func (c CreateHouseRequest) ToEntity(country *model.Country) House {
+	var groups []groupModel.Group
+
+	for _, id := range c.GroupIds {
+		groups = append(groups, groupModel.Group{Id: id})
+	}
+
 	return House{
 		Id:          uuid.New(),
 		Name:        c.Name,
@@ -65,5 +82,6 @@ func (c CreateHouseRequest) ToEntity(country *model.Country) House {
 		StreetLine1: c.StreetLine1,
 		StreetLine2: c.StreetLine2,
 		UserId:      c.UserId,
+		Groups:      groups,
 	}
 }

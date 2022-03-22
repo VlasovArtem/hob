@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type ModeledDatabase struct {
@@ -39,4 +40,8 @@ func (m *ModeledDatabase) Delete(id uuid.UUID) error {
 
 func (m *ModeledDatabase) Update(id uuid.UUID, entity any, omit ...string) error {
 	return m.UpdateById(m.Model, id, entity, omit...)
+}
+
+func (m *ModeledDatabase) Modeled() *gorm.DB {
+	return m.DM(m.Model)
 }

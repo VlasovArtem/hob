@@ -25,7 +25,10 @@ func (p *UserRepositoryTestSuite) SetupSuite() {
 			p.repository = NewUserRepository(service)
 		},
 	).
-		AddMigrators(model.User{})
+		AddAfterTest(func(service db.DatabaseService) {
+			database.TruncateTable(service, model.User{})
+		}).
+		ExecuteMigration(model.User{})
 }
 
 func TestUserRepositoryTestSuite(t *testing.T) {

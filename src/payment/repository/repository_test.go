@@ -54,16 +54,24 @@ func (p *PaymentRepositoryTestSuite) SetupSuite() {
 			p.repository = NewPaymentRepository(service)
 		},
 	).
-		AddMigrators(userModel.User{}, houseModel.House{}, providerModel.Provider{}, model.Payment{})
+		AddAfterTest(func(service db.DatabaseService) {
+			database.TruncateTable(service, model.Payment{})
+		}).
+		AddAfterSuite(func(service db.DatabaseService) {
+			database.TruncateTable(service, providerModel.Provider{})
+			database.TruncateTable(service, houseModel.House{})
+			database.TruncateTable(service, userModel.User{})
+		}).
+		ExecuteMigration(userModel.User{}, houseModel.House{}, providerModel.Provider{}, model.Payment{})
 
 	p.createdUser = userMocks.GenerateUser()
-	p.CreateConstantEntity(&p.createdUser)
+	p.CreateEntity(&p.createdUser)
 
 	p.createdHouse = houseMocks.GenerateHouse(p.createdUser.Id)
-	p.CreateConstantEntity(&p.createdHouse)
+	p.CreateEntity(&p.createdHouse)
 
 	p.createdProvider = providerMocks.GenerateProvider(p.createdUser.Id)
-	p.CreateConstantEntity(&p.createdProvider)
+	p.CreateEntity(&p.createdProvider)
 }
 
 func TestPaymentRepositoryTestSuite(t *testing.T) {

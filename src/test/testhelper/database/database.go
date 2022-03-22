@@ -10,34 +10,12 @@ import (
 	"reflect"
 )
 
-func DropTable(db *gorm.DB, model any) {
-	err := db.Migrator().DropTable(model)
-
-	if err != nil {
-		log.Fatal().Err(err).Msg("Cannot drop table")
-	}
-}
-
-func CreateTable(db *gorm.DB, model any) {
-	err := db.AutoMigrate(model)
-
-	if err != nil {
-		log.Fatal().Err(err).Msg("Cannot create table")
-	}
-}
-
-func RecreateTable(db *gorm.DB, model any) {
-	DropTable(db, model)
-	CreateTable(db, model)
-}
-
 type DBTestSuite struct {
 	suite.Suite
-	Database         database.DatabaseService
-	migrators        []any
-	beforeTest       []func(service database.DatabaseService)
-	createdEntities  []any
-	constantEntities []any
+	Database   database.DatabaseService
+	beforeTest []func(service database.DatabaseService)
+	afterTest  []func(service database.DatabaseService)
+	afterSuite []func(service database.DatabaseService)
 }
 
 func (db *DBTestSuite) InitDBTestSuite() {
@@ -52,13 +30,11 @@ func (db *DBTestSuite) CreateRepository(provider func(service database.DatabaseS
 	return db
 }
 
-func (db *DBTestSuite) AddMigrators(migrators ...any) {
+func (db *DBTestSuite) ExecuteMigration(migrators ...any) {
 	for _, migrator := range migrators {
 		if err := db.Database.D().AutoMigrate(migrator); err != nil {
 			log.Fatal().Err(err).Msg("Cannot create table")
 		}
-
-		db.migrators = append(db.migrators, migrator)
 	}
 }
 
@@ -66,20 +42,22 @@ func (db *DBTestSuite) CreateEntity(entity any) {
 	if err := db.Database.Create(entity); err != nil {
 		log.Fatal().Err(err).Msg("Cannot create entity")
 	}
-
-	db.createdEntities = append(db.createdEntities, reflect.Indirect(reflect.ValueOf(entity)).Interface())
-}
-
-func (db *DBTestSuite) CreateConstantEntity(entity any) {
-	if err := db.Database.Create(entity); err != nil {
-		log.Fatal().Err(err).Msg("Cannot create entity")
-	}
-
-	db.constantEntities = append(db.constantEntities, reflect.Indirect(reflect.ValueOf(entity)).Interface())
 }
 
 func (db *DBTestSuite) AddBeforeTest(beforeTest func(service database.DatabaseService)) *DBTestSuite {
 	db.beforeTest = append(db.beforeTest, beforeTest)
+
+	return db
+}
+
+func (db *DBTestSuite) AddAfterTest(afterTest func(service database.DatabaseService)) *DBTestSuite {
+	db.afterTest = append(db.afterTest, afterTest)
+
+	return db
+}
+
+func (db *DBTestSuite) AddAfterSuite(afterSuite func(service database.DatabaseService)) *DBTestSuite {
+	db.afterSuite = append(db.afterSuite, afterSuite)
 
 	return db
 }
@@ -91,11 +69,15 @@ func (db *DBTestSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (db *DBTestSuite) TearDownSuite() {
-	db.deleteConstant()
+	for _, afterSuiteFunc := range db.afterSuite {
+		afterSuiteFunc(db.Database)
+	}
 }
 
 func (db *DBTestSuite) TearDownTest() {
-	db.deleteCreated()
+	for _, afterTestFunc := range db.afterTest {
+		afterTestFunc(db.Database)
+	}
 }
 
 func (db *DBTestSuite) Delete(entity any) {
@@ -111,14 +93,6 @@ func (db *DBTestSuite) Delete(entity any) {
 	}
 }
 
-func (db *DBTestSuite) deleteCreated() {
-	for i := len(db.createdEntities) - 1; i >= 0; i-- {
-		db.Delete(db.createdEntities[i])
-	}
-}
-
-func (db *DBTestSuite) deleteConstant() {
-	for i := len(db.constantEntities) - 1; i >= 0; i-- {
-		db.Delete(db.constantEntities[i])
-	}
+func TruncateTable(service database.DatabaseService, entity any) {
+	service.D().Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(entity)
 }

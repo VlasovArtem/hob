@@ -32,13 +32,20 @@ func (i *IncomeRepositoryTestSuite) SetupSuite() {
 			i.repository = NewIncomeRepository(service)
 		},
 	).
-		AddMigrators(userModel.User{}, houseModel.House{}, model.Income{})
+		AddAfterTest(func(service db.DatabaseService) {
+			database.TruncateTable(service, model.Income{})
+		}).
+		AddAfterSuite(func(service db.DatabaseService) {
+			database.TruncateTable(service, houseModel.House{})
+			database.TruncateTable(service, userModel.User{})
+		}).
+		ExecuteMigration(userModel.User{}, houseModel.House{}, model.Income{})
 
 	i.createdUser = userMocks.GenerateUser()
-	i.CreateConstantEntity(&i.createdUser)
+	i.CreateEntity(&i.createdUser)
 
 	i.createdHouse = houseMocks.GenerateHouse(i.createdUser.Id)
-	i.CreateConstantEntity(&i.createdHouse)
+	i.CreateEntity(&i.createdHouse)
 }
 
 func TestIncomeRepositoryTestSuite(t *testing.T) {
@@ -52,8 +59,6 @@ func (i *IncomeRepositoryTestSuite) Test_Create() {
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), income, actual)
-
-	i.Delete(income)
 }
 
 func (i *IncomeRepositoryTestSuite) Test_Creat_WithMissingHouse() {

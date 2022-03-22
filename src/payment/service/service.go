@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+var defaultUUID = uuid.UUID{}
+
 var PaymentServiceType = reflect.TypeOf(PaymentServiceObject{})
 
 type PaymentServiceObject struct {
@@ -64,8 +66,11 @@ func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response
 	if !p.houseService.ExistsById(request.HouseId) {
 		return response, fmt.Errorf("house with id %s in not exists", request.HouseId)
 	}
-	if !p.providerService.ExistsById(request.ProviderId) {
-		return response, fmt.Errorf("provider with id %s in not exists", request.ProviderId)
+
+	if request.ProviderId != defaultUUID {
+		if !p.providerService.ExistsById(request.ProviderId) {
+			return response, fmt.Errorf("provider with id %s in not exists", request.ProviderId)
+		}
 	}
 
 	payment, err := p.paymentRepository.Create(request.CreateToEntity())

@@ -38,16 +38,25 @@ func (m *MeterRepositoryTestSuite) SetupSuite() {
 			m.repository = NewMeterRepository(service)
 		},
 	).
-		AddMigrators(userModel.User{}, houseModel.House{}, providerModel.Provider{}, paymentModel.Payment{}, model.Meter{})
+		AddAfterTest(func(service db.DatabaseService) {
+			database.TruncateTable(service, model.Meter{})
+			database.TruncateTable(service, paymentModel.Payment{})
+		}).
+		AddAfterSuite(func(service db.DatabaseService) {
+			database.TruncateTable(service, providerModel.Provider{})
+			database.TruncateTable(service, houseModel.House{})
+			database.TruncateTable(service, userModel.User{})
+		}).
+		ExecuteMigration(userModel.User{}, houseModel.House{}, providerModel.Provider{}, paymentModel.Payment{}, model.Meter{})
 
 	m.createdUser = userMocks.GenerateUser()
-	m.CreateConstantEntity(&m.createdUser)
+	m.CreateEntity(&m.createdUser)
 
 	m.createdProvider = mocks.GenerateProvider(m.createdUser.Id)
-	m.CreateConstantEntity(&m.createdProvider)
+	m.CreateEntity(&m.createdProvider)
 
 	m.createdHouse = houseMocks.GenerateHouse(m.createdUser.Id)
-	m.CreateConstantEntity(&m.createdHouse)
+	m.CreateEntity(&m.createdHouse)
 
 	m.AddBeforeTest(
 		func(service db.DatabaseService) {

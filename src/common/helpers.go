@@ -25,3 +25,10 @@ func EnsureFullPath(path string, mod os.FileMode) {
 		}
 	}
 }
+
+func Map[T any, V any](source []T, target []V, mapper func(T) V) []V {
+	for _, t := range source {
+		target = append(target, mapper(t))
+	}
+	return target
+}

@@ -33,13 +33,20 @@ func (i *IncomeSchedulerRepositoryTestSuite) SetupSuite() {
 			i.repository = NewIncomeSchedulerRepository(service)
 		},
 	).
-		AddMigrators(userModel.User{}, houseModel.House{}, model.IncomeScheduler{})
+		AddAfterTest(func(service db.DatabaseService) {
+			database.TruncateTable(service, model.IncomeScheduler{})
+		}).
+		AddAfterSuite(func(service db.DatabaseService) {
+			database.TruncateTable(service, houseModel.House{})
+			database.TruncateTable(service, userModel.User{})
+		}).
+		ExecuteMigration(userModel.User{}, houseModel.House{}, model.IncomeScheduler{})
 
 	i.createdUser = userMocks.GenerateUser()
-	i.CreateConstantEntity(&i.createdUser)
+	i.CreateEntity(&i.createdUser)
 
 	i.createdHouse = houseMocks.GenerateHouse(i.createdUser.Id)
-	i.CreateConstantEntity(&i.createdHouse)
+	i.CreateEntity(&i.createdHouse)
 }
 
 func TestPaymentRepositorySchedulerTestSuite(t *testing.T) {

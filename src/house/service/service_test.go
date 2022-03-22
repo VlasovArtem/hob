@@ -16,15 +16,15 @@ import (
 
 var (
 	users            *userMocks.UserService
-	repository       *mocks.HouseRepository
+	houseRepository  *mocks.HouseRepository
 	countriesService = testhelper.InitCountryService()
 )
 
 func serviceGenerator() HouseService {
 	users = new(userMocks.UserService)
-	repository = new(mocks.HouseRepository)
+	houseRepository = new(mocks.HouseRepository)
 
-	return NewHouseService(countriesService, users, repository)
+	return NewHouseService(countriesService, users, houseRepository)
 }
 
 func Test_Add(t *testing.T) {
@@ -33,7 +33,7 @@ func Test_Add(t *testing.T) {
 	request := mocks.GenerateCreateHouseRequest()
 
 	users.On("ExistsById", request.UserId).Return(true)
-	repository.On("Create", mock.Anything).Return(
+	houseRepository.On("Create", mock.Anything).Return(
 		func(house model.House) model.House { return house },
 		nil,
 	)
@@ -55,14 +55,14 @@ func Test_Add(t *testing.T) {
 func Test_FindById(t *testing.T) {
 	houseService := serviceGenerator()
 
-	house := mocks.GenerateHouseResponse()
+	house := mocks.GenerateHouse(uuid.New())
 
-	repository.On("FindDtoById", house.Id).Return(house, nil)
+	houseRepository.On("FindById", house.Id).Return(house, nil)
 
 	actual, err := houseService.FindById(house.Id)
 
 	assert.Nil(t, err)
-	assert.Equal(t, house, actual)
+	assert.Equal(t, house.ToDto(), actual)
 }
 
 func Test_FindById_WithRecordNotFound(t *testing.T) {
@@ -70,7 +70,7 @@ func Test_FindById_WithRecordNotFound(t *testing.T) {
 
 	id := uuid.New()
 
-	repository.On("FindDtoById", id).Return(model.HouseDto{}, gorm.ErrRecordNotFound)
+	houseRepository.On("FindById", id).Return(model.House{}, gorm.ErrRecordNotFound)
 
 	actual, err := houseService.FindById(id)
 
@@ -84,7 +84,7 @@ func Test_FindById_WithRecordNotFoundExists(t *testing.T) {
 	id := uuid.New()
 
 	expectedError := errors.New("error")
-	repository.On("FindDtoById", id).Return(model.HouseDto{}, expectedError)
+	houseRepository.On("FindById", id).Return(model.House{}, expectedError)
 
 	actual, err := houseService.FindById(id)
 
@@ -95,13 +95,13 @@ func Test_FindById_WithRecordNotFoundExists(t *testing.T) {
 func Test_FindByUserId(t *testing.T) {
 	houseService := serviceGenerator()
 
-	house := mocks.GenerateHouseResponse()
+	house := mocks.GenerateHouse(uuid.New())
 
-	repository.On("FindResponseByUserId", house.UserId).Return([]model.HouseDto{house})
+	houseRepository.On("FindByUserId", house.UserId).Return([]model.House{house})
 
 	actual := houseService.FindByUserId(house.UserId)
 
-	assert.Equal(t, []model.HouseDto{house}, actual)
+	assert.Equal(t, []model.HouseDto{house.ToDto()}, actual)
 }
 
 func Test_FindByUserId_WithNotExists(t *testing.T) {
@@ -109,7 +109,7 @@ func Test_FindByUserId_WithNotExists(t *testing.T) {
 
 	id := uuid.New()
 
-	repository.On("FindResponseByUserId", id).Return([]model.HouseDto{})
+	houseRepository.On("FindByUserId", id).Return([]model.House{})
 
 	actual := houseService.FindByUserId(id)
 
@@ -121,7 +121,7 @@ func Test_ExistsById(t *testing.T) {
 
 	houseId := uuid.New()
 
-	repository.On("ExistsById", houseId).Return(true)
+	houseRepository.On("ExistsById", houseId).Return(true)
 
 	assert.True(t, houseService.ExistsById(houseId))
 }
@@ -131,7 +131,7 @@ func Test_ExistsById_WithNotExists(t *testing.T) {
 
 	id := uuid.New()
 
-	repository.On("ExistsById", id).Return(false)
+	houseRepository.On("ExistsById", id).Return(false)
 
 	assert.False(t, houseService.ExistsById(id))
 }
@@ -141,8 +141,8 @@ func Test_DeleteById(t *testing.T) {
 
 	id := uuid.New()
 
-	repository.On("ExistsById", id).Return(true)
-	repository.On("DeleteById", id).Return(nil)
+	houseRepository.On("ExistsById", id).Return(true)
+	houseRepository.On("DeleteById", id).Return(nil)
 
 	assert.Nil(t, houseService.DeleteById(id))
 }
@@ -152,11 +152,11 @@ func Test_DeleteById_WithNotExists(t *testing.T) {
 
 	id := uuid.New()
 
-	repository.On("ExistsById", id).Return(false)
+	houseRepository.On("ExistsById", id).Return(false)
 
 	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not found", id), houseService.DeleteById(id))
 
-	repository.AssertNotCalled(t, "DeleteById", id)
+	houseRepository.AssertNotCalled(t, "DeleteById", id)
 }
 
 func Test_Update(t *testing.T) {
@@ -164,8 +164,8 @@ func Test_Update(t *testing.T) {
 
 	id, request := mocks.GenerateUpdateHouseRequest()
 
-	repository.On("ExistsById", id).Return(true)
-	repository.On("Update", id, request).Return(nil)
+	houseRepository.On("ExistsById", id).Return(true)
+	houseRepository.On("Update", id, request).Return(nil)
 
 	assert.Nil(t, houseService.Update(id, request))
 }
@@ -175,8 +175,8 @@ func Test_Update_WithErrorFromDatabase(t *testing.T) {
 
 	id, request := mocks.GenerateUpdateHouseRequest()
 
-	repository.On("ExistsById", id).Return(true)
-	repository.On("Update", id, request).Return(errors.New("test"))
+	houseRepository.On("ExistsById", id).Return(true)
+	houseRepository.On("Update", id, request).Return(errors.New("test"))
 
 	err := houseService.Update(id, request)
 	assert.Equal(t, errors.New("test"), err)
@@ -187,12 +187,12 @@ func Test_Update_WithNotExists(t *testing.T) {
 
 	id, request := mocks.GenerateUpdateHouseRequest()
 
-	repository.On("ExistsById", id).Return(false)
+	houseRepository.On("ExistsById", id).Return(false)
 
 	err := houseService.Update(id, request)
 	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not found", id), err)
 
-	repository.AssertNotCalled(t, "Update", id, request)
+	houseRepository.AssertNotCalled(t, "Update", id, request)
 }
 
 func Test_Update_WithNotMatchingCountry(t *testing.T) {
@@ -201,10 +201,10 @@ func Test_Update_WithNotMatchingCountry(t *testing.T) {
 	id, request := mocks.GenerateUpdateHouseRequest()
 	request.CountryCode = "invalid"
 
-	repository.On("ExistsById", id).Return(true)
+	houseRepository.On("ExistsById", id).Return(true)
 
 	err := houseService.Update(id, request)
 	assert.Equal(t, int_errors.NewErrNotFound("country with code %s is not found", request.CountryCode), err)
 
-	repository.AssertNotCalled(t, "Update", id, request)
+	houseRepository.AssertNotCalled(t, "Update", id, request)
 }

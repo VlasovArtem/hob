@@ -29,10 +29,16 @@ func (p *ProviderRepositoryTestSuite) SetupSuite() {
 			p.repository = NewProviderRepository(service)
 		},
 	).
-		AddMigrators(userModel.User{}, model.Provider{})
+		AddAfterTest(func(service db.DatabaseService) {
+			database.TruncateTable(service, model.Provider{})
+		}).
+		AddAfterSuite(func(service db.DatabaseService) {
+			database.TruncateTable(service, userModel.User{})
+		}).
+		ExecuteMigration(userModel.User{}, model.Provider{})
 
 	p.createdUser = userMocks.GenerateUser()
-	p.CreateConstantEntity(&p.createdUser)
+	p.CreateEntity(&p.createdUser)
 }
 
 func TestProviderRepositoryTestSuite(t *testing.T) {

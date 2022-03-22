@@ -1,12 +1,13 @@
 package service
 
 import (
+	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	"github.com/VlasovArtem/hob/src/house/model"
-	"github.com/VlasovArtem/hob/src/house/respository"
+	"github.com/VlasovArtem/hob/src/house/repository"
 	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -18,13 +19,13 @@ var HouseServiceType = reflect.TypeOf(HouseServiceObject{})
 type HouseServiceObject struct {
 	countriesService countries.CountryService
 	userService      userService.UserService
-	repository       respository.HouseRepository
+	houseRepository  repository.HouseRepository
 }
 
 func NewHouseService(
 	countriesService countries.CountryService,
 	userService userService.UserService,
-	repository respository.HouseRepository,
+	repository repository.HouseRepository,
 ) HouseService {
 	if countriesService == nil {
 		log.Fatal().Msg("CountryCode service is required")
@@ -33,7 +34,7 @@ func NewHouseService(
 	return &HouseServiceObject{
 		countriesService: countriesService,
 		userService:      userService,
-		repository:       repository,
+		houseRepository:  repository,
 	}
 }
 
@@ -41,7 +42,7 @@ func (h *HouseServiceObject) Initialize(factory dependency.DependenciesProvider)
 	return NewHouseService(
 		factory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService),
 		factory.FindRequiredByType(userService.UserServiceType).(userService.UserService),
-		factory.FindRequiredByType(respository.HouseRepositoryType).(respository.HouseRepository),
+		factory.FindRequiredByType(repository.HouseRepositoryType).(repository.HouseRepository),
 	)
 }
 
@@ -62,7 +63,7 @@ func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response mod
 	} else {
 		entity := request.ToEntity(&country)
 
-		if entity, err := h.repository.Create(entity); err != nil {
+		if entity, err := h.houseRepository.Create(entity); err != nil {
 			return response, err
 		} else {
 			return entity.ToDto(), nil
@@ -71,26 +72,30 @@ func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response mod
 }
 
 func (h *HouseServiceObject) FindById(id uuid.UUID) (response model.HouseDto, err error) {
-	if response, err = h.repository.FindDtoById(id); err != nil {
+	if entity, err := h.houseRepository.FindById(id); err != nil {
 		return response, database.HandlerFindError(err, "house with id %s not found", id)
 	} else {
-		return response, nil
+		return entity.ToDto(), nil
 	}
 }
 
 func (h *HouseServiceObject) FindByUserId(userId uuid.UUID) []model.HouseDto {
-	return h.repository.FindResponseByUserId(userId)
+	houseEntities := h.houseRepository.FindByUserId(userId)
+
+	return common.Map(houseEntities, []model.HouseDto{}, func(entity model.House) model.HouseDto {
+		return entity.ToDto()
+	})
 }
 
 func (h *HouseServiceObject) ExistsById(id uuid.UUID) bool {
-	return h.repository.ExistsById(id)
+	return h.houseRepository.ExistsById(id)
 }
 
 func (h *HouseServiceObject) DeleteById(id uuid.UUID) error {
 	if !h.ExistsById(id) {
 		return int_errors.NewErrNotFound("house with id %s not found", id)
 	}
-	return h.repository.DeleteById(id)
+	return h.houseRepository.DeleteById(id)
 }
 
 func (h *HouseServiceObject) Update(id uuid.UUID, request model.UpdateHouseRequest) error {
@@ -100,6 +105,6 @@ func (h *HouseServiceObject) Update(id uuid.UUID, request model.UpdateHouseReque
 	if _, err := h.countriesService.FindCountryByCode(request.CountryCode); err != nil {
 		return err
 	} else {
-		return h.repository.Update(id, request)
+		return h.houseRepository.Update(id, request)
 	}
 }
