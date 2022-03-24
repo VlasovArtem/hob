@@ -63,6 +63,20 @@ func (_m *GroupService) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
+// ExistsByIds provides a mock function with given fields: ids
+func (_m *GroupService) ExistsByIds(ids []uuid.UUID) bool {
+	ret := _m.Called(ids)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func([]uuid.UUID) bool); ok {
+		r0 = rf(ids)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // FindById provides a mock function with given fields: id
 func (_m *GroupService) FindById(id uuid.UUID) (model.GroupDto, error) {
 	ret := _m.Called(id)

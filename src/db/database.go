@@ -10,11 +10,12 @@ import (
 )
 
 type DatabaseConfiguration struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
+	Host       string
+	Port       int
+	User       string
+	Password   string
+	DBName     string
+	GormConfig *gorm.Config
 }
 
 func NewDefaultDatabaseConfiguration() DatabaseConfiguration {
@@ -38,7 +39,13 @@ func (d *DatabaseObject) Initialize(factory dependency.DependenciesProvider) any
 func NewDatabaseService(config DatabaseConfiguration) DatabaseService {
 	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", config.Host, config.Port, config.User, config.Password, config.DBName)
 
-	if db, err := gorm.Open(postgres.Open(psqlconn)); err != nil {
+	var options []gorm.Option
+
+	if config.GormConfig != nil {
+		options = append(options, config.GormConfig)
+	}
+
+	if db, err := gorm.Open(postgres.Open(psqlconn), options...); err != nil {
 		log.Fatal().Err(err)
 		return nil
 	} else {
@@ -47,7 +54,7 @@ func NewDatabaseService(config DatabaseConfiguration) DatabaseService {
 }
 
 type DatabaseService interface {
-	Create(value any) error
+	Create(value any, omit ...string) error
 	FindById(receiver any, id uuid.UUID) error
 	FindByIdModeled(model any, receiver any, id uuid.UUID) error
 	FindByQuery(receiver any, query any, conditions ...any) error
@@ -61,8 +68,8 @@ type DatabaseService interface {
 	DM(model any) *gorm.DB
 }
 
-func (d *DatabaseObject) Create(value any) error {
-	tx := d.db.Create(value)
+func (d *DatabaseObject) Create(value any, omit ...string) error {
+	tx := d.db.Omit(omit...).Create(value)
 
 	if tx.Error != nil {
 		return tx.Error

@@ -1,9 +1,11 @@
 package common
 
 import (
+	"fmt"
 	"github.com/rs/zerolog/log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
@@ -26,9 +28,16 @@ func EnsureFullPath(path string, mod os.FileMode) {
 	}
 }
 
-func Map[T any, V any](source []T, target []V, mapper func(T) V) []V {
+func Map[T any, V any](source []T, mapper func(T) V) []V {
+	target := []V{}
 	for _, t := range source {
 		target = append(target, mapper(t))
 	}
 	return target
+}
+
+func Join[T fmt.Stringer](t []T, sep string) string {
+	return strings.Join(Map(t, func(t T) string {
+		return t.String()
+	}), sep)
 }

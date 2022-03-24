@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
+	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/test"
@@ -64,6 +65,7 @@ func Test_Add(t *testing.T) {
 			StreetLine1: "StreetLine1",
 			StreetLine2: "StreetLine2",
 			UserId:      actual.UserId,
+			Groups:      []groupModel.GroupDto{},
 		}, actual)
 }
 

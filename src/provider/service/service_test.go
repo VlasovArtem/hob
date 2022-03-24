@@ -6,240 +6,218 @@ import (
 	"github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/provider/mocks"
 	"github.com/VlasovArtem/hob/src/provider/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"testing"
 )
 
-var providerRepository *mocks.ProviderRepository
-
-func generateService() ProviderService {
-	providerRepository = new(mocks.ProviderRepository)
-
-	return NewProviderService(providerRepository)
+type ProviderServiceTestSuite struct {
+	testhelper.MockTestSuite[ProviderService]
+	providerRepository *mocks.ProviderRepository
 }
 
-func Test_Add(t *testing.T) {
-	service := generateService()
+func TestProviderServiceTestSuite(t *testing.T) {
+	ts := &ProviderServiceTestSuite{}
+	ts.TestObjectGenerator = func() ProviderService {
+		ts.providerRepository = new(mocks.ProviderRepository)
 
+		return NewProviderService(ts.providerRepository)
+	}
+
+	suite.Run(t, ts)
+}
+
+func (p *ProviderServiceTestSuite) Test_Add() {
 	request := mocks.GenerateCreateProviderRequest()
 
 	var expected model.Provider
 
-	providerRepository.On("ExistsByNameAndUserId", request.Name, request.UserId).Return(false)
-	providerRepository.On("Create", mock.Anything).Return(
+	p.providerRepository.On("ExistsByNameAndUserId", request.Name, request.UserId).Return(false)
+	p.providerRepository.On("Create", mock.Anything).Return(
 		func(entity model.Provider) model.Provider {
 			expected = entity
 			return entity
 		}, nil)
 
-	response, err := service.Add(request)
+	response, err := p.TestO.Add(request)
 
-	assert.Nil(t, err)
-	assert.Equal(t, expected.ToDto(), response)
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), expected.ToDto(), response)
 }
 
-func Test_Add_WithExistingName(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_Add_WithExistingName() {
 	request := mocks.GenerateCreateProviderRequest()
 
-	providerRepository.On("ExistsByNameAndUserId", request.Name, request.UserId).Return(true)
+	p.providerRepository.On("ExistsByNameAndUserId", request.Name, request.UserId).Return(true)
 
-	response, err := service.Add(request)
+	response, err := p.TestO.Add(request)
 
-	assert.Equal(t, errors.New(fmt.Sprintf("provider with name '%s' for user already exists", request.Name)), err)
-	assert.Equal(t, model.ProviderDto{}, response)
-	providerRepository.AssertNotCalled(t, "Create")
+	assert.Equal(p.T(), errors.New(fmt.Sprintf("provider with name '%s' for user already exists", request.Name)), err)
+	assert.Equal(p.T(), model.ProviderDto{}, response)
+	p.providerRepository.AssertNotCalled(p.T(), "Create")
 }
 
-func Test_Add_WithError(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_Add_WithError() {
 	request := mocks.GenerateCreateProviderRequest()
 
 	expectedError := errors.New("error")
 
-	providerRepository.On("ExistsByNameAndUserId", request.Name, request.UserId).Return(false)
-	providerRepository.On("Create", mock.Anything).Return(model.Provider{}, expectedError)
+	p.providerRepository.On("ExistsByNameAndUserId", request.Name, request.UserId).Return(false)
+	p.providerRepository.On("Create", mock.Anything).Return(model.Provider{}, expectedError)
 
-	response, err := service.Add(request)
+	response, err := p.TestO.Add(request)
 
-	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.ProviderDto{}, response)
+	assert.Equal(p.T(), expectedError, err)
+	assert.Equal(p.T(), model.ProviderDto{}, response)
 }
 
-func Test_FindById(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_FindById() {
 	entity := mocks.GenerateProvider(uuid.New())
 
-	providerRepository.On("FindById", entity.Id).Return(entity, nil)
+	p.providerRepository.On("FindById", entity.Id).Return(entity, nil)
 
-	dto, err := service.FindById(entity.Id)
+	dto, err := p.TestO.FindById(entity.Id)
 
-	assert.Nil(t, err)
-	assert.Equal(t, entity.ToDto(), dto)
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), entity.ToDto(), dto)
 }
 
-func Test_FindById_WithNotExistsRecord(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_FindById_WithNotExistsRecord() {
 	id := uuid.New()
 
-	providerRepository.On("FindById", id).Return(model.Provider{}, gorm.ErrRecordNotFound)
+	p.providerRepository.On("FindById", id).Return(model.Provider{}, gorm.ErrRecordNotFound)
 
-	response, err := service.FindById(id)
+	response, err := p.TestO.FindById(id)
 
-	assert.Equal(t, int_errors.NewErrNotFound("provider with id %s not found", id), err)
-	assert.Equal(t, model.ProviderDto{}, response)
+	assert.Equal(p.T(), int_errors.NewErrNotFound("provider with id %s not found", id), err)
+	assert.Equal(p.T(), model.ProviderDto{}, response)
 }
 
-func Test_FindById_WithError(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_FindById_WithError() {
 	id := uuid.New()
 	expectedError := errors.New("error")
 
-	providerRepository.On("FindById", id).Return(model.Provider{}, expectedError)
+	p.providerRepository.On("FindById", id).Return(model.Provider{}, expectedError)
 
-	response, err := service.FindById(id)
+	response, err := p.TestO.FindById(id)
 
-	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.ProviderDto{}, response)
+	assert.Equal(p.T(), expectedError, err)
+	assert.Equal(p.T(), model.ProviderDto{}, response)
 }
 
-func Test_FindByNameLikeAndUserIds(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_FindByNameLikeAndUserIds() {
 	expected := mocks.GenerateProvider(uuid.New())
 
-	providerRepository.On("FindByNameLikeAndUserId", expected.Name, 0, 25, expected.UserId).Return([]model.ProviderDto{expected.ToDto()})
+	p.providerRepository.On("FindByNameLikeAndUserId", expected.Name, 0, 25, expected.UserId).Return([]model.ProviderDto{expected.ToDto()})
 
-	actual := service.FindByNameLikeAndUserId(expected.Name, expected.UserId, 0, 25)
+	actual := p.TestO.FindByNameLikeAndUserId(expected.Name, expected.UserId, 0, 25)
 
-	assert.Equal(t, []model.ProviderDto{expected.ToDto()}, actual)
+	assert.Equal(p.T(), []model.ProviderDto{expected.ToDto()}, actual)
 }
 
-func Test_FindByNameLikeAndUserIds_WithoutMatches(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_FindByNameLikeAndUserIds_WithoutMatches() {
 	userId := uuid.New()
 
-	providerRepository.On("FindByNameLikeAndUserId", "name", 0, 25, userId).Return([]model.ProviderDto{})
+	p.providerRepository.On("FindByNameLikeAndUserId", "name", 0, 25, userId).Return([]model.ProviderDto{})
 
-	actual := service.FindByNameLikeAndUserId("name", userId, 0, 25)
+	actual := p.TestO.FindByNameLikeAndUserId("name", userId, 0, 25)
 
-	assert.Equal(t, []model.ProviderDto{}, actual)
+	assert.Equal(p.T(), []model.ProviderDto{}, actual)
 }
 
-func Test_FindByUserId(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_FindByUserId() {
 	entity := mocks.GenerateProvider(uuid.New())
 
-	providerRepository.On("FindByUserId", entity.UserId).Return([]model.ProviderDto{entity.ToDto()}, nil)
+	p.providerRepository.On("FindByUserId", entity.UserId).Return([]model.ProviderDto{entity.ToDto()}, nil)
 
-	dto := service.FindByUserId(entity.UserId)
+	dto := p.TestO.FindByUserId(entity.UserId)
 
-	assert.Equal(t, []model.ProviderDto{entity.ToDto()}, dto)
+	assert.Equal(p.T(), []model.ProviderDto{entity.ToDto()}, dto)
 }
 
-func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
-	service := generateService()
-
+func (p *ProviderServiceTestSuite) Test_FindByUserId_WithEmptyResponse() {
 	userId := uuid.New()
-	providerRepository.On("FindByUserId", userId).Return([]model.ProviderDto{}, nil)
+	p.providerRepository.On("FindByUserId", userId).Return([]model.ProviderDto{}, nil)
 
-	dto := service.FindByUserId(userId)
+	dto := p.TestO.FindByUserId(userId)
 
-	assert.Equal(t, []model.ProviderDto{}, dto)
+	assert.Equal(p.T(), []model.ProviderDto{}, dto)
 }
 
-func Test_Update(t *testing.T) {
-	houseService := generateService()
-
+func (p *ProviderServiceTestSuite) Test_Update() {
 	request := mocks.GenerateUpdateProviderRequest()
 	id := uuid.New()
 
-	providerRepository.On("ExistsById", id).Return(true)
-	providerRepository.On("Update", mock.Anything).Return(nil)
+	p.providerRepository.On("ExistsById", id).Return(true)
+	p.providerRepository.On("Update", mock.Anything).Return(nil)
 
-	assert.Nil(t, houseService.Update(id, request))
+	assert.Nil(p.T(), p.TestO.Update(id, request))
 
-	providerRepository.AssertCalled(t, "Update", model.Provider{
+	p.providerRepository.AssertCalled(p.T(), "Update", model.Provider{
 		Id:      id,
 		Name:    request.Name,
 		Details: request.Details,
 	})
 }
 
-func Test_Update_WithErrorFromDatabase(t *testing.T) {
-	houseService := generateService()
-
+func (p *ProviderServiceTestSuite) Test_Update_WithErrorFromDatabase() {
 	request := mocks.GenerateUpdateProviderRequest()
 	id := uuid.New()
 
-	providerRepository.On("ExistsById", id).Return(true)
-	providerRepository.On("Update", mock.Anything).Return(errors.New("test"))
+	p.providerRepository.On("ExistsById", id).Return(true)
+	p.providerRepository.On("Update", mock.Anything).Return(errors.New("test"))
 
-	err := houseService.Update(id, request)
-	assert.Equal(t, errors.New("test"), err)
+	err := p.TestO.Update(id, request)
+	assert.Equal(p.T(), errors.New("test"), err)
 }
 
-func Test_Update_WithNotExists(t *testing.T) {
-	houseService := generateService()
-
+func (p *ProviderServiceTestSuite) Test_Update_WithNotExists() {
 	request := mocks.GenerateUpdateProviderRequest()
 	id := uuid.New()
 
-	providerRepository.On("ExistsById", id).Return(false)
+	p.providerRepository.On("ExistsById", id).Return(false)
 
-	err := houseService.Update(id, request)
-	assert.Equal(t, int_errors.NewErrNotFound("provider with id %s not found", id), err)
+	err := p.TestO.Update(id, request)
+	assert.Equal(p.T(), int_errors.NewErrNotFound("provider with id %s not found", id), err)
 
-	providerRepository.AssertNotCalled(t, "Update", mock.Anything)
+	p.providerRepository.AssertNotCalled(p.T(), "Update", mock.Anything)
 }
 
-func Test_Delete(t *testing.T) {
-	houseService := generateService()
-
+func (p *ProviderServiceTestSuite) Test_Delete() {
 	id := uuid.New()
 
-	providerRepository.On("ExistsById", id).Return(true)
-	providerRepository.On("Delete", id).Return(nil)
+	p.providerRepository.On("ExistsById", id).Return(true)
+	p.providerRepository.On("Delete", id).Return(nil)
 
-	err := houseService.Delete(id)
-	assert.Nil(t, err)
+	err := p.TestO.Delete(id)
+	assert.Nil(p.T(), err)
 
-	providerRepository.AssertCalled(t, "Delete", id)
+	p.providerRepository.AssertCalled(p.T(), "Delete", id)
 }
 
-func Test_Delete_WithError(t *testing.T) {
-	houseService := generateService()
-
+func (p *ProviderServiceTestSuite) Test_Delete_WithError() {
 	id := uuid.New()
 
-	providerRepository.On("ExistsById", id).Return(true)
-	providerRepository.On("Delete", id).Return(errors.New("error"))
+	p.providerRepository.On("ExistsById", id).Return(true)
+	p.providerRepository.On("Delete", id).Return(errors.New("error"))
 
-	err := houseService.Delete(id)
-	assert.Equal(t, errors.New("error"), err)
+	err := p.TestO.Delete(id)
+	assert.Equal(p.T(), errors.New("error"), err)
 
-	providerRepository.AssertCalled(t, "Delete", id)
+	p.providerRepository.AssertCalled(p.T(), "Delete", id)
 }
 
-func Test_Delete_WithNotExists(t *testing.T) {
-	houseService := generateService()
-
+func (p *ProviderServiceTestSuite) Test_Delete_WithNotExists() {
 	id := uuid.New()
 
-	providerRepository.On("ExistsById", id).Return(false)
+	p.providerRepository.On("ExistsById", id).Return(false)
 
-	err := houseService.Delete(id)
-	assert.Equal(t, int_errors.NewErrNotFound("provider with id %s not found", id), err)
+	err := p.TestO.Delete(id)
+	assert.Equal(p.T(), int_errors.NewErrNotFound("provider with id %s not found", id), err)
 
-	providerRepository.AssertNotCalled(t, "Delete", mock.Anything)
+	p.providerRepository.AssertNotCalled(p.T(), "Delete", mock.Anything)
 }

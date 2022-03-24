@@ -7,34 +7,39 @@ import (
 	meterMocks "github.com/VlasovArtem/hob/src/meter/mocks"
 	"github.com/VlasovArtem/hob/src/meter/model"
 	paymentMocks "github.com/VlasovArtem/hob/src/payment/mocks"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"testing"
 )
 
-var (
+type MeterServiceTestSuite struct {
+	testhelper.MockTestSuite[MeterService]
 	payments        *paymentMocks.PaymentService
 	meterRepository *meterMocks.MeterRepository
-)
-
-func serviceGenerator() MeterService {
-	payments = new(paymentMocks.PaymentService)
-	meterRepository = new(meterMocks.MeterRepository)
-
-	return NewMeterService(payments, meterRepository)
 }
 
-func Test_Add(t *testing.T) {
-	service := serviceGenerator()
+func TestMeterServiceTestSuite(t *testing.T) {
+	ts := &MeterServiceTestSuite{}
+	ts.TestObjectGenerator = func() MeterService {
+		ts.payments = new(paymentMocks.PaymentService)
+		ts.meterRepository = new(meterMocks.MeterRepository)
+		return NewMeterService(ts.payments, ts.meterRepository)
+	}
 
+	suite.Run(t, ts)
+}
+
+func (m *MeterServiceTestSuite) Test_Add() {
 	var savedMeter model.Meter
 
 	request := meterMocks.GenerateCreateMeterRequest()
 
-	payments.On("ExistsById", request.PaymentId).Return(true)
-	meterRepository.On("Create", mock.Anything).Return(
+	m.payments.On("ExistsById", request.PaymentId).Return(true)
+	m.meterRepository.On("Create", mock.Anything).Return(
 		func(meter model.Meter) model.Meter {
 			savedMeter = meter
 
@@ -43,199 +48,172 @@ func Test_Add(t *testing.T) {
 		nil,
 	)
 
-	meter, err := service.Add(request)
+	meter, err := m.TestO.Add(request)
 
-	assert.Nil(t, err)
-	assert.Equal(t, savedMeter.ToDto(), meter)
+	assert.Nil(m.T(), err)
+	assert.Equal(m.T(), savedMeter.ToDto(), meter)
 }
 
-func Test_Add_WithNotExistingPayment(t *testing.T) {
-	service := serviceGenerator()
+func (m *MeterServiceTestSuite) Test_Add_WithNotExistingPayment() {
 	request := meterMocks.GenerateCreateMeterRequest()
 
-	payments.On("ExistsById", request.PaymentId).Return(false)
+	m.payments.On("ExistsById", request.PaymentId).Return(false)
 
-	meter, err := service.Add(request)
+	meter, err := m.TestO.Add(request)
 
-	assert.Equal(t, fmt.Sprintf("payment with id %s not found", request.PaymentId.String()), err.Error())
-	assert.Equal(t, model.MeterDto{}, meter)
+	assert.Equal(m.T(), fmt.Sprintf("payment with id %s not found", request.PaymentId.String()), err.Error())
+	assert.Equal(m.T(), model.MeterDto{}, meter)
 }
 
-func Test_Add_WithErrorFromRepository(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_Add_WithErrorFromRepository() {
 	expectedError := errors.New("error")
 	request := meterMocks.GenerateCreateMeterRequest()
 
-	payments.On("ExistsById", request.PaymentId).Return(true)
-	meterRepository.On("Create", mock.Anything).Return(model.Meter{}, expectedError)
+	m.payments.On("ExistsById", request.PaymentId).Return(true)
+	m.meterRepository.On("Create", mock.Anything).Return(model.Meter{}, expectedError)
 
-	meter, err := service.Add(request)
+	meter, err := m.TestO.Add(request)
 
-	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.MeterDto{}, meter)
+	assert.Equal(m.T(), expectedError, err)
+	assert.Equal(m.T(), model.MeterDto{}, meter)
 }
 
-func Test_Update(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_Update() {
 	id, request := meterMocks.GenerateUpdateMeterRequest()
 
-	meterRepository.On("ExistsById", id).Return(true)
-	meterRepository.On("Update", id, request.ToEntity()).Return(nil)
+	m.meterRepository.On("ExistsById", id).Return(true)
+	m.meterRepository.On("Update", id, request.ToEntity()).Return(nil)
 
-	err := service.Update(id, request)
+	err := m.TestO.Update(id, request)
 
-	assert.Nil(t, err)
+	assert.Nil(m.T(), err)
 }
 
-func Test_Update_WithMissingId(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_Update_WithMissingId() {
 	id, request := meterMocks.GenerateUpdateMeterRequest()
 
-	meterRepository.On("ExistsById", id).Return(false)
+	m.meterRepository.On("ExistsById", id).Return(false)
 
-	err := service.Update(id, request)
+	err := m.TestO.Update(id, request)
 
-	assert.Equal(t, int_errors.NewErrNotFound("meter with id %s not found", id), err)
+	assert.Equal(m.T(), int_errors.NewErrNotFound("meter with id %s not found", id), err)
 
-	meterRepository.AssertNotCalled(t, "Update", id, request)
+	m.meterRepository.AssertNotCalled(m.T(), "Update", id, request)
 }
 
-func Test_Update_WithErrorFromRepository(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_Update_WithErrorFromRepository() {
 	id, request := meterMocks.GenerateUpdateMeterRequest()
 
-	meterRepository.On("ExistsById", id).Return(true)
-	meterRepository.On("Update", id, request.ToEntity()).Return(errors.New("test"))
+	m.meterRepository.On("ExistsById", id).Return(true)
+	m.meterRepository.On("Update", id, request.ToEntity()).Return(errors.New("test"))
 
-	err := service.Update(id, request)
+	err := m.TestO.Update(id, request)
 
-	assert.Equal(t, errors.New("test"), err)
+	assert.Equal(m.T(), errors.New("test"), err)
 }
 
-func Test_DeleteById(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_DeleteById() {
 	id := uuid.New()
 
-	meterRepository.On("ExistsById", id).Return(true)
-	meterRepository.On("DeleteById", id).Return(nil)
+	m.meterRepository.On("ExistsById", id).Return(true)
+	m.meterRepository.On("DeleteById", id).Return(nil)
 
-	err := service.DeleteById(id)
+	err := m.TestO.DeleteById(id)
 
-	assert.Nil(t, err)
+	assert.Nil(m.T(), err)
 }
 
-func Test_DeleteById_WithMissingId(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_DeleteById_WithMissingId() {
 	id := uuid.New()
 
-	meterRepository.On("ExistsById", id).Return(false)
+	m.meterRepository.On("ExistsById", id).Return(false)
 
-	err := service.DeleteById(id)
+	err := m.TestO.DeleteById(id)
 
-	assert.Equal(t, int_errors.NewErrNotFound("meter with id %s not found", id), err)
+	assert.Equal(m.T(), int_errors.NewErrNotFound("meter with id %s not found", id), err)
 
-	meterRepository.AssertNotCalled(t, "DeleteById", id)
+	m.meterRepository.AssertNotCalled(m.T(), "DeleteById", id)
 }
 
-func Test_DeleteById_WithErrorFromRepository(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_DeleteById_WithErrorFromRepository() {
 	id := uuid.New()
 
-	meterRepository.On("ExistsById", id).Return(true)
-	meterRepository.On("DeleteById", id).Return(errors.New("test"))
+	m.meterRepository.On("ExistsById", id).Return(true)
+	m.meterRepository.On("DeleteById", id).Return(errors.New("test"))
 
-	err := service.DeleteById(id)
+	err := m.TestO.DeleteById(id)
 
-	assert.Equal(t, errors.New("test"), err)
+	assert.Equal(m.T(), errors.New("test"), err)
 }
 
-func Test_FindById(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_FindById() {
 	id := uuid.New()
 
 	expected := meterMocks.GenerateMeter(uuid.New())
 
-	meterRepository.On("FindById", id).Return(expected, nil)
+	m.meterRepository.On("FindById", id).Return(expected, nil)
 
-	actual, err := service.FindById(id)
+	actual, err := m.TestO.FindById(id)
 
-	assert.Nil(t, err)
-	assert.Equal(t, expected.ToDto(), actual)
+	assert.Nil(m.T(), err)
+	assert.Equal(m.T(), expected.ToDto(), actual)
 }
 
-func Test_FindById_WithMissingId(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_FindById_WithMissingId() {
 	id := uuid.New()
 
-	meterRepository.On("FindById", id).Return(model.Meter{}, gorm.ErrRecordNotFound)
+	m.meterRepository.On("FindById", id).Return(model.Meter{}, gorm.ErrRecordNotFound)
 
-	actual, err := service.FindById(id)
+	actual, err := m.TestO.FindById(id)
 
-	assert.Equal(t, int_errors.NewErrNotFound("meter with id %s in not exists", id), err)
-	assert.Equal(t, model.MeterDto{}, actual)
+	assert.Equal(m.T(), int_errors.NewErrNotFound("meter with id %s in not exists", id), err)
+	assert.Equal(m.T(), model.MeterDto{}, actual)
 }
 
-func Test_FindById_WithError(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_FindById_WithError() {
 	id := uuid.New()
 	expectedError := errors.New("error")
 
-	meterRepository.On("FindById", id).Return(model.Meter{}, expectedError)
+	m.meterRepository.On("FindById", id).Return(model.Meter{}, expectedError)
 
-	actual, err := service.FindById(id)
+	actual, err := m.TestO.FindById(id)
 
-	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.MeterDto{}, actual)
+	assert.Equal(m.T(), expectedError, err)
+	assert.Equal(m.T(), model.MeterDto{}, actual)
 }
 
-func Test_FindByPaymentId(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_FindByPaymentId() {
 	id := uuid.New()
 
 	expected := meterMocks.GenerateMeter(uuid.New())
 
-	meterRepository.On("FindByPaymentId", id).Return(expected, nil)
+	m.meterRepository.On("FindByPaymentId", id).Return(expected, nil)
 
-	actual, err := service.FindByPaymentId(id)
+	actual, err := m.TestO.FindByPaymentId(id)
 
-	assert.Nil(t, err)
-	assert.Equal(t, expected.ToDto(), actual)
+	assert.Nil(m.T(), err)
+	assert.Equal(m.T(), expected.ToDto(), actual)
 }
 
-func Test_FindByPaymentId_WithMissingId(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_FindByPaymentId_WithMissingId() {
 	id := uuid.New()
 
-	meterRepository.On("FindByPaymentId", id).Return(model.Meter{}, gorm.ErrRecordNotFound)
+	m.meterRepository.On("FindByPaymentId", id).Return(model.Meter{}, gorm.ErrRecordNotFound)
 
-	actual, err := service.FindByPaymentId(id)
+	actual, err := m.TestO.FindByPaymentId(id)
 
-	assert.Equal(t, int_errors.NewErrNotFound("meter with payment id %s in not exists", id), err)
-	assert.Equal(t, model.MeterDto{}, actual)
+	assert.Equal(m.T(), int_errors.NewErrNotFound("meter with payment id %s in not exists", id), err)
+	assert.Equal(m.T(), model.MeterDto{}, actual)
 }
 
-func Test_FindByPaymentId_WithError(t *testing.T) {
-	service := serviceGenerator()
-
+func (m *MeterServiceTestSuite) Test_FindByPaymentId_WithError() {
 	id := uuid.New()
 	expectedError := errors.New("error")
 
-	meterRepository.On("FindByPaymentId", id).Return(model.Meter{}, expectedError)
+	m.meterRepository.On("FindByPaymentId", id).Return(model.Meter{}, expectedError)
 
-	actual, err := service.FindByPaymentId(id)
+	actual, err := m.TestO.FindByPaymentId(id)
 
-	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.MeterDto{}, actual)
+	assert.Equal(m.T(), expectedError, err)
+	assert.Equal(m.T(), model.MeterDto{}, actual)
 }

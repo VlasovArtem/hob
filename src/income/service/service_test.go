@@ -2,252 +2,260 @@ package service
 
 import (
 	"errors"
+	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
+	groupMocks "github.com/VlasovArtem/hob/src/group/mocks"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/income/mocks"
 	"github.com/VlasovArtem/hob/src/income/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"testing"
 	"time"
 )
 
-var (
+type IncomeServiceTestSuite struct {
+	testhelper.MockTestSuite[IncomeService]
 	houses           *houseMocks.HouseService
+	groups           *groupMocks.GroupService
 	incomeRepository *mocks.IncomeRepository
-)
-
-func serviceGenerator() IncomeService {
-	houses = new(houseMocks.HouseService)
-	incomeRepository = new(mocks.IncomeRepository)
-
-	return NewIncomeService(houses, incomeRepository)
 }
 
-func Test_AddIncome(t *testing.T) {
-	service := serviceGenerator()
+func TestIncomeServiceTestSuite(t *testing.T) {
+	ts := &IncomeServiceTestSuite{}
+	ts.TestObjectGenerator = func() IncomeService {
+		ts.houses = new(houseMocks.HouseService)
+		ts.incomeRepository = new(mocks.IncomeRepository)
+		ts.groups = new(groupMocks.GroupService)
+		return NewIncomeService(ts.houses, ts.groups, ts.incomeRepository)
+	}
 
+	suite.Run(t, ts)
+}
+
+func (i *IncomeServiceTestSuite) Test_AddIncome() {
 	var savedIncome model.Income
 	request := mocks.GenerateCreateIncomeRequest()
+	request.GroupIds = []uuid.UUID{uuid.New()}
 
-	houses.On("ExistsById", request.HouseId).Return(true)
-	incomeRepository.On("Create", mock.Anything).Return(func(income model.Income) model.Income {
+	i.houses.On("ExistsById", request.HouseId).Return(true)
+	i.incomeRepository.On("Create", mock.Anything).Return(func(income model.Income) model.Income {
 		savedIncome = income
 
 		return income
 	}, nil)
+	i.groups.On("ExistsByIds", mock.Anything).Return(true)
 
-	income, err := service.Add(request)
+	income, err := i.TestO.Add(request)
 
-	assert.Nil(t, err)
-	assert.Equal(t, savedIncome.ToDto(), income)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), savedIncome.ToDto(), income)
 }
 
-func Test_Add_WithHouseNotExists(t *testing.T) {
-	service := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_Add_WithHouseNotExists() {
 	request := mocks.GenerateCreateIncomeRequest()
 
-	houses.On("ExistsById", request.HouseId).Return(false)
+	i.houses.On("ExistsById", request.HouseId).Return(false)
 
-	payment, err := service.Add(request)
+	payment, err := i.TestO.Add(request)
 
-	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not exists", request.HouseId), err)
-	assert.Equal(t, model.IncomeDto{}, payment)
+	assert.Equal(i.T(), int_errors.NewErrNotFound("house with id %s not exists", request.HouseId), err)
+	assert.Equal(i.T(), model.IncomeDto{}, payment)
 
-	incomeRepository.AssertNotCalled(t, "Create", mock.Anything)
+	i.incomeRepository.AssertNotCalled(i.T(), "Create", mock.Anything)
 }
 
-func Test_AddIncome_WithErrorFromRepository(t *testing.T) {
-	service := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_AddIncome_WithErrorFromRepository() {
 	expectedError := errors.New("error")
 	request := mocks.GenerateCreateIncomeRequest()
 
-	houses.On("ExistsById", request.HouseId).Return(true)
-	incomeRepository.On("Create", mock.Anything).Return(model.Income{}, expectedError)
+	i.houses.On("ExistsById", request.HouseId).Return(true)
+	i.incomeRepository.On("Create", mock.Anything).Return(model.Income{}, expectedError)
 
-	income, err := service.Add(request)
+	income, err := i.TestO.Add(request)
 
-	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.IncomeDto{}, income)
+	assert.Equal(i.T(), expectedError, err)
+	assert.Equal(i.T(), model.IncomeDto{}, income)
 }
 
-func Test_AddIncome_WithDateAfterCurrentDate(t *testing.T) {
-	service := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_AddIncome_WithDateAfterCurrentDate() {
 	request := mocks.GenerateCreateIncomeRequest()
 	request.Date = time.Now().Add(time.Hour)
 
-	houses.On("ExistsById", request.HouseId).Return(true)
+	i.houses.On("ExistsById", request.HouseId).Return(true)
 
-	payment, err := service.Add(request)
+	payment, err := i.TestO.Add(request)
 
-	assert.Equal(t, errors.New("date should not be after current date"), err)
-	assert.Equal(t, model.IncomeDto{}, payment)
+	assert.Equal(i.T(), errors.New("date should not be after current date"), err)
+	assert.Equal(i.T(), model.IncomeDto{}, payment)
 
-	incomeRepository.AssertNotCalled(t, "Create", mock.Anything)
+	i.incomeRepository.AssertNotCalled(i.T(), "Create", mock.Anything)
 }
 
-func Test_FindById(t *testing.T) {
-	service := serviceGenerator()
+func (i *IncomeServiceTestSuite) Test_AddIncome_WithGroupsNotFound() {
+	request := mocks.GenerateCreateIncomeRequest()
+	request.GroupIds = []uuid.UUID{uuid.New()}
 
+	i.houses.On("ExistsById", request.HouseId).Return(true)
+	i.groups.On("ExistsByIds", mock.Anything).Return(false)
+
+	income, err := i.TestO.Add(request)
+
+	assert.Equal(i.T(), int_errors.NewErrNotFound("not all group with ids %s found", common.Join(request.GroupIds, ",")), err)
+	assert.Equal(i.T(), model.IncomeDto{}, income)
+
+	i.incomeRepository.AssertNotCalled(i.T(), "Create", mock.Anything)
+}
+
+func (i *IncomeServiceTestSuite) Test_FindById() {
 	income := mocks.GenerateIncome(uuid.New())
 
-	incomeRepository.On("FindById", income.Id).Return(income, nil)
+	i.incomeRepository.On("FindById", income.Id).Return(income, nil)
 
-	actual, err := service.FindById(income.Id)
+	actual, err := i.TestO.FindById(income.Id)
 
-	assert.Nil(t, err)
-	assert.Equal(t, income.ToDto(), actual)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), income.ToDto(), actual)
 }
 
-func Test_FindById_WithNotExistingId(t *testing.T) {
-	service := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_FindById_WithNotExistingId() {
 	id := uuid.New()
 
-	incomeRepository.On("FindById", id).Return(model.Income{}, gorm.ErrRecordNotFound)
+	i.incomeRepository.On("FindById", id).Return(model.Income{}, gorm.ErrRecordNotFound)
 
-	actual, err := service.FindById(id)
+	actual, err := i.TestO.FindById(id)
 
-	assert.Equal(t, int_errors.NewErrNotFound("income with id %s not found", id), err)
-	assert.Equal(t, model.IncomeDto{}, actual)
+	assert.Equal(i.T(), int_errors.NewErrNotFound("income with id %s not found", id), err)
+	assert.Equal(i.T(), model.IncomeDto{}, actual)
 }
 
-func Test_FindById_WithError(t *testing.T) {
-	service := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_FindById_WithError() {
 	id := uuid.New()
 	expectedError := errors.New("test")
 
-	incomeRepository.On("FindById", id).Return(model.Income{}, expectedError)
+	i.incomeRepository.On("FindById", id).Return(model.Income{}, expectedError)
 
-	actual, err := service.FindById(id)
+	actual, err := i.TestO.FindById(id)
 
-	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.IncomeDto{}, actual)
+	assert.Equal(i.T(), expectedError, err)
+	assert.Equal(i.T(), model.IncomeDto{}, actual)
 }
 
-func Test_FindByHouseId(t *testing.T) {
-	service := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_FindByHouseId() {
 	income := []model.IncomeDto{mocks.GenerateIncomeDto()}
 
-	incomeRepository.On("FindByHouseId", income[0].HouseId).Return(income, nil)
+	i.incomeRepository.On("FindByHouseId", income[0].HouseId).Return(income, nil)
 
-	actual := service.FindByHouseId(income[0].HouseId)
+	actual := i.TestO.FindByHouseId(income[0].HouseId)
 
-	assert.Equal(t, income, actual)
+	assert.Equal(i.T(), income, actual)
 }
 
-func Test_FindByHouseId_WithNotExistingRecords(t *testing.T) {
-	service := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_FindByHouseId_WithNotExistingRecords() {
 	var income []model.IncomeDto
 
 	houseId := uuid.New()
 
-	incomeRepository.On("FindByHouseId", houseId).Return(income, nil)
+	i.incomeRepository.On("FindByHouseId", houseId).Return(income, nil)
 
-	actual := service.FindByHouseId(houseId)
+	actual := i.TestO.FindByHouseId(houseId)
 
-	assert.Equal(t, income, actual)
+	assert.Equal(i.T(), income, actual)
 }
 
-func Test_ExistsById(t *testing.T) {
-	paymentService := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_ExistsById() {
 	id := uuid.New()
 
-	incomeRepository.On("ExistsById", id).Return(true)
+	i.incomeRepository.On("ExistsById", id).Return(true)
 
-	assert.True(t, paymentService.ExistsById(id))
+	assert.True(i.T(), i.TestO.ExistsById(id))
 }
 
-func Test_ExistsById_WithNotExists(t *testing.T) {
-	paymentService := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_ExistsById_WithNotExists() {
 	id := uuid.New()
 
-	incomeRepository.On("ExistsById", id).Return(false)
+	i.incomeRepository.On("ExistsById", id).Return(false)
 
-	assert.False(t, paymentService.ExistsById(id))
+	assert.False(i.T(), i.TestO.ExistsById(id))
 }
 
-func Test_DeleteById(t *testing.T) {
-	paymentService := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_DeleteById() {
 	id := uuid.New()
 
-	incomeRepository.On("ExistsById", id).Return(true)
-	incomeRepository.On("DeleteById", id).Return(nil)
+	i.incomeRepository.On("ExistsById", id).Return(true)
+	i.incomeRepository.On("DeleteById", id).Return(nil)
 
-	assert.Nil(t, paymentService.DeleteById(id))
+	assert.Nil(i.T(), i.TestO.DeleteById(id))
 }
 
-func Test_DeleteById_WithNotExists(t *testing.T) {
-	paymentService := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_DeleteById_WithNotExists() {
 	id := uuid.New()
 
-	incomeRepository.On("ExistsById", id).Return(false)
+	i.incomeRepository.On("ExistsById", id).Return(false)
 
-	assert.Equal(t, int_errors.NewErrNotFound("income with id %s not found", id), paymentService.DeleteById(id))
+	assert.Equal(i.T(), int_errors.NewErrNotFound("income with id %s not found", id), i.TestO.DeleteById(id))
 
-	incomeRepository.AssertNotCalled(t, "DeleteById", id)
+	i.incomeRepository.AssertNotCalled(i.T(), "DeleteById", id)
 }
 
-func Test_Update(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_Update() {
 	id, request := mocks.GenerateUpdateIncomeRequest()
 
-	incomeRepository.On("ExistsById", id).Return(true)
-	incomeRepository.On("Update", id, request).Return(nil)
+	i.incomeRepository.On("ExistsById", id).Return(true)
+	i.incomeRepository.On("Update", id, request).Return(nil)
 
-	assert.Nil(t, houseService.Update(id, request))
+	assert.Nil(i.T(), i.TestO.Update(id, request))
 
-	incomeRepository.AssertCalled(t, "Update", id, request)
+	i.incomeRepository.AssertCalled(i.T(), "Update", id, request)
 }
 
-func Test_Update_WithErrorFromDatabase(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_Update_WithErrorFromDatabase() {
 	id, request := mocks.GenerateUpdateIncomeRequest()
 
-	incomeRepository.On("ExistsById", id).Return(true)
-	incomeRepository.On("Update", id, request).Return(errors.New("test"))
+	i.incomeRepository.On("ExistsById", id).Return(true)
+	i.incomeRepository.On("Update", id, request).Return(errors.New("test"))
 
-	err := houseService.Update(id, request)
-	assert.Equal(t, errors.New("test"), err)
+	err := i.TestO.Update(id, request)
+	assert.Equal(i.T(), errors.New("test"), err)
 }
 
-func Test_Update_WithNotExists(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_Update_WithNotExists() {
 	id, request := mocks.GenerateUpdateIncomeRequest()
 
-	incomeRepository.On("ExistsById", id).Return(false)
+	i.incomeRepository.On("ExistsById", id).Return(false)
 
-	err := houseService.Update(id, request)
-	assert.Equal(t, int_errors.NewErrNotFound("income with id %s not found", id), err)
+	err := i.TestO.Update(id, request)
+	assert.Equal(i.T(), int_errors.NewErrNotFound("income with id %s not found", id), err)
 
-	incomeRepository.AssertNotCalled(t, "Update", id, request)
+	i.incomeRepository.AssertNotCalled(i.T(), "Update", id, request)
 }
 
-func Test_Update_WithDateAfterCurrentDate(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (i *IncomeServiceTestSuite) Test_Update_WithDateAfterCurrentDate() {
 	id, request := mocks.GenerateUpdateIncomeRequest()
 	request.Date = time.Now().Add(time.Hour)
 
-	incomeRepository.On("ExistsById", id).Return(true)
+	i.incomeRepository.On("ExistsById", id).Return(true)
 
-	err := houseService.Update(id, request)
-	assert.Equal(t, errors.New("date should not be after current date"), err)
+	err := i.TestO.Update(id, request)
+	assert.Equal(i.T(), errors.New("date should not be after current date"), err)
 
-	incomeRepository.AssertNotCalled(t, "Update", id, request)
+	i.incomeRepository.AssertNotCalled(i.T(), "Update", id, request)
+}
+
+func (i *IncomeServiceTestSuite) Test_Update_WithGroupsIdsNotFound() {
+	id, request := mocks.GenerateUpdateIncomeRequest()
+	request.GroupIds = []uuid.UUID{uuid.New()}
+
+	i.incomeRepository.On("ExistsById", id).Return(true)
+	i.groups.On("ExistsByIds", mock.Anything).Return(false)
+
+	err := i.TestO.Update(id, request)
+
+	assert.Equal(i.T(), int_errors.NewErrNotFound("not all group with ids %s found", common.Join(request.GroupIds, ",")), err)
+
+	i.incomeRepository.AssertNotCalled(i.T(), "Update", id, request)
 }

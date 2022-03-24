@@ -10,43 +10,48 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
 )
 
-var (
+type UserHandlerTestSuite struct {
+	testhelper.MockTestSuite[UserHandler]
 	userService   *mocks.UserService
 	userValidator *mocks.UserRequestValidator
-)
-
-func generateHandler() UserHandler {
-	userService = new(mocks.UserService)
-	userValidator = new(mocks.UserRequestValidator)
-
-	return NewUserHandler(userService, userValidator)
 }
 
-func Test_AddUser(t *testing.T) {
-	handler := generateHandler()
+func TestUserHandlerTestSuite(t *testing.T) {
+	ts := &UserHandlerTestSuite{}
+	ts.TestObjectGenerator = func() UserHandler {
+		ts.userService = new(mocks.UserService)
+		ts.userValidator = new(mocks.UserRequestValidator)
 
+		return NewUserHandler(ts.userService, ts.userValidator)
+	}
+
+	suite.Run(t, ts)
+}
+
+func (u *UserHandlerTestSuite) Test_AddUser() {
 	request := mocks.GenerateCreateUserRequest()
 
-	userValidator.On("ValidateCreateRequest", request).Return(nil)
-	userService.On("Add", request).Return(mocks.GenerateUserResponse(), nil)
+	u.userValidator.On("ValidateCreateRequest", request).Return(nil)
+	u.userService.On("Add", request).Return(mocks.GenerateUserResponse(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
-		WithHandler(handler.Add()).
+		WithHandler(u.TestO.Add()).
 		WithBody(request)
 
-	content := testRequest.Verify(t, http.StatusCreated)
+	content := testRequest.Verify(u.T(), http.StatusCreated)
 
 	actualResponse := model.UserDto{}
 
 	json.Unmarshal(content, &actualResponse)
 
-	assert.Equal(t, model.UserDto{
+	assert.Equal(u.T(), model.UserDto{
 		Id:        actualResponse.Id,
 		FirstName: "First Name",
 		LastName:  "Last Name",
@@ -54,224 +59,198 @@ func Test_AddUser(t *testing.T) {
 	}, actualResponse)
 }
 
-func Test_AddUserWithInvalidRequest(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_AddUserWithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
-		WithHandler(handler.Add())
+		WithHandler(u.TestO.Add())
 
-	testRequest.Verify(t, http.StatusBadRequest)
+	testRequest.Verify(u.T(), http.StatusBadRequest)
 }
 
-func Test_AddUserWithMissingDetails(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_AddUserWithMissingDetails() {
 	request := mocks.GenerateCreateUserRequest()
 
 	error := helperModel.NewWithDetails("error", "details")
-	userValidator.On("ValidateCreateRequest", request).Return(error)
+	u.userValidator.On("ValidateCreateRequest", request).Return(error)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
-		WithHandler(handler.Add()).
+		WithHandler(u.TestO.Add()).
 		WithBody(request)
 
-	response := testRequest.Verify(t, http.StatusBadRequest)
+	response := testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	assert.Equal(t, *error.(*helperModel.ErrorResponseObject), testhelper.ReadErrorResponse(response))
+	assert.Equal(u.T(), *error.(*helperModel.ErrorResponseObject), testhelper.ReadErrorResponse(response))
 }
 
-func Test_Add_WithErrorFromService(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_Add_WithErrorFromService() {
 	request := mocks.GenerateCreateUserRequest()
 
-	userValidator.On("ValidateCreateRequest", request).Return(nil)
+	u.userValidator.On("ValidateCreateRequest", request).Return(nil)
 
 	err := errors.New("error")
 
-	userService.On("Add", request).Return(model.UserDto{}, err)
+	u.userService.On("Add", request).Return(model.UserDto{}, err)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
 		WithMethod("POST").
-		WithHandler(handler.Add()).
+		WithHandler(u.TestO.Add()).
 		WithBody(request)
 
-	response := testRequest.Verify(t, http.StatusBadRequest)
+	response := testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	assert.Equal(t, []byte("error\n"), response)
+	assert.Equal(u.T(), []byte("error\n"), response)
 }
 
-func Test_FindById(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_FindById() {
 	request := mocks.GenerateCreateUserRequest()
 	expected := request.ToEntity().ToDto()
 
-	userService.On("FindById", expected.Id).Return(expected, nil)
+	u.userService.On("FindById", expected.Id).Return(expected, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(u.TestO.FindById()).
 		WithVar("id", expected.Id.String())
 
-	content := testRequest.Verify(t, http.StatusOK)
+	content := testRequest.Verify(u.T(), http.StatusOK)
 
 	actual := model.UserDto{}
 
 	err := json.Unmarshal(content, &actual)
 
-	assert.Nil(t, err)
+	assert.Nil(u.T(), err)
 
-	assert.Equal(t, expected, actual)
+	assert.Equal(u.T(), expected, actual)
 }
 
-func Test_FindById_WithErrorFromService(t *testing.T) {
-	handler := generateHandler()
-
-	userService.On("FindById", mock.Anything).Return(model.UserDto{}, errors.New("test"))
+func (u *UserHandlerTestSuite) Test_FindById_WithErrorFromService() {
+	u.userService.On("FindById", mock.Anything).Return(model.UserDto{}, errors.New("test"))
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(u.TestO.FindById()).
 		WithVar("id", uuid.New().String())
 
-	content := testRequest.Verify(t, http.StatusBadRequest)
+	content := testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "test\n", string(content))
+	assert.Equal(u.T(), "test\n", string(content))
 }
 
-func Test_FindByIdWithMissingParameter(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_FindByIdWithMissingParameter() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById())
+		WithHandler(u.TestO.FindById())
 
-	content := testRequest.Verify(t, http.StatusBadRequest)
+	content := testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "parameter 'id' not found\n", string(content))
+	assert.Equal(u.T(), "parameter 'id' not found\n", string(content))
 }
 
-func Test_FindById_WithInvalidUUID(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_FindById_WithInvalidUUID() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(u.TestO.FindById()).
 		WithVar("id", "id")
 
-	content := testRequest.Verify(t, http.StatusBadRequest)
+	content := testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(content))
+	assert.Equal(u.T(), "the id is not valid id\n", string(content))
 }
 
-func Test_Update(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_Update() {
 	id, request := mocks.GenerateUpdateUserRequest()
 
-	userValidator.On("ValidateUpdateRequest", request).Return(nil)
-	userService.On("Update", id, request).Return(nil)
+	u.userValidator.On("ValidateUpdateRequest", request).Return(nil)
+	u.userService.On("Update", id, request).Return(nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(u.TestO.Update()).
 		WithBody(request).
 		WithVar("id", id.String())
 
-	testRequest.Verify(t, http.StatusOK)
+	testRequest.Verify(u.T(), http.StatusOK)
 }
 
-func Test_Update_WithInvalidRequest(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_Update_WithInvalidRequest() {
 	id := uuid.New()
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(u.TestO.Update()).
 		WithVar("id", id.String())
 
-	testRequest.Verify(t, http.StatusBadRequest)
+	testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	userService.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+	u.userService.AssertNotCalled(u.T(), "Update", mock.Anything, mock.Anything)
 }
 
-func Test_Update_WithInvalidUUID(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_Update_WithInvalidUUID() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(u.TestO.Update()).
 		WithVar("id", "id")
 
-	testRequest.Verify(t, http.StatusBadRequest)
+	testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	userService.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+	u.userService.AssertNotCalled(u.T(), "Update", mock.Anything, mock.Anything)
 }
 
-func Test_Update_WithMissingIdParameter(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_Update_WithMissingIdParameter() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update())
+		WithHandler(u.TestO.Update())
 
-	testRequest.Verify(t, http.StatusBadRequest)
+	testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	userService.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+	u.userService.AssertNotCalled(u.T(), "Update", mock.Anything, mock.Anything)
 }
 
-func Test_Update_WithMissingDetails(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_Update_WithMissingDetails() {
 	id, request := mocks.GenerateUpdateUserRequest()
 
 	errorResponse := helperModel.NewWithDetails("error", "details")
-	userValidator.On("ValidateUpdateRequest", request).Return(errorResponse)
+	u.userValidator.On("ValidateUpdateRequest", request).Return(errorResponse)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(u.TestO.Update()).
 		WithBody(request).
 		WithVar("id", id.String())
 
-	response := testRequest.Verify(t, http.StatusBadRequest)
+	response := testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	assert.Equal(t, *errorResponse.(*helperModel.ErrorResponseObject), testhelper.ReadErrorResponse(response))
-	userService.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+	assert.Equal(u.T(), *errorResponse.(*helperModel.ErrorResponseObject), testhelper.ReadErrorResponse(response))
+	u.userService.AssertNotCalled(u.T(), "Update", mock.Anything, mock.Anything)
 }
 
-func Test_Update_WithErrorFromService(t *testing.T) {
-	handler := generateHandler()
-
+func (u *UserHandlerTestSuite) Test_Update_WithErrorFromService() {
 	id, request := mocks.GenerateUpdateUserRequest()
 
-	userValidator.On("ValidateUpdateRequest", request).Return(nil)
-	userService.On("Update", id, request).Return(errors.New("error"))
+	u.userValidator.On("ValidateUpdateRequest", request).Return(nil)
+	u.userService.On("Update", id, request).Return(errors.New("error"))
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(u.TestO.Update()).
 		WithBody(request).
 		WithVar("id", id.String())
 
-	response := testRequest.Verify(t, http.StatusBadRequest)
+	response := testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	assert.Equal(t, []byte("error\n"), response)
+	assert.Equal(u.T(), []byte("error\n"), response)
 }

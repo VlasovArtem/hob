@@ -113,3 +113,10 @@ func findNameAndType(dependency any) (name string, dependencyType reflect.Type) 
 
 	return name, typeOf
 }
+
+func FindRequiredDependency[T any, V any](d DependenciesProvider) V {
+	var t T
+	typeOf := reflect.TypeOf(t)
+
+	return d.FindByType(typeOf, true).(V)
+}

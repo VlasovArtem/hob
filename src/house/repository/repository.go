@@ -47,7 +47,7 @@ type HouseRepository interface {
 }
 
 func (h *HouseRepositoryObject) Create(entity model.House) (model.House, error) {
-	return entity, h.db.Create(&entity)
+	return entity, h.db.D().Omit("Groups.*").Create(&entity).Error
 }
 
 func (h *HouseRepositoryObject) FindById(id uuid.UUID) (response model.House, err error) {
@@ -99,12 +99,7 @@ func (h *HouseRepositoryObject) Update(id uuid.UUID, request model.UpdateHouseRe
 		return err
 	}
 
-	var groups = common.Map(
-		request.GroupIds,
-		[]groupModel.Group{},
-		func(id uuid.UUID) groupModel.Group {
-			return groupModel.Group{Id: id}
-		})
+	var groups = common.Map(request.GroupIds, groupModel.GroupIdToGroup)
 
 	return h.db.DM(&entity).Association("Groups").Replace(groups)
 }

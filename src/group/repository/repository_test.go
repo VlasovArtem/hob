@@ -6,7 +6,6 @@ import (
 	"github.com/VlasovArtem/hob/src/group/mocks"
 	"github.com/VlasovArtem/hob/src/group/model"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
-	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -37,7 +36,7 @@ func (i *GroupRepositoryTestSuite) SetupSuite() {
 		AddAfterSuite(func(service db.DatabaseService) {
 			database.TruncateTable(service, userModel.User{})
 		}).
-		ExecuteMigration(userModel.User{}, houseModel.House{}, model.Group{})
+		ExecuteMigration(userModel.User{}, model.Group{})
 
 	i.createdUser = userMocks.GenerateUser()
 	i.CreateEntity(&i.createdUser)
@@ -88,6 +87,18 @@ func (i *GroupRepositoryTestSuite) Test_ExistsById() {
 
 func (i *GroupRepositoryTestSuite) Test_ExistsById_WithMissingId() {
 	assert.False(i.T(), i.repository.ExistsById(uuid.New()))
+}
+
+func (i *GroupRepositoryTestSuite) Test_ExistsByIds() {
+	entity := i.createGroup()
+
+	assert.True(i.T(), i.repository.ExistsByIds([]uuid.UUID{entity.Id}))
+}
+
+func (i *GroupRepositoryTestSuite) Test_ExistsByIds_WithMissingId() {
+	entity := i.createGroup()
+
+	assert.False(i.T(), i.repository.ExistsByIds([]uuid.UUID{entity.Id, uuid.New()}))
 }
 
 func (i *GroupRepositoryTestSuite) Test_DeleteById() {

@@ -40,6 +40,7 @@ type GroupService interface {
 	FindById(id uuid.UUID) (model.GroupDto, error)
 	FindByUserId(userId uuid.UUID) []model.GroupDto
 	ExistsById(id uuid.UUID) bool
+	ExistsByIds(ids []uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateGroupRequest) error
 }
@@ -72,6 +73,10 @@ func (h *GroupServiceObject) FindByUserId(userId uuid.UUID) []model.GroupDto {
 
 func (h *GroupServiceObject) ExistsById(id uuid.UUID) bool {
 	return h.repository.ExistsById(id)
+}
+
+func (h *GroupServiceObject) ExistsByIds(ids []uuid.UUID) bool {
+	return h.repository.ExistsByIds(ids)
 }
 
 func (h *GroupServiceObject) DeleteById(id uuid.UUID) error {

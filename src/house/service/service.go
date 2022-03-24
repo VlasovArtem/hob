@@ -6,6 +6,7 @@ import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
 	countries "github.com/VlasovArtem/hob/src/country/service"
+	groupService "github.com/VlasovArtem/hob/src/group/service"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/house/repository"
 	userService "github.com/VlasovArtem/hob/src/user/service"
@@ -20,12 +21,14 @@ type HouseServiceObject struct {
 	countriesService countries.CountryService
 	userService      userService.UserService
 	houseRepository  repository.HouseRepository
+	groupService     groupService.GroupService
 }
 
 func NewHouseService(
 	countriesService countries.CountryService,
 	userService userService.UserService,
 	repository repository.HouseRepository,
+	groupService groupService.GroupService,
 ) HouseService {
 	if countriesService == nil {
 		log.Fatal().Msg("CountryCode service is required")
@@ -35,14 +38,16 @@ func NewHouseService(
 		countriesService: countriesService,
 		userService:      userService,
 		houseRepository:  repository,
+		groupService:     groupService,
 	}
 }
 
 func (h *HouseServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHouseService(
-		factory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService),
-		factory.FindRequiredByType(userService.UserServiceType).(userService.UserService),
-		factory.FindRequiredByType(repository.HouseRepositoryType).(repository.HouseRepository),
+		dependency.FindRequiredDependency[countries.CountryServiceObject, countries.CountryService](factory),
+		dependency.FindRequiredDependency[userService.UserServiceObject, userService.UserService](factory),
+		dependency.FindRequiredDependency[repository.HouseRepositoryObject, repository.HouseRepository](factory),
+		dependency.FindRequiredDependency[groupService.GroupServiceObject, groupService.GroupService](factory),
 	)
 }
 
@@ -60,6 +65,8 @@ func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response mod
 		return response, err
 	} else if !h.userService.ExistsById(request.UserId) {
 		return response, int_errors.NewErrNotFound("user with id %s in not exists", request.UserId)
+	} else if len(request.GroupIds) != 0 && !h.groupService.ExistsByIds(request.GroupIds) {
+		return response, int_errors.NewErrNotFound("not all group with ids %s found", common.Join(request.GroupIds, ","))
 	} else {
 		entity := request.ToEntity(&country)
 
@@ -82,7 +89,7 @@ func (h *HouseServiceObject) FindById(id uuid.UUID) (response model.HouseDto, er
 func (h *HouseServiceObject) FindByUserId(userId uuid.UUID) []model.HouseDto {
 	houseEntities := h.houseRepository.FindByUserId(userId)
 
-	return common.Map(houseEntities, []model.HouseDto{}, func(entity model.House) model.HouseDto {
+	return common.Map(houseEntities, func(entity model.House) model.HouseDto {
 		return entity.ToDto()
 	})
 }
@@ -101,6 +108,9 @@ func (h *HouseServiceObject) DeleteById(id uuid.UUID) error {
 func (h *HouseServiceObject) Update(id uuid.UUID, request model.UpdateHouseRequest) error {
 	if !h.ExistsById(id) {
 		return int_errors.NewErrNotFound("house with id %s not found", id)
+	}
+	if len(request.GroupIds) != 0 && !h.groupService.ExistsByIds(request.GroupIds) {
+		return int_errors.NewErrNotFound("not all group with ids %s found", common.Join(request.GroupIds, ","))
 	}
 	if _, err := h.countriesService.FindCountryByCode(request.CountryCode); err != nil {
 		return err

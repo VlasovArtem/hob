@@ -21,6 +21,9 @@ type DBTestSuite struct {
 func (db *DBTestSuite) InitDBTestSuite() {
 	config := database.NewDefaultDatabaseConfiguration()
 	config.DBName = "hob_test"
+	//config.GormConfig = &gorm.Config{
+	//	Logger: logger.Default.LogMode(logger.Info),
+	//}
 	db.Database = database.NewDatabaseService(config)
 }
 

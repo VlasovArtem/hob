@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/income/mocks"
 	"github.com/VlasovArtem/hob/src/income/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
@@ -49,6 +50,7 @@ func Test_AddIncome(t *testing.T) {
 		Description: "Description",
 		Sum:         100.1,
 		HouseId:     actual.HouseId,
+		Groups:      []groupModel.GroupDto{},
 	}, actual)
 }
 

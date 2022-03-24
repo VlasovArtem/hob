@@ -42,3 +42,11 @@ func (c CreateGroupRequest) ToEntity() Group {
 		OwnerId: c.OwnerId,
 	}
 }
+
+func GroupToGroupDto(group Group) GroupDto {
+	return group.ToDto()
+}
+
+func GroupIdToGroup(groupId uuid.UUID) Group {
+	return Group{Id: groupId}
+}

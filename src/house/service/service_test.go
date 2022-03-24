@@ -2,7 +2,11 @@ package service
 
 import (
 	"errors"
+	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
+	countries "github.com/VlasovArtem/hob/src/country/service"
+	groupMocks "github.com/VlasovArtem/hob/src/group/mocks"
+	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
@@ -10,38 +14,46 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"testing"
 )
 
-var (
+type HouseServiceTestSuite struct {
+	testhelper.MockTestSuite[HouseService]
 	users            *userMocks.UserService
 	houseRepository  *mocks.HouseRepository
-	countriesService = testhelper.InitCountryService()
-)
-
-func serviceGenerator() HouseService {
-	users = new(userMocks.UserService)
-	houseRepository = new(mocks.HouseRepository)
-
-	return NewHouseService(countriesService, users, houseRepository)
+	countriesService countries.CountryService
+	groups           *groupMocks.GroupService
 }
 
-func Test_Add(t *testing.T) {
-	service := serviceGenerator()
+func TestHouseServiceTestSuite(t *testing.T) {
+	ts := &HouseServiceTestSuite{
+		countriesService: testhelper.InitCountryService(),
+	}
+	ts.TestObjectGenerator = func() HouseService {
+		ts.users = new(userMocks.UserService)
+		ts.houseRepository = new(mocks.HouseRepository)
+		ts.groups = new(groupMocks.GroupService)
+		return NewHouseService(ts.countriesService, ts.users, ts.houseRepository, ts.groups)
+	}
 
+	suite.Run(t, ts)
+}
+
+func (h *HouseServiceTestSuite) Test_Add() {
 	request := mocks.GenerateCreateHouseRequest()
 
-	users.On("ExistsById", request.UserId).Return(true)
-	houseRepository.On("Create", mock.Anything).Return(
+	h.users.On("ExistsById", request.UserId).Return(true)
+	h.houseRepository.On("Create", mock.Anything).Return(
 		func(house model.House) model.House { return house },
 		nil,
 	)
 
-	actual, err := service.Add(request)
+	actual, err := h.TestO.Add(request)
 
-	assert.Nil(t, err)
-	assert.Equal(t, model.HouseDto{
+	assert.Nil(h.T(), err)
+	assert.Equal(h.T(), model.HouseDto{
 		Id:          actual.Id,
 		Name:        "Test House",
 		CountryCode: "UA",
@@ -49,162 +61,166 @@ func Test_Add(t *testing.T) {
 		StreetLine1: "StreetLine1",
 		StreetLine2: "StreetLine2",
 		UserId:      request.UserId,
+		Groups:      []groupModel.GroupDto{},
 	}, actual)
 }
 
-func Test_FindById(t *testing.T) {
-	houseService := serviceGenerator()
+func (h *HouseServiceTestSuite) Test_Add_WithGroupsNotFound() {
+	request := mocks.GenerateCreateHouseRequest()
+	request.GroupIds = []uuid.UUID{uuid.New()}
 
+	h.users.On("ExistsById", request.UserId).Return(true)
+	h.groups.On("ExistsByIds", mock.Anything).Return(false)
+
+	income, err := h.TestO.Add(request)
+
+	assert.Equal(h.T(), int_errors.NewErrNotFound("not all group with ids %s found", common.Join(request.GroupIds, ",")), err)
+	assert.Equal(h.T(), model.HouseDto{}, income)
+
+	h.houseRepository.AssertNotCalled(h.T(), "Create", mock.Anything)
+}
+
+func (h *HouseServiceTestSuite) Test_FindById() {
 	house := mocks.GenerateHouse(uuid.New())
 
-	houseRepository.On("FindById", house.Id).Return(house, nil)
+	h.houseRepository.On("FindById", house.Id).Return(house, nil)
 
-	actual, err := houseService.FindById(house.Id)
+	actual, err := h.TestO.FindById(house.Id)
 
-	assert.Nil(t, err)
-	assert.Equal(t, house.ToDto(), actual)
+	assert.Nil(h.T(), err)
+	assert.Equal(h.T(), house.ToDto(), actual)
 }
 
-func Test_FindById_WithRecordNotFound(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_FindById_WithRecordNotFound() {
 	id := uuid.New()
 
-	houseRepository.On("FindById", id).Return(model.House{}, gorm.ErrRecordNotFound)
+	h.houseRepository.On("FindById", id).Return(model.House{}, gorm.ErrRecordNotFound)
 
-	actual, err := houseService.FindById(id)
+	actual, err := h.TestO.FindById(id)
 
-	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not found", id), err)
-	assert.Equal(t, model.HouseDto{}, actual)
+	assert.Equal(h.T(), int_errors.NewErrNotFound("house with id %s not found", id), err)
+	assert.Equal(h.T(), model.HouseDto{}, actual)
 }
 
-func Test_FindById_WithRecordNotFoundExists(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_FindById_WithRecordNotFoundExists() {
 	id := uuid.New()
 
 	expectedError := errors.New("error")
-	houseRepository.On("FindById", id).Return(model.House{}, expectedError)
+	h.houseRepository.On("FindById", id).Return(model.House{}, expectedError)
 
-	actual, err := houseService.FindById(id)
+	actual, err := h.TestO.FindById(id)
 
-	assert.Equal(t, expectedError, err)
-	assert.Equal(t, model.HouseDto{}, actual)
+	assert.Equal(h.T(), expectedError, err)
+	assert.Equal(h.T(), model.HouseDto{}, actual)
 }
 
-func Test_FindByUserId(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_FindByUserId() {
 	house := mocks.GenerateHouse(uuid.New())
 
-	houseRepository.On("FindByUserId", house.UserId).Return([]model.House{house})
+	h.houseRepository.On("FindByUserId", house.UserId).Return([]model.House{house})
 
-	actual := houseService.FindByUserId(house.UserId)
+	actual := h.TestO.FindByUserId(house.UserId)
 
-	assert.Equal(t, []model.HouseDto{house.ToDto()}, actual)
+	assert.Equal(h.T(), []model.HouseDto{house.ToDto()}, actual)
 }
 
-func Test_FindByUserId_WithNotExists(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_FindByUserId_WithNotExists() {
 	id := uuid.New()
 
-	houseRepository.On("FindByUserId", id).Return([]model.House{})
+	h.houseRepository.On("FindByUserId", id).Return([]model.House{})
 
-	actual := houseService.FindByUserId(id)
+	actual := h.TestO.FindByUserId(id)
 
-	assert.Equal(t, []model.HouseDto{}, actual)
+	assert.Equal(h.T(), []model.HouseDto{}, actual)
 }
 
-func Test_ExistsById(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_ExistsById() {
 	houseId := uuid.New()
 
-	houseRepository.On("ExistsById", houseId).Return(true)
+	h.houseRepository.On("ExistsById", houseId).Return(true)
 
-	assert.True(t, houseService.ExistsById(houseId))
+	assert.True(h.T(), h.TestO.ExistsById(houseId))
 }
 
-func Test_ExistsById_WithNotExists(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_ExistsById_WithNotExists() {
 	id := uuid.New()
 
-	houseRepository.On("ExistsById", id).Return(false)
+	h.houseRepository.On("ExistsById", id).Return(false)
 
-	assert.False(t, houseService.ExistsById(id))
+	assert.False(h.T(), h.TestO.ExistsById(id))
 }
 
-func Test_DeleteById(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_DeleteById() {
 	id := uuid.New()
 
-	houseRepository.On("ExistsById", id).Return(true)
-	houseRepository.On("DeleteById", id).Return(nil)
+	h.houseRepository.On("ExistsById", id).Return(true)
+	h.houseRepository.On("DeleteById", id).Return(nil)
 
-	assert.Nil(t, houseService.DeleteById(id))
+	assert.Nil(h.T(), h.TestO.DeleteById(id))
 }
 
-func Test_DeleteById_WithNotExists(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_DeleteById_WithNotExists() {
 	id := uuid.New()
 
-	houseRepository.On("ExistsById", id).Return(false)
+	h.houseRepository.On("ExistsById", id).Return(false)
 
-	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not found", id), houseService.DeleteById(id))
+	assert.Equal(h.T(), int_errors.NewErrNotFound("house with id %s not found", id), h.TestO.DeleteById(id))
 
-	houseRepository.AssertNotCalled(t, "DeleteById", id)
+	h.houseRepository.AssertNotCalled(h.T(), "DeleteById", id)
 }
 
-func Test_Update(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_Update() {
 	id, request := mocks.GenerateUpdateHouseRequest()
 
-	houseRepository.On("ExistsById", id).Return(true)
-	houseRepository.On("Update", id, request).Return(nil)
+	h.houseRepository.On("ExistsById", id).Return(true)
+	h.houseRepository.On("Update", id, request).Return(nil)
 
-	assert.Nil(t, houseService.Update(id, request))
+	assert.Nil(h.T(), h.TestO.Update(id, request))
 }
 
-func Test_Update_WithErrorFromDatabase(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_Update_WithErrorFromDatabase() {
 	id, request := mocks.GenerateUpdateHouseRequest()
 
-	houseRepository.On("ExistsById", id).Return(true)
-	houseRepository.On("Update", id, request).Return(errors.New("test"))
+	h.houseRepository.On("ExistsById", id).Return(true)
+	h.houseRepository.On("Update", id, request).Return(errors.New("test"))
 
-	err := houseService.Update(id, request)
-	assert.Equal(t, errors.New("test"), err)
+	err := h.TestO.Update(id, request)
+	assert.Equal(h.T(), errors.New("test"), err)
 }
 
-func Test_Update_WithNotExists(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_Update_WithNotExists() {
 	id, request := mocks.GenerateUpdateHouseRequest()
 
-	houseRepository.On("ExistsById", id).Return(false)
+	h.houseRepository.On("ExistsById", id).Return(false)
 
-	err := houseService.Update(id, request)
-	assert.Equal(t, int_errors.NewErrNotFound("house with id %s not found", id), err)
+	err := h.TestO.Update(id, request)
+	assert.Equal(h.T(), int_errors.NewErrNotFound("house with id %s not found", id), err)
 
-	houseRepository.AssertNotCalled(t, "Update", id, request)
+	h.houseRepository.AssertNotCalled(h.T(), "Update", id, request)
 }
 
-func Test_Update_WithNotMatchingCountry(t *testing.T) {
-	houseService := serviceGenerator()
-
+func (h *HouseServiceTestSuite) Test_Update_WithNotMatchingCountry() {
 	id, request := mocks.GenerateUpdateHouseRequest()
 	request.CountryCode = "invalid"
 
-	houseRepository.On("ExistsById", id).Return(true)
+	h.houseRepository.On("ExistsById", id).Return(true)
 
-	err := houseService.Update(id, request)
-	assert.Equal(t, int_errors.NewErrNotFound("country with code %s is not found", request.CountryCode), err)
+	err := h.TestO.Update(id, request)
+	assert.Equal(h.T(), int_errors.NewErrNotFound("country with code %s is not found", request.CountryCode), err)
 
-	houseRepository.AssertNotCalled(t, "Update", id, request)
+	h.houseRepository.AssertNotCalled(h.T(), "Update", id, request)
+}
+
+func (h *HouseServiceTestSuite) Test_Update_WithGroupsIdsNotFound() {
+	id, request := mocks.GenerateUpdateHouseRequest()
+	request.GroupIds = []uuid.UUID{uuid.New()}
+
+	h.houseRepository.On("ExistsById", id).Return(true)
+	h.groups.On("ExistsByIds", mock.Anything).Return(false)
+
+	err := h.TestO.Update(id, request)
+
+	assert.Equal(h.T(), int_errors.NewErrNotFound("not all group with ids %s found", common.Join(request.GroupIds, ",")), err)
+
+	h.houseRepository.AssertNotCalled(h.T(), "Update", id, request)
 }

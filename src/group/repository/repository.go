@@ -5,6 +5,7 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/group/model"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"reflect"
 )
 
@@ -39,6 +40,7 @@ type GroupRepository interface {
 	FindById(id uuid.UUID) (model.GroupDto, error)
 	FindByOwnerId(ownerId uuid.UUID) (response []model.GroupDto)
 	ExistsById(id uuid.UUID) bool
+	ExistsByIds(ids []uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateGroupRequest) error
 }
@@ -63,6 +65,17 @@ func (i *GroupRepositoryObject) FindByOwnerId(ownerId uuid.UUID) (response []mod
 
 func (i *GroupRepositoryObject) ExistsById(id uuid.UUID) bool {
 	return i.database.Exists(id)
+}
+
+func (i *GroupRepositoryObject) ExistsByIds(ids []uuid.UUID) bool {
+	var count int64
+	err := i.database.Modeled().Where("id IN ?", ids).Count(&count).Error
+
+	if err != nil {
+		log.Error().Err(err)
+	}
+
+	return int64(len(ids)) == count
 }
 
 func (i *GroupRepositoryObject) DeleteById(id uuid.UUID) error {

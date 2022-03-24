@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/country/model"
 	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -50,11 +51,6 @@ type UpdateHouseRequest struct {
 }
 
 func (h House) ToDto() HouseDto {
-	var groups []groupModel.GroupDto
-	for _, group := range h.Groups {
-		groups = append(groups, group.ToDto())
-	}
-
 	return HouseDto{
 		Id:          h.Id,
 		Name:        h.Name,
@@ -63,17 +59,11 @@ func (h House) ToDto() HouseDto {
 		StreetLine1: h.StreetLine1,
 		StreetLine2: h.StreetLine2,
 		UserId:      h.UserId,
-		Groups:      groups,
+		Groups:      common.Map(h.Groups, groupModel.GroupToGroupDto),
 	}
 }
 
 func (c CreateHouseRequest) ToEntity(country *model.Country) House {
-	var groups []groupModel.Group
-
-	for _, id := range c.GroupIds {
-		groups = append(groups, groupModel.Group{Id: id})
-	}
-
 	return House{
 		Id:          uuid.New(),
 		Name:        c.Name,
@@ -82,6 +72,6 @@ func (c CreateHouseRequest) ToEntity(country *model.Country) House {
 		StreetLine1: c.StreetLine1,
 		StreetLine2: c.StreetLine2,
 		UserId:      c.UserId,
-		Groups:      groups,
+		Groups:      common.Map(c.GroupIds, groupModel.GroupIdToGroup),
 	}
 }
