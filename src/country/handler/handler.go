@@ -17,7 +17,7 @@ func NewCountryHandler(countryService service.CountryService) CountryHandler {
 }
 
 func (c *CountryHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewCountryHandler(factory.FindRequiredByObject(service.CountryServiceObject{}).(service.CountryService))
+	return NewCountryHandler(dependency.FindRequiredDependency[service.CountryServiceObject, service.CountryService](factory))
 }
 
 func (c *CountryHandlerObject) Init(router *mux.Router) {

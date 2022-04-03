@@ -6,13 +6,11 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/google/uuid"
-	"reflect"
 )
 
 var (
-	PaymentRepositoryType = reflect.TypeOf(ProviderRepositoryObject{})
-	entity                = model.Provider{}
-	DefaultUser           = uuid.UUID{}
+	entity      = model.Provider{}
+	DefaultUser = uuid.UUID{}
 )
 
 type ProviderRepositoryObject struct {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
+	intErrors "github.com/VlasovArtem/hob/src/common/int-errors"
 	houses "github.com/VlasovArtem/hob/src/house/service"
 	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
@@ -51,12 +51,12 @@ func NewPaymentSchedulerService(
 
 func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerService(
-		factory.FindRequiredByType(users.UserServiceType).(users.UserService),
-		factory.FindRequiredByType(houses.HouseServiceType).(houses.HouseService),
-		factory.FindRequiredByType(payments.PaymentServiceType).(payments.PaymentService),
-		factory.FindRequiredByType(providers.ProviderServiceType).(providers.ProviderService),
-		factory.FindRequiredByType(scheduler.SchedulerServiceType).(scheduler.ServiceScheduler),
-		factory.FindRequiredByType(repository.PaymentSchedulerRepositoryType).(repository.PaymentSchedulerRepository),
+		dependency.FindRequiredDependency[users.UserServiceObject, users.UserService](factory),
+		dependency.FindRequiredDependency[houses.HouseServiceObject, houses.HouseService](factory),
+		dependency.FindRequiredDependency[payments.PaymentServiceObject, payments.PaymentService](factory),
+		dependency.FindRequiredDependency[providers.ProviderServiceObject, providers.ProviderService](factory),
+		dependency.FindRequiredDependency[scheduler.SchedulerServiceObject, scheduler.ServiceScheduler](factory),
+		dependency.FindRequiredDependency[repository.PaymentSchedulerRepositoryObject, repository.PaymentSchedulerRepository](factory),
 	)
 }
 
@@ -93,13 +93,13 @@ func (p *PaymentSchedulerServiceObject) validateCreateRequest(request model.Crea
 		return errors.New("sum should not be zero of negative")
 	}
 	if !p.userService.ExistsById(request.UserId) {
-		return int_errors.NewErrNotFound("user with id %s in not exists", request.UserId)
+		return intErrors.NewErrNotFound("user with id %s in not exists", request.UserId)
 	}
 	if !p.houseService.ExistsById(request.HouseId) {
-		return int_errors.NewErrNotFound("house with id %s in not exists", request.HouseId)
+		return intErrors.NewErrNotFound("house with id %s in not exists", request.HouseId)
 	}
 	if !p.providerService.ExistsById(request.ProviderId) {
-		return int_errors.NewErrNotFound("provider with id %s in not exists", request.ProviderId)
+		return intErrors.NewErrNotFound("provider with id %s in not exists", request.ProviderId)
 	}
 	if request.Spec == "" {
 		return errors.New("scheduler configuration not provided")
@@ -109,7 +109,7 @@ func (p *PaymentSchedulerServiceObject) validateCreateRequest(request model.Crea
 
 func (p *PaymentSchedulerServiceObject) Remove(id uuid.UUID) error {
 	if !p.repository.ExistsById(id) {
-		return int_errors.NewErrNotFound("payment scheduler with id %s not found", id)
+		return intErrors.NewErrNotFound("payment scheduler with id %s not found", id)
 	} else {
 		if err := p.serviceScheduler.Remove(id); err != nil {
 			log.Error().Err(err).Msg("")
@@ -164,10 +164,10 @@ func (p *PaymentSchedulerServiceObject) validateUpdateRequest(id uuid.UUID, requ
 		return errors.New("sum should not be zero of negative"), true
 	}
 	if !p.repository.ExistsById(id) {
-		return int_errors.NewErrNotFound("payment schedule with id %s not found", id), true
+		return intErrors.NewErrNotFound("payment schedule with id %s not found", id), true
 	}
 	if !p.providerService.ExistsById(request.ProviderId) {
-		return int_errors.NewErrNotFound("provider with id %s not found", request.ProviderId), true
+		return intErrors.NewErrNotFound("provider with id %s not found", request.ProviderId), true
 	}
 	if request.Spec == "" {
 		return errors.New("scheduler configuration not provided"), true

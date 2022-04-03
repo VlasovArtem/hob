@@ -6,20 +6,16 @@ import (
 	"github.com/VlasovArtem/hob/src/group/model"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"reflect"
 )
 
-var (
-	GroupRepositoryType = reflect.TypeOf(GroupRepositoryObject{})
-	entity              = model.Group{}
-)
+var entity = model.Group{}
 
 type GroupRepositoryObject struct {
 	database db.ModeledDatabase
 }
 
 func (i *GroupRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewGroupRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
+	return NewGroupRepository(dependency.FindRequiredDependency[db.DatabaseObject, db.DatabaseService](factory))
 }
 
 func (i *GroupRepositoryObject) GetEntity() any {

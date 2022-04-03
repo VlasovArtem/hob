@@ -12,11 +12,8 @@ import (
 	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"reflect"
 	"time"
 )
-
-var IncomeSchedulerServiceType = reflect.TypeOf(IncomeSchedulerServiceObject{})
 
 type IncomeSchedulerServiceObject struct {
 	houseService     houseService.HouseService
@@ -41,10 +38,10 @@ func NewIncomeSchedulerService(
 
 func (i *IncomeSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeSchedulerService(
-		factory.FindRequiredByType(houseService.HouseServiceType).(houseService.HouseService),
-		factory.FindRequiredByType(incomeService.IncomeServiceType).(incomeService.IncomeService),
-		factory.FindRequiredByType(scheduler.SchedulerServiceType).(scheduler.ServiceScheduler),
-		factory.FindRequiredByType(repository.IncomeSchedulerRepositoryType).(repository.IncomeSchedulerRepository),
+		dependency.FindRequiredDependency[houseService.HouseServiceObject, houseService.HouseService](factory),
+		dependency.FindRequiredDependency[incomeService.IncomeServiceObject, incomeService.IncomeService](factory),
+		dependency.FindRequiredDependency[scheduler.SchedulerServiceObject, scheduler.ServiceScheduler](factory),
+		dependency.FindRequiredDependency[repository.IncomeSchedulerRepositoryObject, repository.IncomeSchedulerRepository](factory),
 	)
 }
 

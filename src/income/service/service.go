@@ -12,11 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
-	"reflect"
 	"time"
 )
-
-var IncomeServiceType = reflect.TypeOf(IncomeServiceObject{})
 
 type IncomeServiceObject struct {
 	houseService houseService.HouseService

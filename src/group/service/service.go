@@ -8,10 +8,7 @@ import (
 	"github.com/VlasovArtem/hob/src/group/repository"
 	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
-	"reflect"
 )
-
-var GroupServiceType = reflect.TypeOf(GroupServiceObject{})
 
 type GroupServiceObject struct {
 	userService userService.UserService
@@ -30,8 +27,8 @@ func NewGroupService(
 
 func (h *GroupServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewGroupService(
-		factory.FindRequiredByType(userService.UserServiceType).(userService.UserService),
-		factory.FindRequiredByType(repository.GroupRepositoryType).(repository.GroupRepository),
+		dependency.FindRequiredDependency[userService.UserServiceObject, userService.UserService](factory),
+		dependency.FindRequiredDependency[repository.GroupRepositoryObject, repository.GroupRepository](factory),
 	)
 }
 

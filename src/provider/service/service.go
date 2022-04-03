@@ -9,10 +9,7 @@ import (
 	"github.com/VlasovArtem/hob/src/provider/repository"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"reflect"
 )
-
-var ProviderServiceType = reflect.TypeOf(ProviderServiceObject{})
 
 type ProviderServiceObject struct {
 	repository repository.ProviderRepository
@@ -23,7 +20,7 @@ func NewProviderService(repository repository.ProviderRepository) ProviderServic
 }
 
 func (p *ProviderServiceObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewProviderService(factory.FindRequiredByObject(repository.ProviderRepositoryObject{}).(repository.ProviderRepository))
+	return NewProviderService(dependency.FindRequiredDependency[repository.ProviderRepositoryObject, repository.ProviderRepository](factory))
 }
 
 type ProviderService interface {

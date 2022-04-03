@@ -5,13 +5,9 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
-	"reflect"
 )
 
-var (
-	UserRepositoryType = reflect.TypeOf(UserRepositoryObject{})
-	entity             = model.User{}
-)
+var entity = model.User{}
 
 type UserRepositoryObject struct {
 	database db.ModeledDatabase

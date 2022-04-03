@@ -42,7 +42,9 @@ func main() {
 }
 
 func startApplication(cfg *config.Config, rootApplication *app.RootApplication) {
+	log.Info().Msg("Starting application")
 	if cfg.IsTerminalView() {
+		log.Info().Msg("Trying to start terminal view")
 		tApp := tui.NewTApp(rootApplication)
 
 		tApp.Init()
@@ -51,6 +53,8 @@ func startApplication(cfg *config.Config, rootApplication *app.RootApplication) 
 			panic(err)
 		}
 	} else {
+		log.Info().Msg("Trying to start server")
+
 		router := mux.NewRouter().StrictSlash(true)
 
 		api.InitApi(router, rootApplication)

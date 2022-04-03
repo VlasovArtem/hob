@@ -40,7 +40,7 @@ func NewConfig() *Config {
 			LogFile  string
 			LogLevel string
 			View     string
-		}{LogFile: DefaultLogFilePath, LogLevel: DefaultLogLevel, View: defaultView},
+		}{LogLevel: DefaultLogLevel, View: defaultView},
 	}
 }
 

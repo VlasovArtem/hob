@@ -9,6 +9,8 @@ import (
 	"github.com/VlasovArtem/hob/src/country/model"
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/group/repository"
+	groupService "github.com/VlasovArtem/hob/src/group/service"
 	houseRepository "github.com/VlasovArtem/hob/src/house/repository"
 	houseService "github.com/VlasovArtem/hob/src/house/service"
 	incomeRepository "github.com/VlasovArtem/hob/src/income/repository"
@@ -74,8 +76,8 @@ func (a *RootApplication) createDatabaseConfiguration() {
 	configuration := db.DatabaseConfiguration{
 		Host:     environment.GetEnvironmentVariable(hostEnvironmentName, "localhost"),
 		Port:     environment.GetEnvironmentIntVariable(portEnvironmentName, 5432),
-		User:     environment.GetEnvironmentVariable(userEnvironmentName, "postgres"),
-		Password: environment.GetEnvironmentVariable(passwordEnvironmentName, "postgres"),
+		User:     environment.GetEnvironmentVariable(userEnvironmentName, "hob"),
+		Password: environment.GetEnvironmentVariable(passwordEnvironmentName, "magical_password"),
 		DBName:   environment.GetEnvironmentVariable(dbnameEnvironmentName, "hob"),
 	}
 
@@ -87,6 +89,8 @@ func (a *RootApplication) addAutoInitializingDependencies() {
 		new(userRequestValidator.UserRequestValidatorObject),
 		new(userRepository.UserRepositoryObject),
 		new(userService.UserServiceObject),
+		new(repository.GroupRepositoryObject),
+		new(groupService.GroupServiceObject),
 		new(houseRepository.HouseRepositoryObject),
 		new(houseService.HouseServiceObject),
 		new(scheduler.SchedulerServiceObject),

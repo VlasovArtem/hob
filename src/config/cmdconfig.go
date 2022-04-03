@@ -28,7 +28,7 @@ func NewCMDConfig() *CMDConfig {
 }
 
 func (c *CMDConfig) ParseCMDConfig() {
-	pflag.StringVarP(&c.View, "view", "v", "", "View: 't', 'terminal' - Terminal, 'a', 'api' - Api. Default: 'terminal', 't'")
+	pflag.StringVarP(&c.View, "view", "v", "t", "View: 't', 'terminal' - Terminal, 'a', 'api' - Api. Default: 'terminal', 't'")
 	pflag.StringVarP(&c.LogFile, "log-file", "f", "", "Log file path. Default: Empty for api and temp for terminal.")
 	pflag.StringVarP(&c.LogLevel, "log-level", "l", "", "Log level. Default: 'info'")
 	pflag.StringVarP(&c.UserEmail, "user-email", "u", "", "Default user email")

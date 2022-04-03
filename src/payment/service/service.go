@@ -11,13 +11,10 @@ import (
 	providers "github.com/VlasovArtem/hob/src/provider/service"
 	users "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
-	"reflect"
 	"time"
 )
 
 var defaultUUID = uuid.UUID{}
-
-var PaymentServiceType = reflect.TypeOf(PaymentServiceObject{})
 
 type PaymentServiceObject struct {
 	userService       users.UserService
@@ -41,10 +38,10 @@ func NewPaymentService(
 
 func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentService(
-		factory.FindRequiredByType(users.UserServiceType).(users.UserService),
-		factory.FindRequiredByType(houses.HouseServiceType).(houses.HouseService),
-		factory.FindRequiredByType(providers.ProviderServiceType).(providers.ProviderService),
-		factory.FindRequiredByType(repository.PaymentRepositoryType).(repository.PaymentRepository),
+		dependency.FindRequiredDependency[users.UserServiceObject, users.UserService](factory),
+		dependency.FindRequiredDependency[houses.HouseServiceObject, houses.HouseService](factory),
+		dependency.FindRequiredDependency[providers.ProviderServiceObject, providers.ProviderService](factory),
+		dependency.FindRequiredDependency[repository.PaymentRepositoryObject, repository.PaymentRepository](factory),
 	)
 }
 

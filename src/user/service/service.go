@@ -9,17 +9,14 @@ import (
 	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/VlasovArtem/hob/src/user/repository"
 	"github.com/google/uuid"
-	"reflect"
 )
-
-var UserServiceType = reflect.TypeOf(UserServiceObject{})
 
 type UserServiceObject struct {
 	repository repository.UserRepository
 }
 
 func (u *UserServiceObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewUserService(factory.FindRequiredByObject(repository.UserRepositoryObject{}).(repository.UserRepository))
+	return NewUserService(dependency.FindRequiredDependency[repository.UserRepositoryObject, repository.UserRepository](factory))
 }
 
 func NewUserService(repository repository.UserRepository) UserService {

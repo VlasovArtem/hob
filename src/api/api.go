@@ -4,6 +4,7 @@ import (
 	"github.com/VlasovArtem/hob/src/app"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	countryHandler "github.com/VlasovArtem/hob/src/country/handler"
+	"github.com/VlasovArtem/hob/src/group/handler"
 	healthHandler "github.com/VlasovArtem/hob/src/health/handler"
 	houseHandler "github.com/VlasovArtem/hob/src/house/handler"
 	incomeHandler "github.com/VlasovArtem/hob/src/income/handler"
@@ -32,6 +33,7 @@ func InitApi(router *mux.Router, application *app.RootApplication) {
 	addHandler(router, application, new(incomeHandler.IncomeHandlerObject))
 	addHandler(router, application, new(incomeSchedulerHandler.IncomeSchedulerHandlerObject))
 	addHandler(router, application, new(healthHandler.HealthHandlerObject))
+	addHandler(router, application, new(handler.GroupHandlerObject))
 }
 
 func addHandler(router *mux.Router, application *app.RootApplication, handler ApplicationHandler) {

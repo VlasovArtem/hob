@@ -12,10 +12,7 @@ import (
 	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"reflect"
 )
-
-var HouseServiceType = reflect.TypeOf(HouseServiceObject{})
 
 type HouseServiceObject struct {
 	countriesService countries.CountryService

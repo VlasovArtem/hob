@@ -9,10 +9,7 @@ import (
 	"github.com/VlasovArtem/hob/src/meter/repository"
 	paymentService "github.com/VlasovArtem/hob/src/payment/service"
 	"github.com/google/uuid"
-	"reflect"
 )
-
-var MeterServiceType = reflect.TypeOf(MeterServiceObject{})
 
 type MeterServiceObject struct {
 	paymentService paymentService.PaymentService
@@ -25,8 +22,8 @@ func NewMeterService(paymentService paymentService.PaymentService, repository re
 
 func (m *MeterServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewMeterService(
-		factory.FindRequiredByType(paymentService.PaymentServiceType).(paymentService.PaymentService),
-		factory.FindRequiredByType(repository.MeterRepositoryType).(repository.MeterRepository),
+		dependency.FindRequiredDependency[paymentService.PaymentServiceObject, paymentService.PaymentService](factory),
+		dependency.FindRequiredDependency[repository.MeterRepositoryObject, repository.MeterRepository](factory),
 	)
 }
 

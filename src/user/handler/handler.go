@@ -21,8 +21,8 @@ func NewUserHandler(userService service.UserService, userValidator validator.Use
 
 func (u *UserHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewUserHandler(
-		factory.FindRequiredByObject(service.UserServiceType).(service.UserService),
-		factory.FindRequiredByObject(validator.UserRequestValidatorObject{}).(validator.UserRequestValidator),
+		dependency.FindRequiredDependency[service.UserServiceObject, service.UserService](factory),
+		dependency.FindRequiredDependency[validator.UserRequestValidatorObject, validator.UserRequestValidator](factory),
 	)
 }
 

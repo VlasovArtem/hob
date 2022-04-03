@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/VlasovArtem/hob/src/app"
+	"github.com/VlasovArtem/hob/src/common/dependency"
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	houses "github.com/VlasovArtem/hob/src/house/service"
@@ -79,39 +80,39 @@ func (t *TerminalApp) Init() {
 }
 
 func (t *TerminalApp) GetHouseService() houses.HouseService {
-	return t.root.DependenciesFactory.FindRequiredByObject(houses.HouseServiceObject{}).(houses.HouseService)
+	return dependency.FindRequiredDependency[houses.HouseServiceObject, houses.HouseService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetUserService() users.UserService {
-	return t.root.DependenciesFactory.FindRequiredByObject(users.UserServiceObject{}).(users.UserService)
+	return dependency.FindRequiredDependency[users.UserServiceObject, users.UserService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) getCountryService() countries.CountryService {
-	return t.root.DependenciesFactory.FindRequiredByObject(countries.CountryServiceObject{}).(countries.CountryService)
+	return dependency.FindRequiredDependency[countries.CountryServiceObject, countries.CountryService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetIncomeService() incomes.IncomeService {
-	return t.root.DependenciesFactory.FindRequiredByObject(incomes.IncomeServiceObject{}).(incomes.IncomeService)
+	return dependency.FindRequiredDependency[incomes.IncomeServiceObject, incomes.IncomeService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetPaymentService() payments.PaymentService {
-	return t.root.DependenciesFactory.FindRequiredByObject(payments.PaymentServiceObject{}).(payments.PaymentService)
+	return dependency.FindRequiredDependency[payments.PaymentServiceObject, payments.PaymentService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetProviderService() providers.ProviderService {
-	return t.root.DependenciesFactory.FindRequiredByType(providers.ProviderServiceType).(providers.ProviderService)
+	return dependency.FindRequiredDependency[providers.ProviderServiceObject, providers.ProviderService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetMeterService() meters.MeterService {
-	return t.root.DependenciesFactory.FindRequiredByType(meters.MeterServiceType).(meters.MeterService)
+	return dependency.FindRequiredDependency[meters.MeterServiceObject, meters.MeterService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetPaymentSchedulerService() paymentSchedulers.PaymentSchedulerService {
-	return t.root.DependenciesFactory.FindRequiredByType(paymentSchedulers.PaymentSchedulerServiceType).(paymentSchedulers.PaymentSchedulerService)
+	return dependency.FindRequiredDependency[paymentSchedulers.PaymentSchedulerServiceObject, paymentSchedulers.PaymentSchedulerService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetIncomeSchedulerService() incomeSchedulers.IncomeSchedulerService {
-	return t.root.DependenciesFactory.FindRequiredByType(incomeSchedulers.IncomeSchedulerServiceType).(incomeSchedulers.IncomeSchedulerService)
+	return dependency.FindRequiredDependency[incomeSchedulers.IncomeSchedulerServiceObject, incomeSchedulers.IncomeSchedulerService](t.root.DependenciesFactory)
 }
 
 func AsKey(evt *tcell.EventKey) tcell.Key {

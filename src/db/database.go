@@ -22,8 +22,8 @@ func NewDefaultDatabaseConfiguration() DatabaseConfiguration {
 	return DatabaseConfiguration{
 		Host:     "localhost",
 		Port:     5432,
-		User:     "postgres",
-		Password: "postgres",
+		User:     "hob",
+		Password: "magical_password",
 		DBName:   "hob",
 	}
 }

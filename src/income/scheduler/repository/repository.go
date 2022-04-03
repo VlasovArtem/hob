@@ -5,13 +5,9 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/income/scheduler/model"
 	"github.com/google/uuid"
-	"reflect"
 )
 
-var (
-	IncomeSchedulerRepositoryType = reflect.TypeOf(IncomeSchedulerRepositoryObject{})
-	entity                        = model.IncomeScheduler{}
-)
+var entity = model.IncomeScheduler{}
 
 type IncomeSchedulerRepositoryObject struct {
 	database db.ModeledDatabase
@@ -27,7 +23,7 @@ func NewIncomeSchedulerRepository(database db.DatabaseService) IncomeSchedulerRe
 }
 
 func (i *IncomeSchedulerRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewIncomeSchedulerRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
+	return NewIncomeSchedulerRepository(dependency.FindRequiredDependency[db.DatabaseObject, db.DatabaseService](factory))
 }
 
 func (i *IncomeSchedulerRepositoryObject) GetEntity() any {

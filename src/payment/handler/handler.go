@@ -20,7 +20,7 @@ func NewPaymentHandler(paymentService paymentService.PaymentService) PaymentHand
 }
 
 func (p *PaymentHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewPaymentHandler(factory.FindRequiredByObject(paymentService.PaymentServiceObject{}).(paymentService.PaymentService))
+	return NewPaymentHandler(dependency.FindRequiredDependency[paymentService.PaymentServiceObject, paymentService.PaymentService](factory))
 }
 
 func (p *PaymentHandlerObject) Init(router *mux.Router) {

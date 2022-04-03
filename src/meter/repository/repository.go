@@ -5,13 +5,9 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/meter/model"
 	"github.com/google/uuid"
-	"reflect"
 )
 
-var (
-	MeterRepositoryType = reflect.TypeOf(MeterRepositoryObject{})
-	entity              = model.Meter{}
-)
+var entity = model.Meter{}
 
 type MeterRepositoryObject struct {
 	database db.ModeledDatabase

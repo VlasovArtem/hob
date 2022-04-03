@@ -79,6 +79,11 @@ app:
 :CUSTOM_ID: how-to-start
 :END:
 
+** Make project
+#+BEGIN_SRC shell
+make build && make img && make compose-up
+#+END_SRC
+
 ** Database
 #+BEGIN_SRC shell
 docker run --name hob -e POSTGRES_USERNAME=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=hob -d -p 5432:5432 postgres

@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 	"net/http"
 )
 
@@ -28,6 +30,22 @@ type HealthHandler interface {
 
 func (h *HealthHandlerObject) HealthCheck() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(200)
+		marshal, err := json.Marshal(HealthStatus{
+			status: "UP",
+		})
+
+		if err != nil {
+			log.Error().Err(err)
+		}
+
+		_, err = writer.Write(marshal)
+
+		if err != nil {
+			log.Error().Err(err)
+		}
 	}
+}
+
+type HealthStatus struct {
+	status string
 }
