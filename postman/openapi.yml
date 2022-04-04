@@ -1,0 +1,1560 @@
+openapi: 3.0.1
+info:
+  title: House of Bills API
+  version: v0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: House of Bills API
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      operationId: health
+      responses:
+        200:
+          description: Ok
+  /countries:
+    get:
+      tags:
+        - Countries
+      operationId: getAllCountries
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Country'
+  /countries/{code}:
+    get:
+      tags:
+        - Countries
+      operationId: getCountryByCode
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+  /groups:
+    post:
+      tags:
+        - Groups
+      operationId: createGroup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+  /groups/batch:
+    post:
+      tags:
+        - Groups
+      operationId: createGroupsBatch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupBatchRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /groups/{id}:
+    get:
+      tags:
+        - Groups
+      operationId: getGroupById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - Groups
+      operationId: deleteGroupById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Not Found
+    put:
+      tags:
+        - Groups
+      operationId: updateGroupById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGroupRequest'
+      responses:
+        200:
+          description: Ok
+        404:
+          description: Not Found
+  /groups/user/{id}:
+    get:
+      tags:
+        - Groups
+      operationId: getGroupsByUserId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        404:
+          description: Not Found
+  /houses:
+    post:
+      tags:
+        - Houses
+      operationId: createHouse
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHouseRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/House'
+  /houses/batch:
+    post:
+      tags:
+        - Houses
+      operationId: createHousesBatch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHouseBatchRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/House'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /houses/{id}:
+    get:
+      tags:
+        - Houses
+      operationId: getHouseById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/House'
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - Houses
+      operationId: deleteHouseById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Not Found
+    put:
+      tags:
+        - Houses
+      operationId: updateHouseById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHouseRequest'
+      responses:
+        200:
+          description: Ok
+        404:
+          description: Not Found
+  /houses/user/{id}:
+    get:
+      tags:
+        - Houses
+      operationId: getHousesByUserId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/House'
+        404:
+          description: Not Found
+  /incomes:
+    post:
+      tags:
+        - Incomes
+      operationId: createIncome
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIncomeRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Income'
+  /incomes/batch:
+    post:
+      tags:
+        - Incomes
+      operationId: createIncomesBatch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIncomeBatchRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Income'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /incomes/{id}:
+    get:
+      tags:
+        - Incomes
+      operationId: getIncomeById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Income'
+        404:
+          description: Not Found
+  /incomes/house/{id}:
+    get:
+      tags:
+        - Incomes
+      operationId: getIncomesByHouseId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Income'
+        404:
+          description: Not Found
+  /incomes/schedulers:
+    post:
+      tags:
+        - Incomes
+      operationId: createIncomeScheduler
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schedulers/CreateIncomeSchedulerRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schedulers/IncomeScheduler'
+  /incomes/schedulers/{id}:
+    get:
+      tags:
+        - Incomes
+      operationId: getIncomeSchedulerById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schedulers/IncomeScheduler'
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - Incomes
+      operationId: deleteIncomeSchedulerById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Not Found
+    put:
+      tags:
+        - Incomes
+      operationId: updateIncomeSchedulerById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schedulers/UpdateIncomeSchedulerRequest'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schedulers/IncomeScheduler'
+        404:
+          description: Not Found
+  /incomes/schedulers/house/{id}:
+    get:
+      tags:
+        - Incomes
+      operationId: getIncomeSchedulersByHouseId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schedulers/IncomeScheduler'
+        404:
+          description: Not Found
+  /meters:
+    post:
+      tags:
+        - Meters
+      operationId: createMeter
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMeterRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meter'
+  /meters/{id}:
+    get:
+      tags:
+        - Meters
+      operationId: getMeterById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meter'
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - Meters
+      operationId: deleteMeterById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Not Found
+    put:
+      tags:
+        - Meters
+      operationId: updateMeterById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMeterRequest'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meter'
+        404:
+          description: Not Found
+  /meters/payment/{id}:
+    get:
+      tags:
+        - Meters
+      operationId: getMeterPaymentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meter'
+        404:
+          description: Not Found
+  /payments:
+    post:
+      tags:
+        - Payments
+      operationId: createPayment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+  /payments/batch:
+    post:
+      tags:
+        - Payments
+      operationId: createPaymentsBatch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentsBatchRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /payments/{id}:
+    get:
+      tags:
+        - Payments
+      operationId: getPaymentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - Payments
+      operationId: deletePaymentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Not Found
+    put:
+      tags:
+        - Payments
+      operationId: updatePaymentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentRequest'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        404:
+          description: Not Found
+  /payments/house/{id}:
+    get:
+      tags:
+        - Payments
+      operationId: getPaymentsByHouseId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+  /payments/user/{id}:
+    get:
+      tags:
+        - Payments
+      operationId: getPaymentsByUserId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+  /payments/provider/{id}:
+    get:
+      tags:
+        - Payments
+      operationId: getPaymentsByProviderId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+  /payments/schedulers:
+    post:
+      tags:
+        - Payments
+      operationId: createPaymentsSchedulers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentsSchedulersRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentScheduler'
+  /payments/schedulers/{id}:
+    get:
+      tags:
+        - Payments
+      operationId: getPaymentSchedulerById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentScheduler'
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - Payments
+      operationId: deletePaymentSchedulerById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Not Found
+    put:
+      tags:
+        - Payments
+      operationId: updatePaymentSchedulerById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentSchedulerRequest'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentScheduler'
+        404:
+          description: Not Found
+  /payments/schedulers/house/{id}:
+    get:
+      tags:
+        - Payments
+      operationId: getPaymentSchedulersByHouseId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentScheduler'
+  /payments/schedulers/user/{id}:
+    get:
+      tags:
+        - Payments
+      operationId: getPaymentSchedulersByUserId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentScheduler'
+  /payments/schedulers/provider/{id}:
+    get:
+      tags:
+        - Payments
+      operationId: getPaymentSchedulersByProviderId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentScheduler'
+  /providers:
+    post:
+      tags:
+        - Providers
+      operationId: createProvider
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProviderRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+    get:
+      tags:
+        - Providers
+      operationId: getProviders
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 25
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Provider'
+  /providers/{id}:
+    get:
+      tags:
+        - Providers
+      operationId: getProviderById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - Providers
+      operationId: deleteProviderById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Not Found
+    put:
+      tags:
+        - Providers
+      operationId: updateProviderById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProviderRequest'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+        404:
+          description: Not Found
+  /users:
+    post:
+      tags:
+        - Users
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - Users
+      operationId: deleteUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: No Content
+        404:
+          description: Not Found
+    put:
+      tags:
+        - Users
+      operationId: updateUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        404:
+          description: Not Found
+components:
+  schemas:
+    Country:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        capital:
+          type: string
+        region:
+          type: string
+        currency:
+          type: object
+          properties:
+            code:
+              type: string
+            name:
+              type: string
+            symbol:
+              type: string
+        language:
+          type: object
+          properties:
+            code:
+              type: string
+            name:
+              type: string
+        flag:
+          type: string
+    CreateGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        ownerId:
+          type: string
+          format: uuid
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        ownerId:
+          type: string
+          format: uuid
+    CreateGroupBatchRequest:
+      type: object
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateGroupRequest'
+    UpdateGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+    CreateHouseRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        countryCode:
+          type: string
+        city:
+          type: string
+        streetLine1:
+          type: string
+        streetLine2:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        groupIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    House:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        countryCode:
+          type: string
+        city:
+          type: string
+        streetLine1:
+          type: string
+        streetLine2:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+    CreateHouseBatchRequest:
+      type: object
+      properties:
+        houses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateHouseRequest'
+    CreateIncomeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        sum:
+          type: number
+        houseId:
+          type: string
+          format: uuid
+        groupIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    Income:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        sum:
+          type: number
+        houseId:
+          type: string
+          format: uuid
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+    CreateIncomeBatchRequest:
+      type: object
+      properties:
+        incomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateIncomeRequest'
+    CreateIncomeSchedulerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sum:
+          type: number
+        houseId:
+          type: string
+          format: uuid
+        spec:
+          type: string
+          enum:
+            - HOURLY
+            - DAILY
+            - WEEKLY
+            - MONTHLY
+            - YEARLY
+    IncomeScheduler:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        sum:
+          type: number
+        houseId:
+          type: string
+          format: uuid
+        spec:
+          type: string
+          enum:
+            - HOURLY
+            - DAILY
+            - WEEKLY
+            - MONTHLY
+            - YEARLY
+    UpdateIncomeSchedulerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sum:
+          type: number
+        spec:
+          type: string
+          enum:
+            - HOURLY
+            - DAILY
+            - WEEKLY
+            - MONTHLY
+            - YEARLY
+    CreateMeterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        details:
+          type: string
+          example: "{\"first\":\"1\",\"second\":\"2\"}"
+        description:
+          type: string
+        paymentId:
+          type: string
+          format: uuid
+    Meter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        details:
+          type: string
+          example: "{\"first\":\"1\",\"second\":\"2\"}"
+        description:
+          type: string
+        paymentId:
+          type: string
+          format: uuid
+    UpdateMeterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        details:
+          type: string
+          example: "{\"first\":\"1\",\"second\":\"2\"}"
+        description:
+          type: string
+    CreatePaymentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        houseId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        providerId:
+          type: string
+          format: uuid
+        sum:
+          type: number
+        date:
+          type: string
+          format: date-time
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        houseId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        providerId:
+          type: string
+          format: uuid
+        sum:
+          type: number
+        date:
+          type: string
+          format: date-time
+    UpdatePaymentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sum:
+          type: number
+        date:
+          type: string
+          format: date-time
+        providerId:
+          type: string
+          format: uuid
+    CreatePaymentsBatchRequest:
+      type: object
+      properties:
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreatePaymentRequest'
+    CreatePaymentsSchedulersRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        houseId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        providerId:
+          type: string
+          format: uuid
+        sum:
+          type: number
+        date:
+          type: string
+          format: date-time
+        spec:
+          type: string
+          enum:
+            - HOURLY
+            - DAILY
+            - WEEKLY
+            - MONTHLY
+            - YEARLY
+    PaymentScheduler:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        sum:
+          type: number
+        houseId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        providerId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date-time
+        spec:
+          type: string
+          enum:
+            - HOURLY
+            - DAILY
+            - WEEKLY
+            - MONTHLY
+            - YEARLY
+    UpdatePaymentSchedulerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        providerId:
+          type: string
+          format: uuid
+        sum:
+          type: number
+        spec:
+          type: string
+          enum:
+            - HOURLY
+            - DAILY
+            - WEEKLY
+            - MONTHLY
+            - YEARLY
+    CreateProviderRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        details:
+          type: string
+        userId:
+          type: string
+          format: uuid
+    Provider:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        details:
+          type: string
+        userId:
+          type: string
+          format: uuid
+    UpdateProviderRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        details:
+          type: string
+    CreateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        password:
+          type: string
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
