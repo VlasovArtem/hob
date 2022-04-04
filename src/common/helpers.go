@@ -28,16 +28,65 @@ func EnsureFullPath(path string, mod os.FileMode) {
 	}
 }
 
-func Map[T any, V any](source []T, mapper func(T) V) []V {
-	target := []V{}
+func MapKeys[T comparable, V comparable](source map[T]any, mapper func(T) V) map[V]any {
+	if source == nil {
+		return nil
+	}
+	if len(source) == 0 {
+		return make(map[V]any)
+	}
+	result := make(map[V]any)
+	for key, value := range source {
+		result[mapper(key)] = value
+	}
+	return result
+}
+
+func MapValues[KEY comparable, T any, V any](source map[KEY]T, mapper func(T) V) map[KEY]V {
+	if source == nil {
+		return nil
+	}
+	result := make(map[KEY]V)
+	if len(source) == 0 {
+		return result
+	}
+	for key, value := range source {
+		result[key] = mapper(value)
+	}
+	return result
+}
+
+func MapData[OKEY comparable, NKEY comparable, OVALUE any, NVALUE any](source map[OKEY]OVALUE, mapper func(OKEY, OVALUE) (NKEY, NVALUE)) map[NKEY]NVALUE {
+	if source == nil {
+		return nil
+	}
+	result := make(map[NKEY]NVALUE)
+	if len(source) == 0 {
+		return result
+	}
+	for key, value := range source {
+		nkey, nvalue := mapper(key, value)
+		result[nkey] = nvalue
+	}
+	return result
+}
+
+func MapSlice[T any, V any](source []T, mapper func(T) V) []V {
+	target := make([]V, 0)
 	for _, t := range source {
 		target = append(target, mapper(t))
 	}
 	return target
 }
 
+func ForEach[T any](source []T, action func(T)) {
+	for _, t := range source {
+		action(t)
+	}
+}
+
 func Join[T fmt.Stringer](t []T, sep string) string {
-	return strings.Join(Map(t, func(t T) string {
+	return strings.Join(MapSlice(t, func(t T) string {
 		return t.String()
 	}), sep)
 }

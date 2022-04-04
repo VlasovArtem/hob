@@ -21,7 +21,7 @@ func (c *CountryHandlerObject) Initialize(factory dependency.DependenciesProvide
 }
 
 func (c *CountryHandlerObject) Init(router *mux.Router) {
-	subrouter := router.PathPrefix("/api/v1/country").Subrouter()
+	subrouter := router.PathPrefix("/api/v1/countries").Subrouter()
 
 	subrouter.Path("/").HandlerFunc(c.FindAll()).Methods("GET")
 	subrouter.Path("/{code}").HandlerFunc(c.FindByCode()).Methods("GET")

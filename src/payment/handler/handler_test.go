@@ -4,44 +4,52 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common"
+	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/payment/mocks"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
 )
 
-var payments *mocks.PaymentService
-
-func handlerGenerator() PaymentHandler {
-	payments = new(mocks.PaymentService)
-
-	return NewPaymentHandler(payments)
+type PaymentHandlerTestSuite struct {
+	testhelper.MockTestSuite[PaymentHandler]
+	payments *mocks.PaymentService
 }
 
-func Test_Add(t *testing.T) {
-	handler := handlerGenerator()
+func TestPaymentHandlerTestSuite(t *testing.T) {
+	testingSuite := &PaymentHandlerTestSuite{}
+	testingSuite.TestObjectGenerator = func() PaymentHandler {
+		testingSuite.payments = new(mocks.PaymentService)
+		return NewPaymentHandler(testingSuite.payments)
+	}
 
+	suite.Run(t, testingSuite)
+}
+
+func (p *PaymentHandlerTestSuite) Test_Add() {
 	request := mocks.GenerateCreatePaymentRequest()
 
-	payments.On("Add", request).Return(request.CreateToEntity().ToDto(), nil)
+	p.payments.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").
 		WithMethod("POST").
-		WithHandler(handler.Add()).
+		WithHandler(p.TestO.Add()).
 		WithBody(request)
 
-	responseByteArray := testRequest.Verify(t, http.StatusCreated)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusCreated)
 
 	actual := model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, model.PaymentDto{
+	assert.Equal(p.T(), model.PaymentDto{
 		Id:          actual.Id,
 		Name:        "Test Payment",
 		Description: "Test Payment Description",
@@ -53,397 +61,422 @@ func Test_Add(t *testing.T) {
 	}, actual)
 }
 
-func Test_Add_WithInvalidRequest(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_Add_WithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").
 		WithMethod("POST").
-		WithHandler(handler.Add())
+		WithHandler(p.TestO.Add())
 
-	testRequest.Verify(t, http.StatusBadRequest)
+	testRequest.Verify(p.T(), http.StatusBadRequest)
 }
 
-func Test_Add_WithErrorFromService(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_Add_WithErrorFromService() {
 	request := mocks.GenerateCreatePaymentRequest()
 
 	expected := errors.New("error")
 
-	payments.On("Add", request).Return(model.PaymentDto{}, expected)
+	p.payments.On("Add", request).Return(model.PaymentDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment").
 		WithMethod("POST").
-		WithHandler(handler.Add()).
+		WithHandler(p.TestO.Add()).
 		WithBody(request)
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
+	assert.Equal(p.T(), fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
 }
 
-func Test_Update(t *testing.T) {
-	handler := handlerGenerator()
+func (p *PaymentHandlerTestSuite) Test_AddBatch() {
+	request := mocks.GenerateCreatePaymentBatchRequest(1)
 
+	p.payments.On("AddBatch", request).Return(common.MapSlice(request.Payments, func(request model.CreatePaymentRequest) model.PaymentDto {
+		return request.ToEntity().ToDto()
+	}), nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/batch").
+		WithMethod("POST").
+		WithHandler(p.TestO.AddBatch()).
+		WithBody(request)
+
+	responseByteArray := testRequest.Verify(p.T(), http.StatusCreated)
+
+	var actual []model.PaymentDto
+
+	err := json.Unmarshal(responseByteArray, &actual)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), []model.PaymentDto{
+		{
+			Id:          actual[0].Id,
+			Name:        "Payment Name #0",
+			Description: "Test Payment Description",
+			HouseId:     mocks.HouseId,
+			UserId:      mocks.UserId,
+			ProviderId:  mocks.ProviderId,
+			Date:        mocks.Date,
+			Sum:         1000,
+		},
+	}, actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_AddBatch_WithInvalidRequest() {
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/batch").
+		WithMethod("POST").
+		WithHandler(p.TestO.AddBatch())
+
+	testRequest.Verify(p.T(), http.StatusBadRequest)
+}
+
+func (p *PaymentHandlerTestSuite) Test_AddBatch_WithErrorFromService() {
+	request := mocks.GenerateCreatePaymentBatchRequest(1)
+
+	errorResponse := int_errors.NewBuilder().
+		WithDetail("message").
+		WithMessage("error")
+	err := int_errors.NewErrResponse(errorResponse)
+
+	p.payments.On("AddBatch", request).Return([]model.PaymentDto{}, err)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/batch").
+		WithMethod("POST").
+		WithHandler(p.TestO.AddBatch()).
+		WithBody(request)
+
+	actual := testRequest.Verify(p.T(), http.StatusBadRequest)
+
+	expected, err := json.Marshal(errorResponse.Build())
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), append(expected, []byte("\n")...), actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_Update() {
 	request := mocks.GenerateUpdatePaymentRequest()
 	id := uuid.New()
 
-	payments.On("Update", id, request).Return(nil)
+	p.payments.On("Update", id, request).Return(nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(p.TestO.Update()).
 		WithBody(request).
 		WithVar("id", id.String())
 
-	testRequest.Verify(t, http.StatusOK)
+	testRequest.Verify(p.T(), http.StatusOK)
 }
 
-func Test_Update_WithInvalidId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_Update_WithInvalidId() {
 	request := mocks.GenerateUpdatePaymentRequest()
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(p.TestO.Update()).
 		WithBody(request).
 		WithVar("id", "id")
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+	assert.Equal(p.T(), "the id is not valid id\n", string(responseByteArray))
 
-	payments.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+	p.payments.AssertNotCalled(p.T(), "Update", mock.Anything, mock.Anything)
 }
 
-func Test_Update_WithInvalidRequest(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_Update_WithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(p.TestO.Update()).
 		WithVar("id", uuid.New().String())
 
-	testRequest.Verify(t, http.StatusBadRequest)
+	testRequest.Verify(p.T(), http.StatusBadRequest)
 }
 
-func Test_Update_WithErrorFromService(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_Update_WithErrorFromService() {
 	request := mocks.GenerateUpdatePaymentRequest()
 	id := uuid.New()
 
 	expected := errors.New("error")
 
-	payments.On("Update", id, request).Return(expected)
+	p.payments.On("Update", id, request).Return(expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("PUT").
-		WithHandler(handler.Update()).
+		WithHandler(p.TestO.Update()).
 		WithVar("id", id.String()).
 		WithBody(request)
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
+	assert.Equal(p.T(), fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
 }
 
-func Test_Delete(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_Delete() {
 	id := uuid.New()
 
-	payments.On("DeleteById", id).Return(nil)
+	p.payments.On("DeleteById", id).Return(nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("DELETE").
-		WithHandler(handler.Delete()).
+		WithHandler(p.TestO.Delete()).
 		WithVar("id", id.String())
 
-	testRequest.Verify(t, http.StatusNoContent)
+	testRequest.Verify(p.T(), http.StatusNoContent)
 }
 
-func Test_Delete_WithMissingParameter(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_Delete_WithMissingParameter() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("DELETE").
-		WithHandler(handler.Delete())
+		WithHandler(p.TestO.Delete())
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "parameter 'id' not found\n", string(responseByteArray))
+	assert.Equal(p.T(), "parameter 'id' not found\n", string(responseByteArray))
 }
 
-func Test_Delete_WithInvalidParameter(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_Delete_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("DELETE").
-		WithHandler(handler.Delete()).
+		WithHandler(p.TestO.Delete()).
 		WithVar("id", "id")
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+	assert.Equal(p.T(), "the id is not valid id\n", string(responseByteArray))
 }
 
-func Test_FindById(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindById() {
 	paymentResponse := mocks.GeneratePaymentResponse()
 
-	payments.On("FindById", paymentResponse.Id).
+	p.payments.On("FindById", paymentResponse.Id).
 		Return(paymentResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(p.TestO.FindById()).
 		WithVar("id", paymentResponse.Id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
 
 	actual := model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponse, actual)
+	assert.Equal(p.T(), paymentResponse, actual)
 }
 
-func Test_FindById_WithError(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindById_WithError() {
 	id := uuid.New()
 
 	expected := errors.New("error")
 
-	payments.On("FindById", id).
+	p.payments.On("FindById", id).
 		Return(model.PaymentDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(p.TestO.FindById()).
 		WithVar("id", id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
+	assert.Equal(p.T(), fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
 }
 
-func Test_FindById_WithInvalidParameter(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindById_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(p.TestO.FindById()).
 		WithVar("id", "id")
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+	assert.Equal(p.T(), "the id is not valid id\n", string(responseByteArray))
 }
 
-func Test_FindByHouseId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByHouseId() {
 	response := mocks.GeneratePaymentResponse()
 
 	paymentResponses := []model.PaymentDto{response}
 
-	payments.On("FindByHouseId", response.Id).
+	p.payments.On("FindByHouseId", response.Id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByHouseId()).
+		WithHandler(p.TestO.FindByHouseId()).
 		WithVar("id", response.Id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
 
 	actual := []model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponses, actual)
+	assert.Equal(p.T(), paymentResponses, actual)
 }
 
-func Test_FindByHouseId_WithEmptyResponse(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithEmptyResponse() {
 	id := uuid.New()
 
 	paymentResponses := []model.PaymentDto{}
 
-	payments.On("FindByHouseId", id).
+	p.payments.On("FindByHouseId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByHouseId()).
+		WithHandler(p.TestO.FindByHouseId()).
 		WithVar("id", id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
 
 	actual := []model.PaymentDto{}
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponses, actual)
+	assert.Equal(p.T(), paymentResponses, actual)
 }
 
-func Test_FindByHouseId_WithInvalidParameter(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByHouseId()).
+		WithHandler(p.TestO.FindByHouseId()).
 		WithVar("id", "id")
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+	assert.Equal(p.T(), "the id is not valid id\n", string(responseByteArray))
 }
 
-func Test_FindByUserId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByUserId() {
 	response := mocks.GeneratePaymentResponse()
 
 	paymentResponses := []model.PaymentDto{response}
 
-	payments.On("FindByUserId", response.Id).
+	p.payments.On("FindByUserId", response.Id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByUserId()).
+		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", response.Id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
 
 	var actual []model.PaymentDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponses, actual)
+	assert.Equal(p.T(), paymentResponses, actual)
 }
 
-func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithEmptyResponse() {
 	id := uuid.New()
 
 	var paymentResponses []model.PaymentDto
 
-	payments.On("FindByUserId", id).
+	p.payments.On("FindByUserId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByUserId()).
+		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
 
 	var actual []model.PaymentDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponses, actual)
+	assert.Equal(p.T(), paymentResponses, actual)
 }
 
-func Test_FindByUserId_WithInvalidParameter(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByUserId()).
+		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", "id")
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+	assert.Equal(p.T(), "the id is not valid id\n", string(responseByteArray))
 }
 
-func Test_FindByProviderId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByProviderId() {
 	response := mocks.GeneratePaymentResponse()
 
 	paymentResponses := []model.PaymentDto{response}
 
-	payments.On("FindByProviderId", response.Id).
+	p.payments.On("FindByProviderId", response.Id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/provider/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByProviderId()).
+		WithHandler(p.TestO.FindByProviderId()).
 		WithVar("id", response.Id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
 
 	var actual []model.PaymentDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponses, actual)
+	assert.Equal(p.T(), paymentResponses, actual)
 }
 
-func Test_FindByProviderId_WithEmptyResponse(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithEmptyResponse() {
 	id := uuid.New()
 
 	var paymentResponses []model.PaymentDto
 
-	payments.On("FindByProviderId", id).
+	p.payments.On("FindByProviderId", id).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/provider/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByProviderId()).
+		WithHandler(p.TestO.FindByProviderId()).
 		WithVar("id", id.String())
 
-	responseByteArray := testRequest.Verify(t, http.StatusOK)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
 
 	var actual []model.PaymentDto
 
 	json.Unmarshal(responseByteArray, &actual)
 
-	assert.Equal(t, paymentResponses, actual)
+	assert.Equal(p.T(), paymentResponses, actual)
 }
 
-func Test_FindByProviderId_WithInvalidParameter(t *testing.T) {
-	handler := handlerGenerator()
-
+func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/payment/provider/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByUserId()).
+		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", "id")
 
-	responseByteArray := testRequest.Verify(t, http.StatusBadRequest)
+	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(responseByteArray))
+	assert.Equal(p.T(), "the id is not valid id\n", string(responseByteArray))
 }

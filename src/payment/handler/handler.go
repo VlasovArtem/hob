@@ -24,9 +24,10 @@ func (p *PaymentHandlerObject) Initialize(factory dependency.DependenciesProvide
 }
 
 func (p *PaymentHandlerObject) Init(router *mux.Router) {
-	subrouter := router.PathPrefix("/api/v1/payment").Subrouter()
+	subrouter := router.PathPrefix("/api/v1/payments").Subrouter()
 
 	subrouter.Path("").HandlerFunc(p.Add()).Methods("POST")
+	subrouter.Path("/batch").HandlerFunc(p.Add()).Methods("POST")
 	subrouter.Path("/{id}").HandlerFunc(p.FindById()).Methods("GET")
 	subrouter.Path("/{id}").HandlerFunc(p.Delete()).Methods("DELETE")
 	subrouter.Path("/{id}").HandlerFunc(p.Update()).Methods("PUT")
@@ -37,6 +38,7 @@ func (p *PaymentHandlerObject) Init(router *mux.Router) {
 
 type PaymentHandler interface {
 	Add() http.HandlerFunc
+	AddBatch() http.HandlerFunc
 	Delete() http.HandlerFunc
 	Update() http.HandlerFunc
 	FindById() http.HandlerFunc
@@ -52,6 +54,18 @@ func (p *PaymentHandlerObject) Add() http.HandlerFunc {
 		} else {
 			rest.NewAPIResponse(writer).
 				Created(p.paymentService.Add(body)).
+				Perform()
+		}
+	}
+}
+
+func (p *PaymentHandlerObject) AddBatch() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if body, err := rest.ReadRequestBody[model.CreatePaymentBatchRequest](request); err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			rest.NewAPIResponse(writer).
+				Created(p.paymentService.AddBatch(body)).
 				Perform()
 		}
 	}

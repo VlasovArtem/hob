@@ -39,6 +39,7 @@ func NewIncomeRepository(database db.DatabaseService) IncomeRepository {
 
 type IncomeRepository interface {
 	Create(entity model.Income) (model.Income, error)
+	CreateBatch(entity []model.Income) ([]model.Income, error)
 	FindById(id uuid.UUID) (model.Income, error)
 	FindByHouseId(id uuid.UUID) ([]model.IncomeDto, error)
 	FindByGroupIds(groupIds []uuid.UUID) ([]model.IncomeDto, error)
@@ -49,6 +50,10 @@ type IncomeRepository interface {
 
 func (i *IncomeRepositoryObject) Create(entity model.Income) (model.Income, error) {
 	return entity, i.db.D().Omit("Groups.*").Create(&entity).Error
+}
+
+func (i *IncomeRepositoryObject) CreateBatch(entities []model.Income) ([]model.Income, error) {
+	return entities, i.db.D().Omit("Groups.*").Create(&entities).Error
 }
 
 func (i *IncomeRepositoryObject) FindById(id uuid.UUID) (response model.Income, err error) {
@@ -66,7 +71,7 @@ func (i *IncomeRepositoryObject) FindByHouseId(id uuid.UUID) (response []model.I
 		return []model.IncomeDto{}, err
 	}
 
-	return common.Map(responseEntities, func(i model.Income) model.IncomeDto {
+	return common.MapSlice(responseEntities, func(i model.Income) model.IncomeDto {
 		return i.ToDto()
 	}), nil
 }
@@ -76,7 +81,7 @@ func (i *IncomeRepositoryObject) FindByGroupIds(groupIds []uuid.UUID) (response 
 	if err = i.db.D().Joins("JOIN income_groups ON income_groups.income_id = incomes.id AND income_groups.group_id IN ?", groupIds).Preload("Groups").Find(&responseEntity).Error; err != nil {
 		return []model.IncomeDto{}, err
 	}
-	return common.Map(responseEntity, func(entity model.Income) model.IncomeDto {
+	return common.MapSlice(responseEntity, func(entity model.Income) model.IncomeDto {
 		return entity.ToDto()
 	}), nil
 }
@@ -112,7 +117,7 @@ func (i *IncomeRepositoryObject) Update(id uuid.UUID, request model.UpdateIncome
 		return err
 	}
 
-	var groups = common.Map(request.GroupIds, groupModel.GroupIdToGroup)
+	var groups = common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup)
 
 	return i.db.DM(&entity).Association("Groups").Replace(groups)
 }

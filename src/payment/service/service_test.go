@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common"
 	interrors "github.com/VlasovArtem/hob/src/common/int-errors"
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/payment/mocks"
@@ -54,7 +55,7 @@ func (p *PaymentServiceTestSuite) Test_Add() {
 
 	payment, err := p.TestO.Add(request)
 
-	expectedEntity := request.CreateToEntity()
+	expectedEntity := request.ToEntity()
 	expectedEntity.Id = payment.Id
 	expectedResponse := expectedEntity.ToDto()
 
@@ -69,7 +70,7 @@ func (p *PaymentServiceTestSuite) Test_Add_WithUserNotExists() {
 
 	payment, err := p.TestO.Add(request)
 
-	assert.Equal(p.T(), fmt.Errorf("user with id %s in not exists", request.UserId), err)
+	assert.Equal(p.T(), fmt.Errorf("user with id %s not found", request.UserId), err)
 	assert.Equal(p.T(), model.PaymentDto{}, payment)
 }
 
@@ -81,7 +82,7 @@ func (p *PaymentServiceTestSuite) Test_Add_WithHouseNotExists() {
 
 	payment, err := p.TestO.Add(request)
 
-	assert.Equal(p.T(), fmt.Errorf("house with id %s in not exists", request.HouseId), err)
+	assert.Equal(p.T(), fmt.Errorf("house with id %s not found", request.HouseId), err)
 	assert.Equal(p.T(), model.PaymentDto{}, payment)
 }
 
@@ -94,10 +95,77 @@ func (p *PaymentServiceTestSuite) Test_Add_WithProviderNotExists() {
 
 	payment, err := p.TestO.Add(request)
 
-	assert.Equal(p.T(), fmt.Errorf("provider with id %s in not exists", request.ProviderId), err)
+	assert.Equal(p.T(), fmt.Errorf("provider with id %s not found", request.ProviderId), err)
 	assert.Equal(p.T(), model.PaymentDto{}, payment)
 
 	p.paymentRepository.AssertNotCalled(p.T(), "Create", mock.Anything)
+}
+
+func (p *PaymentServiceTestSuite) Test_AddBatch() {
+	request := mocks.GenerateCreatePaymentBatchRequest(2)
+	repositoryResponse := common.MapSlice(request.Payments, func(income model.CreatePaymentRequest) model.Payment {
+		return income.ToEntity()
+	})
+
+	p.userService.On("ExistsById", mock.Anything).Return(true)
+	p.houseService.On("ExistsById", mock.Anything).Return(true)
+	p.providerService.On("ExistsById", mock.Anything).Return(true)
+	p.paymentRepository.On("CreateBatch", mock.Anything).Return(repositoryResponse, nil)
+
+	batch, err := p.TestO.AddBatch(request)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), common.MapSlice(repositoryResponse, model.EntityToDto), batch)
+}
+
+func (p *PaymentServiceTestSuite) Test_AddBatch_WithEmptyData() {
+	request := mocks.GenerateCreatePaymentBatchRequest(0)
+
+	batch, err := p.TestO.AddBatch(request)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), make([]model.PaymentDto, 0), batch)
+
+	p.userService.AssertNotCalled(p.T(), "ExistsById", mock.Anything)
+	p.houseService.AssertNotCalled(p.T(), "ExistsById", mock.Anything)
+	p.providerService.AssertNotCalled(p.T(), "ExistsById", mock.Anything)
+	p.paymentRepository.AssertNotCalled(p.T(), "CreateBatch", mock.Anything)
+}
+
+func (p *PaymentServiceTestSuite) Test_AddBatch_WithInvalidData() {
+	request := mocks.GenerateCreatePaymentBatchRequest(3)
+	request.Payments[0].UserId = uuid.New()
+	request.Payments[1].HouseId = uuid.New()
+	request.Payments[2].ProviderId = uuid.New()
+
+	p.userService.On("ExistsById", request.Payments[0].UserId).Return(false)
+	p.userService.On("ExistsById", request.Payments[1].UserId).Return(true)
+	p.userService.On("ExistsById", request.Payments[2].UserId).Return(true)
+	p.houseService.On("ExistsById", request.Payments[0].HouseId).Return(true)
+	p.houseService.On("ExistsById", request.Payments[1].HouseId).Return(false)
+	p.houseService.On("ExistsById", request.Payments[2].HouseId).Return(true)
+	p.providerService.On("ExistsById", request.Payments[0].ProviderId).Return(true)
+	p.providerService.On("ExistsById", request.Payments[1].ProviderId).Return(true)
+	p.providerService.On("ExistsById", request.Payments[2].ProviderId).Return(false)
+
+	actual, err := p.TestO.AddBatch(request)
+
+	var expectedResult []model.PaymentDto
+
+	assert.Equal(p.T(), expectedResult, actual)
+
+	builder := interrors.NewBuilder()
+	builder.WithMessage("Create payment batch failed")
+	builder.WithDetail(fmt.Sprintf("user with id %s not found", request.Payments[0].UserId))
+	builder.WithDetail(fmt.Sprintf("house with id %s not found", request.Payments[1].HouseId))
+	builder.WithDetail(fmt.Sprintf("provider with id %s not found", request.Payments[2].ProviderId))
+
+	expectedError := interrors.NewErrResponse(builder).(*interrors.ErrResponse)
+	actualError := err.(*interrors.ErrResponse)
+
+	assert.Equal(p.T(), *expectedError, *actualError)
+
+	p.paymentRepository.AssertNotCalled(p.T(), "CreateBatch", mock.Anything)
 }
 
 func (p *PaymentServiceTestSuite) Test_FindById() {

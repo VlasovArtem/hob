@@ -3,6 +3,7 @@ package mocks
 import (
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/google/uuid"
+	"strconv"
 )
 
 func GenerateHouse(userId uuid.UUID) model.House {
@@ -26,6 +27,16 @@ func GenerateCreateHouseRequest() model.CreateHouseRequest {
 		StreetLine2: "StreetLine2",
 		UserId:      uuid.New(),
 	}
+}
+
+func GenerateCreateHouseBatchRequest(number int) model.CreateHouseBatchRequest {
+	request := model.CreateHouseBatchRequest{}
+	for i := 0; i < number; i++ {
+		houseRequest := GenerateCreateHouseRequest()
+		houseRequest.Name = "House Name #" + strconv.Itoa(i)
+		request.Houses = append(request.Houses, houseRequest)
+	}
+	return request
 }
 
 func GenerateHouseResponse() model.HouseDto {

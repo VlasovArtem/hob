@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
@@ -43,6 +44,7 @@ func (i *IncomeServiceObject) Initialize(factory dependency.DependenciesProvider
 
 type IncomeService interface {
 	Add(request model.CreateIncomeRequest) (model.IncomeDto, error)
+	AddBatch(request model.CreateIncomeBatchRequest) ([]model.IncomeDto, error)
 	FindById(id uuid.UUID) (model.IncomeDto, error)
 	FindByHouseId(id uuid.UUID) []model.IncomeDto
 	FindByGroupIds(ids []uuid.UUID) []model.IncomeDto
@@ -53,7 +55,7 @@ type IncomeService interface {
 
 func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response model.IncomeDto, err error) {
 	if !i.houseService.ExistsById(request.HouseId) {
-		return response, int_errors.NewErrNotFound("house with id %s not exists", request.HouseId)
+		return response, int_errors.NewErrNotFound("house with id %s not found", request.HouseId)
 	}
 	if len(request.GroupIds) != 0 && !i.groupService.ExistsByIds(request.GroupIds) {
 		return response, int_errors.NewErrNotFound("not all group with ids %s found", common.Join(request.GroupIds, ","))
@@ -66,6 +68,60 @@ func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response m
 		return response, err
 	} else {
 		return entity.ToDto(), nil
+	}
+}
+
+func (i *IncomeServiceObject) AddBatch(request model.CreateIncomeBatchRequest) (response []model.IncomeDto, err error) {
+	if len(request.Incomes) == 0 {
+		return make([]model.IncomeDto, 0), nil
+	}
+
+	houseIds := make(map[uuid.UUID]bool)
+	groups := make(map[uuid.UUID]bool)
+
+	common.ForEach(request.Incomes, func(income model.CreateIncomeRequest) {
+		houseIds[income.HouseId] = true
+		common.ForEach(income.GroupIds, func(groupId uuid.UUID) {
+			groups[groupId] = true
+		})
+	})
+
+	builder := int_errors.NewBuilder()
+
+	for houseId, _ := range houseIds {
+		if !i.houseService.ExistsById(houseId) {
+			builder.WithDetail(fmt.Sprintf("house with id %s not found", houseId))
+		}
+	}
+
+	var groupIds []uuid.UUID
+
+	for groupId := range groups {
+		groupIds = append(groupIds, groupId)
+	}
+
+	if len(groupIds) != 0 && !i.groupService.ExistsByIds(groupIds) {
+		builder.WithDetail(fmt.Sprintf("not all group with ids %s found", common.Join(groupIds, ",")))
+	}
+
+	for _, income := range request.Incomes {
+		if income.Date.After(time.Now()) {
+			builder.WithDetail("date should not be after current date")
+		}
+	}
+
+	if builder.HasErrors() {
+		return nil, int_errors.NewErrResponse(builder.WithMessage("Create income batch failed"))
+	}
+
+	entities := common.MapSlice(request.Incomes, func(income model.CreateIncomeRequest) model.Income {
+		return income.ToEntity()
+	})
+
+	if repositoryResponse, err := i.repository.CreateBatch(entities); err != nil {
+		return nil, err
+	} else {
+		return common.MapSlice(repositoryResponse, model.IncomeToDto), nil
 	}
 }
 

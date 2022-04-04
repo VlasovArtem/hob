@@ -22,7 +22,7 @@ func (p *PaymentSchedulerHandlerObject) Initialize(factory dependency.Dependenci
 }
 
 func (p *PaymentSchedulerHandlerObject) Init(router *mux.Router) {
-	subrouter := router.PathPrefix("/api/v1/payment/scheduler").Subrouter()
+	subrouter := router.PathPrefix("/api/v1/payments/schedulers").Subrouter()
 
 	subrouter.Path("").HandlerFunc(p.Add()).Methods("POST")
 	subrouter.Path("/{id}").HandlerFunc(p.FindById()).Methods("GET")

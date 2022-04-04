@@ -22,15 +22,17 @@ func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesProvider
 }
 
 func (i *IncomeHandlerObject) Init(router *mux.Router) {
-	incomeRouter := router.PathPrefix("/api/v1/income").Subrouter()
+	incomeRouter := router.PathPrefix("/api/v1/incomes").Subrouter()
 
 	incomeRouter.Path("").HandlerFunc(i.Add()).Methods("POST")
+	incomeRouter.Path("/batch").HandlerFunc(i.AddBatch()).Methods("POST")
 	incomeRouter.Path("/{id}").HandlerFunc(i.FindById()).Methods("GET")
 	incomeRouter.Path("/house/{id}").HandlerFunc(i.FindByHouseId()).Methods("GET")
 }
 
 type IncomeHandler interface {
 	Add() http.HandlerFunc
+	AddBatch() http.HandlerFunc
 	FindById() http.HandlerFunc
 	FindByHouseId() http.HandlerFunc
 }
@@ -42,6 +44,18 @@ func (i *IncomeHandlerObject) Add() http.HandlerFunc {
 		} else {
 			rest.NewAPIResponse(writer).
 				Created(i.incomeService.Add(body)).
+				Perform()
+		}
+	}
+}
+
+func (i *IncomeHandlerObject) AddBatch() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if body, err := rest.ReadRequestBody[model.CreateIncomeBatchRequest](request); err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			rest.NewAPIResponse(writer).
+				Created(i.incomeService.AddBatch(body)).
 				Perform()
 		}
 	}

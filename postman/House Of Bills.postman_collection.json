@@ -14,7 +14,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/country",
+							"raw": "http://localhost:3000/api/v1/countries",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -35,7 +35,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/country/UA",
+							"raw": "http://localhost:3000/api/v1/countries/UA",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -88,7 +88,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/v1/user",
+							"raw": "http://localhost:3000/api/v1/users",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -109,7 +109,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/user/{{user_id}}",
+							"raw": "http://localhost:3000/api/v1/users/{{user_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -162,7 +162,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/v1/house",
+							"raw": "http://localhost:3000/api/v1/houses",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -183,7 +183,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/house/{{house_id}}",
+							"raw": "http://localhost:3000/api/v1/houses/{{house_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -205,7 +205,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/house/user/{{user_id}}",
+							"raw": "http://localhost:3000/api/v1/houses/users/{{user_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -271,7 +271,7 @@
 									}
 								},
 								"url": {
-									"raw": "http://localhost:3000/api/v1/provider/custom",
+									"raw": "http://localhost:3000/api/v1/providers/custom",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -293,7 +293,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/provider/custom/{{custom_provider_id}}",
+									"raw": "http://localhost:3000/api/v1/providers/custom/{{custom_provider_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -316,7 +316,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/provider/custom/user/{{user_id}}",
+									"raw": "http://localhost:3000/api/v1/providers/custom/users/{{user_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -377,7 +377,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/v1/provider",
+							"raw": "http://localhost:3000/api/v1/providers",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -398,7 +398,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/provider/{{provider_id}}",
+							"raw": "http://localhost:3000/api/v1/providers/{{provider_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -420,7 +420,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/provider/name/provider",
+							"raw": "http://localhost:3000/api/v1/providers/name/providers",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -477,7 +477,7 @@
 									}
 								},
 								"url": {
-									"raw": "http://localhost:3000/api/v1/payment/scheduler",
+									"raw": "http://localhost:3000/api/v1/payments/schedulers",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -499,7 +499,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/payment/scheduler/{{payment_scheduler_id}}",
+									"raw": "http://localhost:3000/api/v1/payments/schedulers/{{payment_scheduler_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -522,7 +522,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/payment/scheduler/house/{{house_id}}",
+									"raw": "http://localhost:3000/api/v1/payments/schedulers/houses/{{house_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -546,7 +546,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/payment/scheduler/user/{{user_id}}",
+									"raw": "http://localhost:3000/api/v1/payments/schedulers/users/{{user_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -570,7 +570,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/payment/scheduler/{{payment_scheduler_id}}",
+									"raw": "http://localhost:3000/api/v1/payments/schedulers/{{payment_scheduler_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -632,7 +632,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/v1/payment",
+							"raw": "http://localhost:3000/api/v1/payments",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -653,7 +653,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/payment/{{payment_id}}",
+							"raw": "http://localhost:3000/api/v1/payments/{{payment_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -675,7 +675,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/payment/house/{{house_id}}",
+							"raw": "http://localhost:3000/api/v1/payments/houses/{{house_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -698,7 +698,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/payment/user/{{user_id}}",
+							"raw": "http://localhost:3000/api/v1/payments/users/{{user_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -755,7 +755,7 @@
 									}
 								},
 								"url": {
-									"raw": "http://localhost:3000/api/v1/income/scheduler",
+									"raw": "http://localhost:3000/api/v1/incomes/schedulers",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -777,7 +777,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/income/scheduler/{{income_scheduler_id}}",
+									"raw": "http://localhost:3000/api/v1/incomes/schedulers/{{income_scheduler_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -800,7 +800,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/income/scheduler/house/{{house_id}}",
+									"raw": "http://localhost:3000/api/v1/incomes/schedulers/houses/{{house_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -824,7 +824,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:3000/api/v1/income/scheduler/{{income_scheduler_id}}",
+									"raw": "http://localhost:3000/api/v1/incomes/schedulers/{{income_scheduler_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -886,7 +886,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/v1/income",
+							"raw": "http://localhost:3000/api/v1/incomes",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -907,7 +907,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/income/{{income_id}}",
+							"raw": "http://localhost:3000/api/v1/incomes/{{income_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -929,7 +929,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/income/house/{{house_id}}",
+							"raw": "http://localhost:3000/api/v1/incomes/houses/{{house_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -983,7 +983,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/v1/meter",
+							"raw": "http://localhost:3000/api/v1/meters",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1004,7 +1004,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/meter/{{meter_id}}",
+							"raw": "http://localhost:3000/api/v1/meters/{{meter_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1026,7 +1026,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/meter/house/{{house_id}}",
+							"raw": "http://localhost:3000/api/v1/meters/houses/{{house_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1049,7 +1049,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/api/v1/meter/payment/{{payment_id}}",
+							"raw": "http://localhost:3000/api/v1/meters/payments/{{payment_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"

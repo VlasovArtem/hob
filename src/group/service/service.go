@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	interrors "github.com/VlasovArtem/hob/src/common/int-errors"
@@ -25,7 +27,7 @@ func NewGroupService(
 	}
 }
 
-func (h *GroupServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (g *GroupServiceObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewGroupService(
 		dependency.FindRequiredDependency[userService.UserServiceObject, userService.UserService](factory),
 		dependency.FindRequiredDependency[repository.GroupRepositoryObject, repository.GroupRepository](factory),
@@ -33,7 +35,8 @@ func (h *GroupServiceObject) Initialize(factory dependency.DependenciesProvider)
 }
 
 type GroupService interface {
-	Add(house model.CreateGroupRequest) (model.GroupDto, error)
+	Add(request model.CreateGroupRequest) (model.GroupDto, error)
+	AddBatch(request model.CreateGroupBatchRequest) ([]model.GroupDto, error)
 	FindById(id uuid.UUID) (model.GroupDto, error)
 	FindByUserId(userId uuid.UUID) []model.GroupDto
 	ExistsById(id uuid.UUID) bool
@@ -42,13 +45,13 @@ type GroupService interface {
 	Update(id uuid.UUID, request model.UpdateGroupRequest) error
 }
 
-func (h *GroupServiceObject) Add(request model.CreateGroupRequest) (response model.GroupDto, err error) {
-	if !h.userService.ExistsById(request.OwnerId) {
+func (g *GroupServiceObject) Add(request model.CreateGroupRequest) (response model.GroupDto, err error) {
+	if !g.userService.ExistsById(request.OwnerId) {
 		return response, interrors.NewErrNotFound("user with id %s not found", request.OwnerId)
 	} else {
 		entity := request.ToEntity()
 
-		if entity, err := h.repository.Create(entity); err != nil {
+		if entity, err := g.repository.Create(entity); err != nil {
 			return response, err
 		} else {
 			return entity.ToDto(), nil
@@ -56,36 +59,68 @@ func (h *GroupServiceObject) Add(request model.CreateGroupRequest) (response mod
 	}
 }
 
-func (h *GroupServiceObject) FindById(id uuid.UUID) (response model.GroupDto, err error) {
-	if response, err = h.repository.FindById(id); err != nil {
+func (g *GroupServiceObject) AddBatch(request model.CreateGroupBatchRequest) (response []model.GroupDto, err error) {
+	if len(request.Groups) == 0 {
+		return make([]model.GroupDto, 0), nil
+	}
+
+	ownerIds := make(map[string]uuid.UUID)
+
+	entities := common.MapSlice(request.Groups, func(r model.CreateGroupRequest) model.Group {
+		ownerIds[r.OwnerId.String()] = r.OwnerId
+		return r.ToEntity()
+	})
+
+	builder := interrors.NewBuilder()
+
+	for stringOwnerId, ownerId := range ownerIds {
+		if !g.userService.ExistsById(ownerId) {
+			builder.WithDetail(fmt.Sprintf("user with id %s not found", stringOwnerId))
+		}
+	}
+
+	if builder.HasErrors() {
+		builder.WithMessage("Create Group Batch Request Issue")
+		return nil, interrors.NewErrResponse(builder)
+	}
+
+	if batch, err := g.repository.CreateBatch(entities); err != nil {
+		return nil, err
+	} else {
+		return common.MapSlice(batch, model.GroupToGroupDto), nil
+	}
+}
+
+func (g *GroupServiceObject) FindById(id uuid.UUID) (response model.GroupDto, err error) {
+	if response, err = g.repository.FindById(id); err != nil {
 		return response, database.HandlerFindError(err, "group with id %s not found", id)
 	} else {
 		return response, nil
 	}
 }
 
-func (h *GroupServiceObject) FindByUserId(userId uuid.UUID) []model.GroupDto {
-	return h.repository.FindByOwnerId(userId)
+func (g *GroupServiceObject) FindByUserId(userId uuid.UUID) []model.GroupDto {
+	return g.repository.FindByOwnerId(userId)
 }
 
-func (h *GroupServiceObject) ExistsById(id uuid.UUID) bool {
-	return h.repository.ExistsById(id)
+func (g *GroupServiceObject) ExistsById(id uuid.UUID) bool {
+	return g.repository.ExistsById(id)
 }
 
-func (h *GroupServiceObject) ExistsByIds(ids []uuid.UUID) bool {
-	return h.repository.ExistsByIds(ids)
+func (g *GroupServiceObject) ExistsByIds(ids []uuid.UUID) bool {
+	return g.repository.ExistsByIds(ids)
 }
 
-func (h *GroupServiceObject) DeleteById(id uuid.UUID) error {
-	if !h.ExistsById(id) {
+func (g *GroupServiceObject) DeleteById(id uuid.UUID) error {
+	if !g.ExistsById(id) {
 		return interrors.NewErrNotFound("group with id %s not found", id)
 	}
-	return h.repository.DeleteById(id)
+	return g.repository.DeleteById(id)
 }
 
-func (h *GroupServiceObject) Update(id uuid.UUID, request model.UpdateGroupRequest) error {
-	if !h.ExistsById(id) {
+func (g *GroupServiceObject) Update(id uuid.UUID, request model.UpdateGroupRequest) error {
+	if !g.ExistsById(id) {
 		return interrors.NewErrNotFound("group with id %s not found", id)
 	}
-	return h.repository.Update(id, request)
+	return g.repository.Update(id, request)
 }

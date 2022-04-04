@@ -22,12 +22,12 @@ type GroupRepositoryTestSuite struct {
 	createdUser userModel.User
 }
 
-func (i *GroupRepositoryTestSuite) SetupSuite() {
-	i.InitDBTestSuite()
+func (g *GroupRepositoryTestSuite) SetupSuite() {
+	g.InitDBTestSuite()
 
-	i.CreateRepository(
+	g.CreateRepository(
 		func(service db.DatabaseService) {
-			i.repository = NewGroupRepository(service)
+			g.repository = NewGroupRepository(service)
 		},
 	).
 		AddAfterTest(func(service db.DatabaseService) {
@@ -38,105 +38,117 @@ func (i *GroupRepositoryTestSuite) SetupSuite() {
 		}).
 		ExecuteMigration(userModel.User{}, model.Group{})
 
-	i.createdUser = userMocks.GenerateUser()
-	i.CreateEntity(&i.createdUser)
+	g.createdUser = userMocks.GenerateUser()
+	g.CreateEntity(&g.createdUser)
 }
 
 func TestGroupRepositoryTestSuite(t *testing.T) {
 	suite.Run(t, new(GroupRepositoryTestSuite))
 }
 
-func (i *GroupRepositoryTestSuite) Test_Create() {
-	firstGroup := mocks.GenerateGroup(i.createdUser.Id)
+func (g *GroupRepositoryTestSuite) Test_Create() {
+	firstGroup := mocks.GenerateGroup(g.createdUser.Id)
 
-	actual, err := i.repository.Create(firstGroup)
+	actual, err := g.repository.Create(firstGroup)
 
-	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), firstGroup, actual)
+	assert.Nil(g.T(), err)
+	assert.Equal(g.T(), firstGroup, actual)
 }
 
-func (i *GroupRepositoryTestSuite) Test_FindById() {
-	expected := i.createGroup()
+func (g *GroupRepositoryTestSuite) Test_CreateBatch() {
+	firstGroup := mocks.GenerateGroup(g.createdUser.Id)
+	firstGroup.Name = "Name First"
+	secondGroup := mocks.GenerateGroup(g.createdUser.Id)
+	secondGroup.Name = "Name Second"
 
-	actual, err := i.repository.FindById(expected.Id)
+	actual, err := g.repository.CreateBatch([]model.Group{firstGroup, secondGroup})
 
-	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), expected.ToDto(), actual)
+	assert.Nil(g.T(), err)
+	assert.Equal(g.T(), []model.Group{firstGroup, secondGroup}, actual)
 }
 
-func (i *GroupRepositoryTestSuite) Test_FindById_WithMissingId() {
-	actual, err := i.repository.FindById(uuid.New())
+func (g *GroupRepositoryTestSuite) Test_FindById() {
+	expected := g.createGroup()
 
-	assert.ErrorIs(i.T(), err, gorm.ErrRecordNotFound)
-	assert.Equal(i.T(), model.GroupDto{}, actual)
+	actual, err := g.repository.FindById(expected.Id)
+
+	assert.Nil(g.T(), err)
+	assert.Equal(g.T(), expected.ToDto(), actual)
 }
 
-func (i *GroupRepositoryTestSuite) Test_FindByOwnerId() {
-	expected := i.createGroup()
+func (g *GroupRepositoryTestSuite) Test_FindById_WithMissingId() {
+	actual, err := g.repository.FindById(uuid.New())
 
-	actual := i.repository.FindByOwnerId(expected.OwnerId)
-
-	assert.Equal(i.T(), []model.GroupDto{expected.ToDto()}, actual)
+	assert.ErrorIs(g.T(), err, gorm.ErrRecordNotFound)
+	assert.Equal(g.T(), model.GroupDto{}, actual)
 }
 
-func (i *GroupRepositoryTestSuite) Test_ExistsById() {
-	entity := i.createGroup()
+func (g *GroupRepositoryTestSuite) Test_FindByOwnerId() {
+	expected := g.createGroup()
 
-	assert.True(i.T(), i.repository.ExistsById(entity.Id))
+	actual := g.repository.FindByOwnerId(expected.OwnerId)
+
+	assert.Equal(g.T(), []model.GroupDto{expected.ToDto()}, actual)
 }
 
-func (i *GroupRepositoryTestSuite) Test_ExistsById_WithMissingId() {
-	assert.False(i.T(), i.repository.ExistsById(uuid.New()))
+func (g *GroupRepositoryTestSuite) Test_ExistsById() {
+	entity := g.createGroup()
+
+	assert.True(g.T(), g.repository.ExistsById(entity.Id))
 }
 
-func (i *GroupRepositoryTestSuite) Test_ExistsByIds() {
-	entity := i.createGroup()
-
-	assert.True(i.T(), i.repository.ExistsByIds([]uuid.UUID{entity.Id}))
+func (g *GroupRepositoryTestSuite) Test_ExistsById_WithMissingId() {
+	assert.False(g.T(), g.repository.ExistsById(uuid.New()))
 }
 
-func (i *GroupRepositoryTestSuite) Test_ExistsByIds_WithMissingId() {
-	entity := i.createGroup()
+func (g *GroupRepositoryTestSuite) Test_ExistsByIds() {
+	entity := g.createGroup()
 
-	assert.False(i.T(), i.repository.ExistsByIds([]uuid.UUID{entity.Id, uuid.New()}))
+	assert.True(g.T(), g.repository.ExistsByIds([]uuid.UUID{entity.Id}))
 }
 
-func (i *GroupRepositoryTestSuite) Test_DeleteById() {
-	group := i.createGroup()
+func (g *GroupRepositoryTestSuite) Test_ExistsByIds_WithMissingId() {
+	entity := g.createGroup()
 
-	assert.Nil(i.T(), i.repository.DeleteById(group.Id))
+	assert.False(g.T(), g.repository.ExistsByIds([]uuid.UUID{entity.Id, uuid.New()}))
 }
 
-func (i *GroupRepositoryTestSuite) Test_DeleteById_WithMissingId() {
-	assert.Nil(i.T(), i.repository.DeleteById(uuid.New()))
+func (g *GroupRepositoryTestSuite) Test_DeleteById() {
+	group := g.createGroup()
+
+	assert.Nil(g.T(), g.repository.DeleteById(group.Id))
 }
 
-func (i *GroupRepositoryTestSuite) Test_Update() {
-	entity := i.createGroup()
-	newHouse := houseMocks.GenerateHouse(i.createdUser.Id)
-	i.CreateEntity(newHouse)
+func (g *GroupRepositoryTestSuite) Test_DeleteById_WithMissingId() {
+	assert.Nil(g.T(), g.repository.DeleteById(uuid.New()))
+}
+
+func (g *GroupRepositoryTestSuite) Test_Update() {
+	entity := g.createGroup()
+	newHouse := houseMocks.GenerateHouse(g.createdUser.Id)
+	g.CreateEntity(newHouse)
 
 	updatedIncome := model.UpdateGroupRequest{
 		Name: fmt.Sprintf("%s-new", entity.Name),
 	}
 
-	err := i.repository.Update(entity.Id, updatedIncome)
+	err := g.repository.Update(entity.Id, updatedIncome)
 
-	assert.Nil(i.T(), err)
+	assert.Nil(g.T(), err)
 
-	response, err := i.repository.FindById(entity.Id)
-	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), model.GroupDto{
+	response, err := g.repository.FindById(entity.Id)
+	assert.Nil(g.T(), err)
+	assert.Equal(g.T(), model.GroupDto{
 		Id:      entity.Id,
 		Name:    "Name-new",
-		OwnerId: i.createdUser.Id,
+		OwnerId: g.createdUser.Id,
 	}, response)
 }
 
-func (i *GroupRepositoryTestSuite) createGroup() model.Group {
-	entity := mocks.GenerateGroup(i.createdUser.Id)
+func (g *GroupRepositoryTestSuite) createGroup() model.Group {
+	entity := mocks.GenerateGroup(g.createdUser.Id)
 
-	i.CreateEntity(entity)
+	g.CreateEntity(entity)
 
 	return entity
 }

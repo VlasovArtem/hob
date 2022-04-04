@@ -32,6 +32,10 @@ type CreatePaymentRequest struct {
 	Sum         float32
 }
 
+type CreatePaymentBatchRequest struct {
+	Payments []CreatePaymentRequest
+}
+
 type UpdatePaymentRequest struct {
 	Name        string
 	Description string
@@ -64,7 +68,7 @@ func (p Payment) ToDto() PaymentDto {
 	}
 }
 
-func (c CreatePaymentRequest) CreateToEntity() Payment {
+func (c CreatePaymentRequest) ToEntity() Payment {
 	return Payment{
 		Id:          uuid.New(),
 		Name:        c.Name,
@@ -86,4 +90,8 @@ func (u UpdatePaymentRequest) UpdateToEntity(id uuid.UUID) Payment {
 		Date:        u.Date,
 		Sum:         u.Sum,
 	}
+}
+
+func EntityToDto(entity Payment) PaymentDto {
+	return entity.ToDto()
 }

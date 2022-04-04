@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
 	groupMocks "github.com/VlasovArtem/hob/src/group/mocks"
@@ -37,7 +38,7 @@ func TestIncomeServiceTestSuite(t *testing.T) {
 	suite.Run(t, ts)
 }
 
-func (i *IncomeServiceTestSuite) Test_AddIncome() {
+func (i *IncomeServiceTestSuite) Test_Add() {
 	var savedIncome model.Income
 	request := mocks.GenerateCreateIncomeRequest()
 	request.GroupIds = []uuid.UUID{uuid.New()}
@@ -63,13 +64,13 @@ func (i *IncomeServiceTestSuite) Test_Add_WithHouseNotExists() {
 
 	payment, err := i.TestO.Add(request)
 
-	assert.Equal(i.T(), int_errors.NewErrNotFound("house with id %s not exists", request.HouseId), err)
+	assert.Equal(i.T(), int_errors.NewErrNotFound("house with id %s not found", request.HouseId), err)
 	assert.Equal(i.T(), model.IncomeDto{}, payment)
 
 	i.incomeRepository.AssertNotCalled(i.T(), "Create", mock.Anything)
 }
 
-func (i *IncomeServiceTestSuite) Test_AddIncome_WithErrorFromRepository() {
+func (i *IncomeServiceTestSuite) Test_Add_WithErrorFromRepository() {
 	expectedError := errors.New("error")
 	request := mocks.GenerateCreateIncomeRequest()
 
@@ -82,7 +83,7 @@ func (i *IncomeServiceTestSuite) Test_AddIncome_WithErrorFromRepository() {
 	assert.Equal(i.T(), model.IncomeDto{}, income)
 }
 
-func (i *IncomeServiceTestSuite) Test_AddIncome_WithDateAfterCurrentDate() {
+func (i *IncomeServiceTestSuite) Test_Add_WithDateAfterCurrentDate() {
 	request := mocks.GenerateCreateIncomeRequest()
 	request.Date = time.Now().Add(time.Hour)
 
@@ -96,7 +97,7 @@ func (i *IncomeServiceTestSuite) Test_AddIncome_WithDateAfterCurrentDate() {
 	i.incomeRepository.AssertNotCalled(i.T(), "Create", mock.Anything)
 }
 
-func (i *IncomeServiceTestSuite) Test_AddIncome_WithGroupsNotFound() {
+func (i *IncomeServiceTestSuite) Test_Add_WithGroupsNotFound() {
 	request := mocks.GenerateCreateIncomeRequest()
 	request.GroupIds = []uuid.UUID{uuid.New()}
 
@@ -109,6 +110,67 @@ func (i *IncomeServiceTestSuite) Test_AddIncome_WithGroupsNotFound() {
 	assert.Equal(i.T(), model.IncomeDto{}, income)
 
 	i.incomeRepository.AssertNotCalled(i.T(), "Create", mock.Anything)
+}
+
+func (i *IncomeServiceTestSuite) Test_AddBatch() {
+	request := mocks.GenerateCreateIncomeBatchRequest(2)
+	repositoryResponse := common.MapSlice(request.Incomes, func(income model.CreateIncomeRequest) model.Income {
+		return income.ToEntity()
+	})
+
+	i.houses.On("ExistsById", mock.Anything).Return(true)
+	i.groups.On("ExistsByIds", mock.Anything).Return(true)
+	i.incomeRepository.On("CreateBatch", mock.Anything).Return(repositoryResponse, nil)
+
+	batch, err := i.TestO.AddBatch(request)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), common.MapSlice(repositoryResponse, model.IncomeToDto), batch)
+}
+
+func (i *IncomeServiceTestSuite) Test_AddBatch_WithEmptyData() {
+	request := mocks.GenerateCreateIncomeBatchRequest(0)
+
+	batch, err := i.TestO.AddBatch(request)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), make([]model.IncomeDto, 0), batch)
+
+	i.houses.AssertNotCalled(i.T(), "ExistsById", mock.Anything)
+	i.groups.AssertNotCalled(i.T(), "ExistsByIds", mock.Anything)
+	i.incomeRepository.AssertNotCalled(i.T(), "CreateBatch", mock.Anything)
+}
+
+func (i *IncomeServiceTestSuite) Test_AddBatch_WithInvalidData() {
+	request := mocks.GenerateCreateIncomeBatchRequest(3)
+	request.Incomes[0].Date = time.Now().Add(time.Hour)
+	request.Incomes[2].GroupIds = []uuid.UUID{uuid.New()}
+
+	i.houses.On("ExistsById", request.Incomes[0].HouseId).Return(true)
+	i.houses.On("ExistsById", request.Incomes[1].HouseId).Return(false)
+	i.houses.On("ExistsById", request.Incomes[2].HouseId).Return(true)
+	i.groups.On("ExistsByIds", request.Incomes[0].GroupIds).Return(true)
+	i.groups.On("ExistsByIds", request.Incomes[1].GroupIds).Return(true)
+	i.groups.On("ExistsByIds", request.Incomes[2].GroupIds).Return(false)
+
+	actual, err := i.TestO.AddBatch(request)
+
+	var expectedResult []model.IncomeDto
+
+	assert.Equal(i.T(), expectedResult, actual)
+
+	builder := int_errors.NewBuilder()
+	builder.WithMessage("Create income batch failed")
+	builder.WithDetail(fmt.Sprintf("house with id %s not found", request.Incomes[1].HouseId))
+	builder.WithDetail(fmt.Sprintf("not all group with ids %s found", common.Join(request.Incomes[2].GroupIds, ",")))
+	builder.WithDetail(fmt.Sprintf("date should not be after current date"))
+
+	expectedError := int_errors.NewErrResponse(builder).(*int_errors.ErrResponse)
+	actualError := err.(*int_errors.ErrResponse)
+
+	assert.Equal(i.T(), *expectedError, *actualError)
+
+	i.incomeRepository.AssertNotCalled(i.T(), "CreateBatch", mock.Anything)
 }
 
 func (i *IncomeServiceTestSuite) Test_FindById() {

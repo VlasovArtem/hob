@@ -41,6 +41,10 @@ type CreateHouseRequest struct {
 	GroupIds    []uuid.UUID
 }
 
+type CreateHouseBatchRequest struct {
+	Houses []CreateHouseRequest
+}
+
 type UpdateHouseRequest struct {
 	Name        string
 	CountryCode string
@@ -59,7 +63,7 @@ func (h House) ToDto() HouseDto {
 		StreetLine1: h.StreetLine1,
 		StreetLine2: h.StreetLine2,
 		UserId:      h.UserId,
-		Groups:      common.Map(h.Groups, groupModel.GroupToGroupDto),
+		Groups:      common.MapSlice(h.Groups, groupModel.GroupToGroupDto),
 	}
 }
 
@@ -72,6 +76,6 @@ func (c CreateHouseRequest) ToEntity(country *model.Country) House {
 		StreetLine1: c.StreetLine1,
 		StreetLine2: c.StreetLine2,
 		UserId:      c.UserId,
-		Groups:      common.Map(c.GroupIds, groupModel.GroupIdToGroup),
+		Groups:      common.MapSlice(c.GroupIds, groupModel.GroupIdToGroup),
 	}
 }

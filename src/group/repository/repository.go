@@ -14,11 +14,11 @@ type GroupRepositoryObject struct {
 	database db.ModeledDatabase
 }
 
-func (i *GroupRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
+func (g *GroupRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
 	return NewGroupRepository(dependency.FindRequiredDependency[db.DatabaseObject, db.DatabaseService](factory))
 }
 
-func (i *GroupRepositoryObject) GetEntity() any {
+func (g *GroupRepositoryObject) GetEntity() any {
 	return entity
 }
 
@@ -33,6 +33,7 @@ func NewGroupRepository(database db.DatabaseService) GroupRepository {
 
 type GroupRepository interface {
 	Create(entity model.Group) (model.Group, error)
+	CreateBatch(entities []model.Group) ([]model.Group, error)
 	FindById(id uuid.UUID) (model.GroupDto, error)
 	FindByOwnerId(ownerId uuid.UUID) (response []model.GroupDto)
 	ExistsById(id uuid.UUID) bool
@@ -41,16 +42,20 @@ type GroupRepository interface {
 	Update(id uuid.UUID, request model.UpdateGroupRequest) error
 }
 
-func (i *GroupRepositoryObject) Create(entity model.Group) (model.Group, error) {
-	return entity, i.database.Create(&entity)
+func (g *GroupRepositoryObject) Create(entity model.Group) (model.Group, error) {
+	return entity, g.database.Create(&entity)
 }
 
-func (i *GroupRepositoryObject) FindById(id uuid.UUID) (response model.GroupDto, err error) {
-	return response, i.database.Find(&response, id)
+func (g *GroupRepositoryObject) CreateBatch(entities []model.Group) ([]model.Group, error) {
+	return entities, g.database.Create(&entities)
 }
 
-func (i *GroupRepositoryObject) FindByOwnerId(ownerId uuid.UUID) (response []model.GroupDto) {
-	err := i.database.FindBy(&response, "owner_id = ?", ownerId)
+func (g *GroupRepositoryObject) FindById(id uuid.UUID) (response model.GroupDto, err error) {
+	return response, g.database.Find(&response, id)
+}
+
+func (g *GroupRepositoryObject) FindByOwnerId(ownerId uuid.UUID) (response []model.GroupDto) {
+	err := g.database.FindBy(&response, "owner_id = ?", ownerId)
 
 	if err != nil {
 		return []model.GroupDto{}
@@ -59,13 +64,13 @@ func (i *GroupRepositoryObject) FindByOwnerId(ownerId uuid.UUID) (response []mod
 	return response
 }
 
-func (i *GroupRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return i.database.Exists(id)
+func (g *GroupRepositoryObject) ExistsById(id uuid.UUID) bool {
+	return g.database.Exists(id)
 }
 
-func (i *GroupRepositoryObject) ExistsByIds(ids []uuid.UUID) bool {
+func (g *GroupRepositoryObject) ExistsByIds(ids []uuid.UUID) bool {
 	var count int64
-	err := i.database.Modeled().Where("id IN ?", ids).Count(&count).Error
+	err := g.database.Modeled().Where("id IN ?", ids).Count(&count).Error
 
 	if err != nil {
 		log.Error().Err(err)
@@ -74,10 +79,10 @@ func (i *GroupRepositoryObject) ExistsByIds(ids []uuid.UUID) bool {
 	return int64(len(ids)) == count
 }
 
-func (i *GroupRepositoryObject) DeleteById(id uuid.UUID) error {
-	return i.database.Delete(id)
+func (g *GroupRepositoryObject) DeleteById(id uuid.UUID) error {
+	return g.database.Delete(id)
 }
 
-func (i *GroupRepositoryObject) Update(id uuid.UUID, request model.UpdateGroupRequest) error {
-	return i.database.Update(id, request)
+func (g *GroupRepositoryObject) Update(id uuid.UUID, request model.UpdateGroupRequest) error {
+	return g.database.Update(id, request)
 }

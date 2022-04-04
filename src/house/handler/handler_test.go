@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common"
 	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
 	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/house/mocks"
@@ -12,51 +13,53 @@ import (
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
 )
 
-var (
+type HouseHandlerTestSuite struct {
+	testhelper.MockTestSuite[HouseHandler]
 	houses *mocks.HouseService
-)
-
-func handlerGenerator() HouseHandler {
-	houses = new(mocks.HouseService)
-
-	return NewHouseHandler(houses)
 }
 
-func Test_Add_WithNotValidRequest(t *testing.T) {
-	handler := handlerGenerator()
+func TestHouseHandlerTestSuite(t *testing.T) {
+	testingSuite := &HouseHandlerTestSuite{}
+	testingSuite.TestObjectGenerator = func() HouseHandler {
+		testingSuite.houses = new(mocks.HouseService)
+		return NewHouseHandler(testingSuite.houses)
+	}
 
+	suite.Run(t, testingSuite)
+}
+
+func (h *HouseHandlerTestSuite) Test_Add_WithNotValidRequest() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
 		WithMethod("POST").
-		WithHandler(handler.Add())
+		WithHandler(h.TestO.Add())
 
-	testRequest.Verify(t, http.StatusBadRequest)
+	testRequest.Verify(h.T(), http.StatusBadRequest)
 }
 
-func Test_Add(t *testing.T) {
-	handler := handlerGenerator()
-
+func (h *HouseHandlerTestSuite) Test_Add() {
 	request := mocks.GenerateCreateHouseRequest()
 
-	houses.On("Add", request).Return(request.ToEntity(test.CountryObject).ToDto(), nil)
+	h.houses.On("Add", request).Return(request.ToEntity(test.CountryObject).ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
 		WithMethod("POST").
 		WithBody(request).
-		WithHandler(handler.Add())
+		WithHandler(h.TestO.Add())
 
-	body := testRequest.Verify(t, http.StatusCreated)
+	body := testRequest.Verify(h.T(), http.StatusCreated)
 
 	actual := model.HouseDto{}
 
 	json.Unmarshal(body, &actual)
 
-	assert.Equal(t,
+	assert.Equal(h.T(),
 		model.HouseDto{
 			Id:          actual.Id,
 			Name:        "Test House",
@@ -69,46 +72,113 @@ func Test_Add(t *testing.T) {
 		}, actual)
 }
 
-func Test_Add_WithErrorFromService(t *testing.T) {
-	handler := handlerGenerator()
-
+func (h *HouseHandlerTestSuite) Test_Add_WithErrorFromService() {
 	request := mocks.GenerateCreateHouseRequest()
 
-	houses.On("Add", request).Return(model.HouseDto{}, errors.New("error"))
+	h.houses.On("Add", request).Return(model.HouseDto{}, errors.New("error"))
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house").
 		WithMethod("POST").
 		WithBody(request).
-		WithHandler(handler.Add())
+		WithHandler(h.TestO.Add())
 
-	actual := testRequest.Verify(t, http.StatusBadRequest)
+	actual := testRequest.Verify(h.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "error\n", string(actual))
+	assert.Equal(h.T(), "error\n", string(actual))
 }
 
-func Test_FindById(t *testing.T) {
-	handler := handlerGenerator()
+func (h *HouseHandlerTestSuite) Test_AddBatch() {
+	request := mocks.GenerateCreateHouseBatchRequest(2)
 
+	serviceResponse := common.MapSlice(request.Houses, func(house model.CreateHouseRequest) model.HouseDto {
+		return house.ToEntity(test.CountryObject).ToDto()
+	})
+
+	h.houses.On("AddBatch", request).Return(serviceResponse, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/house/batch").
+		WithMethod("POST").
+		WithBody(request).
+		WithHandler(h.TestO.AddBatch())
+
+	body := testRequest.Verify(h.T(), http.StatusCreated)
+
+	var actual []model.HouseDto
+
+	err := json.Unmarshal(body, &actual)
+	assert.Nil(h.T(), err)
+
+	assert.Equal(h.T(),
+		[]model.HouseDto{
+			{
+				Id:          serviceResponse[0].Id,
+				Name:        "House Name #0",
+				CountryCode: "UA",
+				City:        "City",
+				StreetLine1: "StreetLine1",
+				StreetLine2: "StreetLine2",
+				UserId:      request.Houses[0].UserId,
+				Groups:      []groupModel.GroupDto{},
+			},
+			{
+				Id:          serviceResponse[1].Id,
+				Name:        "House Name #1",
+				CountryCode: "UA",
+				City:        "City",
+				StreetLine1: "StreetLine1",
+				StreetLine2: "StreetLine2",
+				UserId:      request.Houses[1].UserId,
+				Groups:      []groupModel.GroupDto{},
+			},
+		}, actual)
+}
+
+func (h *HouseHandlerTestSuite) Test_AddBatch_WithErrorFromService() {
+	request := mocks.GenerateCreateHouseBatchRequest(1)
+
+	errorResponse := int_errors.NewBuilder().
+		WithDetail("message").
+		WithMessage("error")
+	err := int_errors.NewErrResponse(errorResponse)
+
+	h.houses.On("AddBatch", request).Return([]model.HouseDto{}, err)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/house/batch").
+		WithMethod("POST").
+		WithBody(request).
+		WithHandler(h.TestO.AddBatch())
+
+	actual := testRequest.Verify(h.T(), http.StatusBadRequest)
+
+	expected, err := json.Marshal(errorResponse.Build())
+
+	assert.Nil(h.T(), err)
+	assert.Equal(h.T(), append(expected, []byte("\n")...), actual)
+}
+
+func (h *HouseHandlerTestSuite) Test_FindById() {
 	houseResponse := mocks.GenerateHouseResponse()
 
-	houses.On("FindById", houseResponse.Id).Return(houseResponse, nil)
+	h.houses.On("FindById", houseResponse.Id).Return(houseResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(h.TestO.FindById()).
 		WithVar("id", houseResponse.Id.String())
 
-	body := testRequest.Verify(t, http.StatusOK)
+	body := testRequest.Verify(h.T(), http.StatusOK)
 
 	var responses model.HouseDto
 	json.Unmarshal(body, &responses)
 
-	assert.Equal(t, houseResponse, responses)
+	assert.Equal(h.T(), houseResponse, responses)
 }
 
-func Test_FindById_WithErrorFromService(t *testing.T) {
+func (h *HouseHandlerTestSuite) Test_FindById_WithErrorFromService() {
 	tests := []struct {
 		err        error
 		statusCode int
@@ -124,117 +194,103 @@ func Test_FindById_WithErrorFromService(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		handler := handlerGenerator()
-
 		id := uuid.New()
 
-		houses.On("FindById", id).Return(model.HouseDto{}, test.err)
+		h.houses.On("FindById", id).Return(model.HouseDto{}, test.err)
 
 		testRequest := testhelper.NewTestRequest().
 			WithURL("https://test.com/api/v1/house/{id}").
 			WithMethod("GET").
-			WithHandler(handler.FindById()).
+			WithHandler(h.TestO.FindById()).
 			WithVar("id", id.String())
 
-		body := testRequest.Verify(t, test.statusCode)
+		body := testRequest.Verify(h.T(), test.statusCode)
 
-		assert.Equal(t, fmt.Sprintf("%s\n", test.err.Error()), string(body))
+		assert.Equal(h.T(), fmt.Sprintf("%s\n", test.err.Error()), string(body))
 	}
 }
 
-func Test_FindById_WithInvalidId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (h *HouseHandlerTestSuite) Test_FindById_WithInvalidId() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById()).
+		WithHandler(h.TestO.FindById()).
 		WithVar("id", "id")
 
-	body := testRequest.Verify(t, http.StatusBadRequest)
+	body := testRequest.Verify(h.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(body))
+	assert.Equal(h.T(), "the id is not valid id\n", string(body))
 }
 
-func Test_FindById_WithMissingId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (h *HouseHandlerTestSuite) Test_FindById_WithMissingId() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindById())
+		WithHandler(h.TestO.FindById())
 
-	body := testRequest.Verify(t, http.StatusBadRequest)
+	body := testRequest.Verify(h.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "parameter 'id' not found\n", string(body))
+	assert.Equal(h.T(), "parameter 'id' not found\n", string(body))
 }
 
-func Test_FindByUserId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (h *HouseHandlerTestSuite) Test_FindByUserId() {
 	houseResponse := mocks.GenerateHouseResponse()
 
 	houseResponses := []model.HouseDto{houseResponse}
-	houses.On("FindByUserId", houseResponse.Id).Return(houseResponses)
+	h.houses.On("FindByUserId", houseResponse.Id).Return(houseResponses)
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByUserId()).
+		WithHandler(h.TestO.FindByUserId()).
 		WithVar("id", houseResponse.Id.String())
 
-	body := testRequest.Verify(t, http.StatusOK)
+	body := testRequest.Verify(h.T(), http.StatusOK)
 
 	var responses []model.HouseDto
 	json.Unmarshal(body, &responses)
 
-	assert.Equal(t, houseResponses, responses)
+	assert.Equal(h.T(), houseResponses, responses)
 }
 
-func Test_FindByUserId_WithEmptyResponse(t *testing.T) {
-	handler := handlerGenerator()
-
+func (h *HouseHandlerTestSuite) Test_FindByUserId_WithEmptyResponse() {
 	id := uuid.New()
 
-	houses.On("FindByUserId", id).Return([]model.HouseDto{})
+	h.houses.On("FindByUserId", id).Return([]model.HouseDto{})
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByUserId()).
+		WithHandler(h.TestO.FindByUserId()).
 		WithVar("id", id.String())
 
-	body := testRequest.Verify(t, http.StatusOK)
+	body := testRequest.Verify(h.T(), http.StatusOK)
 
 	var responses []model.HouseDto
 	json.Unmarshal(body, &responses)
 
-	assert.Equal(t, []model.HouseDto{}, responses)
+	assert.Equal(h.T(), []model.HouseDto{}, responses)
 }
 
-func Test_FindByUserId_WithInvalidId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (h *HouseHandlerTestSuite) Test_FindByUserId_WithInvalidId() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByUserId()).
+		WithHandler(h.TestO.FindByUserId()).
 		WithVar("id", "id")
 
-	body := testRequest.Verify(t, http.StatusBadRequest)
+	body := testRequest.Verify(h.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "the id is not valid id\n", string(body))
+	assert.Equal(h.T(), "the id is not valid id\n", string(body))
 }
 
-func Test_FindByUserId_WithMissingId(t *testing.T) {
-	handler := handlerGenerator()
-
+func (h *HouseHandlerTestSuite) Test_FindByUserId_WithMissingId() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/house/user/{id}").
 		WithMethod("GET").
-		WithHandler(handler.FindByUserId())
+		WithHandler(h.TestO.FindByUserId())
 
-	body := testRequest.Verify(t, http.StatusBadRequest)
+	body := testRequest.Verify(h.T(), http.StatusBadRequest)
 
-	assert.Equal(t, "parameter 'id' not found\n", string(body))
+	assert.Equal(h.T(), "parameter 'id' not found\n", string(body))
 }

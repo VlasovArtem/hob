@@ -15,6 +15,7 @@ import (
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"testing"
@@ -24,7 +25,7 @@ func Test_Initialize(t *testing.T) {
 	provider := new(dependencyMocks.DependenciesProvider)
 	object := db.DatabaseObject{}
 
-	provider.On("FindRequiredByObject", object).Return(&object)
+	provider.On("FindByType", mock.Anything, mock.Anything).Return(&object)
 
 	repository := PaymentRepositoryObject{}
 
@@ -114,6 +115,18 @@ func (p *PaymentRepositoryTestSuite) Test_Creat_WithMissingProvider() {
 
 	assert.NotNil(p.T(), err)
 	assert.Equal(p.T(), payment, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_CreateBatch() {
+	first := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	first.Name = "First Income"
+	second := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	second.Name = "Second Income"
+
+	actual, err := p.repository.CreateBatch([]model.Payment{first, second})
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), []model.Payment{first, second}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindById() {

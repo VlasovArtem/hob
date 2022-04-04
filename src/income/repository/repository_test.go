@@ -81,6 +81,18 @@ func (i *IncomeRepositoryTestSuite) Test_Create_WithGroupId() {
 	assert.Equal(i.T(), income, actual)
 }
 
+func (i *IncomeRepositoryTestSuite) Test_CreateBatch() {
+	first := mocks.GenerateIncome(i.createdHouse.Id)
+	first.Name = "First Income"
+	second := mocks.GenerateIncome(i.createdHouse.Id)
+	second.Name = "Second Income"
+
+	actual, err := i.repository.CreateBatch([]model.Income{first, second})
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []model.Income{first, second}, actual)
+}
+
 func (i *IncomeRepositoryTestSuite) Test_FindById() {
 	income := i.createIncome()
 

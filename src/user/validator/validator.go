@@ -2,7 +2,6 @@ package validator
 
 import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	"github.com/VlasovArtem/hob/src/common/int-errors"
 	baseValidator "github.com/VlasovArtem/hob/src/common/validator"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 )
@@ -20,17 +19,17 @@ func NewUserRequestValidator() UserRequestValidator {
 }
 
 type UserRequestValidator interface {
-	ValidateCreateRequest(request userModel.CreateUserRequest) int_errors.ErrorResponse
-	ValidateUpdateRequest(request userModel.UpdateUserRequest) int_errors.ErrorResponse
+	ValidateCreateRequest(request userModel.CreateUserRequest) error
+	ValidateUpdateRequest(request userModel.UpdateUserRequest) error
 }
 
-func (u *UserRequestValidatorObject) ValidateCreateRequest(request userModel.CreateUserRequest) int_errors.ErrorResponse {
+func (u *UserRequestValidatorObject) ValidateCreateRequest(request userModel.CreateUserRequest) error {
 	return u.ValidateStringFieldNotEmpty(request.Email, "email should not be empty").
 		ValidateStringFieldNotEmpty(request.Password, "password should not be empty").
 		Result("Create User Request Validation Error")
 }
 
-func (u *UserRequestValidatorObject) ValidateUpdateRequest(request userModel.UpdateUserRequest) int_errors.ErrorResponse {
+func (u *UserRequestValidatorObject) ValidateUpdateRequest(request userModel.UpdateUserRequest) error {
 	return u.ValidateStringFieldNotEmpty(request.Password, "password should not be empty").
 		Result("Create User Request Validation Error")
 }

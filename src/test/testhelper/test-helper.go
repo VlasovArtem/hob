@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -32,20 +33,22 @@ func InitCountryService() countries.CountryService {
 }
 
 type TestRequest struct {
-	Method   string
-	URL      string
-	Body     any
-	Vars     map[string]string
-	Handler  http.HandlerFunc
-	Request  *http.Request
-	Recorder *httptest.ResponseRecorder
-	build    bool
+	Method     string
+	URL        string
+	Body       any
+	Vars       map[string]string
+	Parameters map[string]string
+	Handler    http.HandlerFunc
+	Request    *http.Request
+	Recorder   *httptest.ResponseRecorder
+	build      bool
 }
 
 func NewTestRequest() *TestRequest {
 	return &TestRequest{
-		Recorder: httptest.NewRecorder(),
-		Vars:     make(map[string]string),
+		Recorder:   httptest.NewRecorder(),
+		Vars:       make(map[string]string),
+		Parameters: make(map[string]string),
 	}
 }
 
@@ -55,6 +58,7 @@ type TestRequestBuilder interface {
 	WithBody(body any) *TestRequest
 	WithHandler(handler http.HandlerFunc) *TestRequest
 	WithVar(key string, value string) *TestRequest
+	WithParameter(key string, value string) *TestRequest
 	Build() *TestRequest
 }
 
@@ -83,6 +87,11 @@ func (t *TestRequest) WithHandler(handler http.HandlerFunc) *TestRequest {
 	return t
 }
 
+func (t *TestRequest) WithParameter(key string, value string) *TestRequest {
+	t.Parameters[key] = value
+	return t
+}
+
 func (t *TestRequest) Build() *TestRequest {
 	body, _ := json.Marshal(t.Body)
 
@@ -90,7 +99,7 @@ func (t *TestRequest) Build() *TestRequest {
 
 	buffer.Write(body)
 
-	t.Request = httptest.NewRequest(t.Method, t.URL, &buffer)
+	t.Request = httptest.NewRequest(t.Method, t.mapURL(), &buffer)
 
 	if len(t.Vars) != 0 {
 		t.Request = mux.SetURLVars(t.Request, t.Vars)
@@ -117,6 +126,15 @@ func (t *TestRequest) Verify(test *testing.T, expectedStatusCode int) []byte {
 	assert.Equal(test, expectedStatusCode, response.StatusCode, fmt.Sprintf("Response status code should be %d but was %d", expectedStatusCode, response.StatusCode))
 
 	return ReadBytes(response)
+}
+
+func (t *TestRequest) mapURL() string {
+	var newURL = t.URL
+	for name, value := range t.Parameters {
+		newURL = strings.Replace(newURL, "{"+name+"}", value, -1)
+	}
+
+	return newURL
 }
 
 func ReadErrorResponse(content []byte) (response helperModel.ErrorResponseObject) {

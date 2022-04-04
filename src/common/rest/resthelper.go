@@ -7,10 +7,31 @@ import (
 	"github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strconv"
 )
+
+var mappers = map[reflect.Type]func(value string) (any, error){
+	reflect.TypeOf(uuid.UUID{}): func(value string) (any, error) {
+		if parse, err := uuid.Parse(value); err != nil {
+			return uuid.UUID{}, errors.New("the id is not valid UUID")
+		} else {
+			return parse, nil
+		}
+	},
+	reflect.TypeOf(int64(0)): func(value string) (any, error) {
+		return strconv.ParseInt(value, 10, 64)
+	},
+	reflect.TypeOf(0): func(value string) (any, error) {
+		return strconv.Atoi(value)
+	},
+	reflect.TypeOf(""): func(value string) (any, error) {
+		return value, nil
+	},
+}
 
 type APIResponse struct {
 	writer     http.ResponseWriter
@@ -85,14 +106,44 @@ func GetRequestParameter(request *http.Request, name string) (string, error) {
 	return "", errors.New(fmt.Sprintf("parameter '%s' not found", name))
 }
 
-func GetQueryIntParameterOrDefault(request *http.Request, name string, defaultValue int) (int, error) {
+func GetQueryParamOrDefault[T any](request *http.Request, name string, defaultValue T) (T, error) {
 	parameter := request.URL.Query().Get(name)
 
 	if parameter == "" {
 		return defaultValue, nil
 	}
 
-	return strconv.Atoi(parameter)
+	var t T
+
+	if mapper, ok := mappers[reflect.TypeOf(defaultValue)]; ok {
+		if mappedValue, err := mapper(parameter); err != nil {
+			return t, err
+		} else {
+			return mappedValue.(T), nil
+		}
+	} else {
+		return t, errors.New(fmt.Sprintf("mapper not found %s", reflect.TypeOf(defaultValue)))
+	}
+}
+
+func GetQueryParam[T any](request *http.Request, name string) (T, error) {
+	parameter := request.URL.Query().Get(name)
+
+	var t T
+
+	if parameter == "" {
+		return t, errors.New(fmt.Sprintf("parameter '%s' not found", name))
+	}
+
+	if mapper, ok := mappers[reflect.TypeOf(t)]; ok {
+		if mappedValue, err := mapper(parameter); err != nil {
+			return t, err
+		} else {
+			return mappedValue.(T), nil
+		}
+	} else {
+		return t, errors.New(fmt.Sprintf("mapper not found %s", reflect.TypeOf(t)))
+	}
 }
 
 func GetIdRequestParameter(request *http.Request) (id uuid.UUID, err error) {
@@ -143,17 +194,18 @@ func HandleErrorResponseWithError(writer http.ResponseWriter, statusCode int, er
 func HandleWithError(writer http.ResponseWriter, err error) {
 	if errors.Is(err, int_errors.ErrNotFound{}) {
 		HandleErrorResponseWithError(writer, http.StatusNotFound, err)
+	} else if errors.Is(err, int_errors.ErrResponse{}) {
+		handleBadRequestWithErrorResponse(writer, err.(*int_errors.ErrResponse).Response)
 	} else {
 		HandleErrorResponseWithError(writer, http.StatusBadRequest, err)
 	}
 }
 
-func HandleBadRequestWithErrorResponse(writer http.ResponseWriter, response int_errors.ErrorResponse) bool {
+func handleBadRequestWithErrorResponse(writer http.ResponseWriter, response int_errors.ErrorResponse) {
 	if response != nil {
 		writer.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(writer).Encode(response)
-		return true
+		if err := json.NewEncoder(writer).Encode(response); err != nil {
+			log.Error().Err(err).Msg("ErrorResponse encoding failure")
+		}
 	}
-
-	return false
 }

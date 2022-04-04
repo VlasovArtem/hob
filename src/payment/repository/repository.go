@@ -32,6 +32,7 @@ func (p *PaymentRepositoryObject) GetEntity() any {
 
 type PaymentRepository interface {
 	Create(entity model.Payment) (model.Payment, error)
+	CreateBatch(entities []model.Payment) ([]model.Payment, error)
 	Delete(id uuid.UUID) error
 	FindById(id uuid.UUID) (model.Payment, error)
 	FindByHouseId(houseId uuid.UUID) []model.PaymentDto
@@ -44,6 +45,10 @@ type PaymentRepository interface {
 
 func (p *PaymentRepositoryObject) Create(entity model.Payment) (model.Payment, error) {
 	return entity, p.database.Create(&entity)
+}
+
+func (p *PaymentRepositoryObject) CreateBatch(entities []model.Payment) ([]model.Payment, error) {
+	return entities, p.database.Create(&entities)
 }
 
 func (p *PaymentRepositoryObject) Delete(id uuid.UUID) (err error) {

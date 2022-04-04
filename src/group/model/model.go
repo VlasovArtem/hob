@@ -27,6 +27,10 @@ type UpdateGroupRequest struct {
 	Name string
 }
 
+type CreateGroupBatchRequest struct {
+	Groups []CreateGroupRequest
+}
+
 func (g Group) ToDto() GroupDto {
 	return GroupDto{
 		Id:      g.Id,

@@ -21,11 +21,12 @@ func Test_WithCreateUserRequest_WithEmptyEmail(t *testing.T) {
 	createUserRequest := mocks.GenerateCreateUserRequest()
 	createUserRequest.Email = ""
 
-	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrorResponseObject)
+	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrResponse)
 
 	assert.NotNil(t, result)
-	assert.Equal(t, "Create User Request Validation Error", result.Error)
-	assert.Equal(t, []string{"email should not be empty"}, result.Messages)
+	response := result.Response.(*int_errors.ErrorResponseObject)
+	assert.Equal(t, "Create User Request Validation Error", response.Message)
+	assert.Equal(t, []string{"email should not be empty"}, response.Details)
 }
 
 func Test_WithCreateUserRequest_WithEmptyPassword(t *testing.T) {
@@ -34,11 +35,13 @@ func Test_WithCreateUserRequest_WithEmptyPassword(t *testing.T) {
 	createUserRequest := mocks.GenerateCreateUserRequest()
 	createUserRequest.Password = ""
 
-	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrorResponseObject)
+	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrResponse)
 
 	assert.NotNil(t, result)
-	assert.Equal(t, "Create User Request Validation Error", result.Error)
-	assert.Equal(t, []string{"password should not be empty"}, result.Messages)
+	response := result.Response.(*int_errors.ErrorResponseObject)
+
+	assert.Equal(t, "Create User Request Validation Error", response.Message)
+	assert.Equal(t, []string{"password should not be empty"}, response.Details)
 }
 
 func Test_WithCreateUserRequest_WithAllErrors(t *testing.T) {
@@ -48,9 +51,11 @@ func Test_WithCreateUserRequest_WithAllErrors(t *testing.T) {
 	createUserRequest.Email = ""
 	createUserRequest.Password = ""
 
-	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrorResponseObject)
+	result := validator.ValidateCreateRequest(createUserRequest).(*int_errors.ErrResponse)
 
 	assert.NotNil(t, result)
-	assert.Equal(t, "Create User Request Validation Error", result.Error)
-	assert.ElementsMatch(t, []string{"email should not be empty", "password should not be empty"}, result.Messages)
+	response := result.Response.(*int_errors.ErrorResponseObject)
+
+	assert.Equal(t, "Create User Request Validation Error", response.Message)
+	assert.ElementsMatch(t, []string{"email should not be empty", "password should not be empty"}, response.Details)
 }

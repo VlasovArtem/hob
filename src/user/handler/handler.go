@@ -34,7 +34,7 @@ type UserHandler interface {
 }
 
 func (u *UserHandlerObject) Init(router *mux.Router) {
-	userRouter := router.PathPrefix("/api/v1/user").Subrouter()
+	userRouter := router.PathPrefix("/api/v1/users").Subrouter()
 
 	userRouter.Path("").HandlerFunc(u.Add()).Methods("POST")
 	userRouter.Path("/{id}").HandlerFunc(u.FindById()).Methods("GET")
@@ -47,12 +47,14 @@ func (u *UserHandlerObject) Add() http.HandlerFunc {
 		if body, err := rest.ReadRequestBody[model.CreateUserRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
-			if rest.HandleBadRequestWithErrorResponse(writer, u.userValidator.ValidateCreateRequest(body)) {
+			if err := u.userValidator.ValidateCreateRequest(body); err != nil {
+				rest.HandleWithError(writer, err)
 				return
+			} else {
+				rest.NewAPIResponse(writer).
+					Created(u.userService.Add(body)).
+					Perform()
 			}
-			rest.NewAPIResponse(writer).
-				Created(u.userService.Add(body)).
-				Perform()
 		}
 	}
 }
@@ -89,13 +91,14 @@ func (u *UserHandlerObject) Update() http.HandlerFunc {
 			if body, err := rest.ReadRequestBody[model.UpdateUserRequest](request); err != nil {
 				rest.HandleWithError(writer, err)
 			} else {
-				if rest.HandleBadRequestWithErrorResponse(writer, u.userValidator.ValidateUpdateRequest(body)) {
+				if err := u.userValidator.ValidateUpdateRequest(body); err != nil {
+					rest.HandleWithError(writer, err)
 					return
+				} else {
+					rest.NewAPIResponse(writer).
+						Error(u.userService.Update(id, body)).
+						Perform()
 				}
-
-				rest.NewAPIResponse(writer).
-					Error(u.userService.Update(id, body)).
-					Perform()
 			}
 		}
 	}

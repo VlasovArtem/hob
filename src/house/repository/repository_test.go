@@ -89,6 +89,39 @@ func (h *HouseRepositoryTestSuite) Test_Create_WithGroupId() {
 	assert.Equal(h.T(), house, actual)
 }
 
+func (h *HouseRepositoryTestSuite) Test_CreateBatch() {
+	first := mocks.GenerateHouse(h.createdUser.Id)
+	first.Name = "Name First"
+	second := mocks.GenerateHouse(h.createdUser.Id)
+	second.Name = "Name Second"
+
+	actual, err := h.repository.CreateBatch([]model.House{first, second})
+
+	assert.Nil(h.T(), err)
+	assert.Equal(h.T(), []model.House{first, second}, actual)
+}
+
+func (h *HouseRepositoryTestSuite) Test_CreateBatch_WithGroupId() {
+	group := groupModel.Group{
+		Id:      uuid.New(),
+		Name:    "Test Group",
+		OwnerId: h.createdUser.Id,
+	}
+	h.CreateEntity(group)
+
+	first := mocks.GenerateHouse(h.createdUser.Id)
+	first.Name = "Name First"
+	first.Groups = []groupModel.Group{group}
+	second := mocks.GenerateHouse(h.createdUser.Id)
+	second.Name = "Name Second"
+	second.Groups = []groupModel.Group{group}
+
+	actual, err := h.repository.CreateBatch([]model.House{first, second})
+
+	assert.Nil(h.T(), err)
+	assert.Equal(h.T(), []model.House{first, second}, actual)
+}
+
 func (h *HouseRepositoryTestSuite) Test_FindById() {
 	house := h.createHouse()
 

@@ -12,18 +12,21 @@ func NewBaseValidator() BaseValidator {
 
 type BaseValidator interface {
 	ValidateStringFieldNotEmpty(value string, message string) BaseValidator
-	Result(error string) int_errors.ErrorResponse
+	Result(error string) error
 }
 
 func (v *Validator) ValidateStringFieldNotEmpty(value string, message string) BaseValidator {
 	if value == "" {
-		v.errors.AddMessage(message)
+		v.errors.WithDetail(message)
 	}
 	return v
 }
 
-func (v *Validator) Result(error string) int_errors.ErrorResponse {
-	v.errors.AddErrorIfMessagesExists(error)
+func (v *Validator) Result(error string) error {
+	if v.errors.HasErrors() {
+		v.errors.WithMessage(error)
+		return int_errors.NewErrResponse(v.errors)
+	}
 
-	return v.errors.Build()
+	return nil
 }

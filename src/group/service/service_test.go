@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"github.com/VlasovArtem/hob/src/common"
 	interrors "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/group/mocks"
 	"github.com/VlasovArtem/hob/src/group/model"
@@ -72,6 +74,77 @@ func (g *GroupServiceTestSuite) Test_Add_WithErrorFromRepository() {
 
 	assert.Equal(g.T(), expectedError, err)
 	assert.Equal(g.T(), model.GroupDto{}, income)
+}
+
+func (g *GroupServiceTestSuite) Test_AddBatch() {
+	var entities []model.Group
+	request := mocks.GenerateCreateGroupBatchRequest(2)
+
+	g.users.On("ExistsById", mock.Anything).Return(true)
+	g.groupRepository.On("CreateBatch", mock.Anything).Return(func(groups []model.Group) []model.Group {
+		entities = groups
+		return groups
+	}, nil)
+
+	result, err := g.TestO.AddBatch(request)
+
+	assert.Nil(g.T(), err)
+	assert.Equal(g.T(), common.MapSlice(entities, model.GroupToGroupDto), result)
+
+	g.users.AssertCalled(g.T(), "ExistsById", entities[0].OwnerId)
+	g.users.AssertCalled(g.T(), "ExistsById", entities[1].OwnerId)
+	g.groupRepository.AssertCalled(g.T(), "CreateBatch", entities)
+}
+
+func (g *GroupServiceTestSuite) Test_AddBatch_WithUserNotExists() {
+	request := mocks.GenerateCreateGroupBatchRequest(2)
+
+	g.users.On("ExistsById", request.Groups[0].OwnerId).Return(true)
+	g.users.On("ExistsById", request.Groups[1].OwnerId).Return(false)
+
+	result, err := g.TestO.AddBatch(request)
+
+	var expectedResult []model.GroupDto
+
+	assert.Equal(g.T(), expectedResult, result)
+
+	builder := interrors.NewBuilder()
+	builder.WithMessage("Create Group Batch Request Issue")
+	builder.WithDetail(fmt.Sprintf("user with id %s not found", request.Groups[1].OwnerId.String()))
+
+	expectedError := interrors.NewErrResponse(builder).(*interrors.ErrResponse)
+	actualError := err.(*interrors.ErrResponse)
+
+	assert.Equal(g.T(), *expectedError, *actualError)
+
+	g.groupRepository.AssertNotCalled(g.T(), "CreateBatch", mock.Anything)
+}
+
+func (g *GroupServiceTestSuite) Test_AddBatch_WithEmptyGroups() {
+	request := mocks.GenerateCreateGroupBatchRequest(0)
+
+	result, err := g.TestO.AddBatch(request)
+
+	assert.Nil(g.T(), err)
+	assert.Equal(g.T(), []model.GroupDto{}, result)
+
+	g.users.AssertNotCalled(g.T(), "ExistsById", mock.Anything)
+	g.groupRepository.AssertNotCalled(g.T(), "CreateBatch", mock.Anything)
+}
+
+func (g *GroupServiceTestSuite) Test_AddBatch_WithErrorFromRepository() {
+	expectedError := errors.New("error")
+	request := mocks.GenerateCreateGroupBatchRequest(1)
+
+	g.users.On("ExistsById", mock.Anything).Return(true)
+	g.groupRepository.On("CreateBatch", mock.Anything).Return(nil, expectedError)
+
+	result, err := g.TestO.AddBatch(request)
+
+	var expected []model.GroupDto
+
+	assert.Equal(g.T(), expectedError, err)
+	assert.Equal(g.T(), expected, result)
 }
 
 func (g *GroupServiceTestSuite) Test_FindById() {

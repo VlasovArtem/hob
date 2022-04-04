@@ -1,11 +1,15 @@
 package int_errors
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"reflect"
 )
 
 var errNotFoundType = reflect.TypeOf(ErrNotFound{})
+
+var errResponseType = reflect.TypeOf(ErrResponse{})
 
 type ErrNotFound struct {
 	message string
@@ -23,9 +27,30 @@ func (e ErrNotFound) Is(err error) bool {
 	return reflect.TypeOf(err) == errNotFoundType
 }
 
+type ErrResponse struct {
+	Response ErrorResponse
+}
+
+func NewErrResponse(build ErrorResponseBuilder) error {
+	return &ErrResponse{build.Build()}
+}
+
+func (e ErrResponse) Error() string {
+	if marshal, err := json.Marshal(e.Response); err != nil {
+		log.Err(err).Msg("")
+		return err.Error()
+	} else {
+		return string(marshal)
+	}
+}
+
+func (e ErrResponse) Is(err error) bool {
+	return reflect.TypeOf(err) == errResponseType
+}
+
 type ErrorResponseObject struct {
-	Error    string
-	Messages []string
+	Message string
+	Details []string
 }
 
 func NewBuilder() ErrorResponseBuilder {
@@ -38,21 +63,15 @@ func New() ErrorResponse {
 
 func NewWithDetails(error string, messages ...string) ErrorResponse {
 	return &ErrorResponseObject{
-		Error:    error,
-		Messages: messages,
-	}
-}
-func NewWithError(err error, messages ...string) ErrorResponse {
-	return &ErrorResponseObject{
-		Error:    err.Error(),
-		Messages: messages,
+		Message: error,
+		Details: messages,
 	}
 }
 
 type ErrorResponseBuilder interface {
-	AddError(error string)
-	AddErrorIfMessagesExists(error string)
-	AddMessage(message string)
+	ErrorResponse
+	WithMessage(error string) ErrorResponseBuilder
+	WithDetail(message string) ErrorResponseBuilder
 	Build() ErrorResponse
 }
 
@@ -60,27 +79,33 @@ type ErrorResponse interface {
 	HasErrors() bool
 }
 
-func (e *ErrorResponseObject) AddMessage(message string) {
-	e.Messages = append(e.Messages, message)
+func (e *ErrorResponseObject) WithDetail(detail string) ErrorResponseBuilder {
+	e.Details = append(e.Details, detail)
+
+	return e
 }
 
-func (e *ErrorResponseObject) AddError(error string) {
-	e.Error = error
-}
+func (e *ErrorResponseObject) WithMessage(message string) ErrorResponseBuilder {
+	e.Message = message
 
-func (e *ErrorResponseObject) AddErrorIfMessagesExists(error string) {
-	if len(e.Messages) != 0 {
-		e.Error = error
-	}
+	return e
 }
 
 func (e *ErrorResponseObject) Build() ErrorResponse {
-	if e.Error == "" && len(e.Messages) == 0 {
+	if e.Message == "" && len(e.Details) == 0 {
+		return nil
+	}
+	return e
+}
+
+func (e *ErrorResponseObject) BuildWithMessage(message string) ErrorResponse {
+	e.Message = message
+	if e.Message == "" && len(e.Details) == 0 {
 		return nil
 	}
 	return e
 }
 
 func (e *ErrorResponseObject) HasErrors() bool {
-	return e.Error != "" || len(e.Messages) != 0
+	return e.Message != "" || len(e.Details) != 0
 }

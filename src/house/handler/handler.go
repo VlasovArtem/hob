@@ -22,9 +22,10 @@ func (h *HouseHandlerObject) Initialize(factory dependency.DependenciesProvider)
 }
 
 func (h *HouseHandlerObject) Init(router *mux.Router) {
-	subrouter := router.PathPrefix("/api/v1/house").Subrouter()
+	subrouter := router.PathPrefix("/api/v1/houses").Subrouter()
 
 	subrouter.Path("").HandlerFunc(h.Add()).Methods("POST")
+	subrouter.Path("/batch").HandlerFunc(h.AddBatch()).Methods("POST")
 	subrouter.Path("/{id}").HandlerFunc(h.FindById()).Methods("GET")
 	subrouter.Path("/{id}").HandlerFunc(h.Update()).Methods("DELETE")
 	subrouter.Path("/{id}").HandlerFunc(h.Delete()).Methods("PUT")
@@ -33,6 +34,7 @@ func (h *HouseHandlerObject) Init(router *mux.Router) {
 
 type HouseHandler interface {
 	Add() http.HandlerFunc
+	AddBatch() http.HandlerFunc
 	FindById() http.HandlerFunc
 	Update() http.HandlerFunc
 	Delete() http.HandlerFunc
@@ -47,6 +49,19 @@ func (h *HouseHandlerObject) Add() http.HandlerFunc {
 		} else {
 			rest.NewAPIResponse(writer).
 				Created(h.houseService.Add(requestBody)).
+				Perform()
+		}
+	}
+}
+
+func (h *HouseHandlerObject) AddBatch() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		requestBody, err := rest.ReadRequestBody[model.CreateHouseBatchRequest](request)
+		if err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			rest.NewAPIResponse(writer).
+				Created(h.houseService.AddBatch(requestBody)).
 				Perform()
 		}
 	}

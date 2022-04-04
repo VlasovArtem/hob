@@ -17,7 +17,7 @@ import (
 func main() {
 	cfg := prepareConfig()
 
-	if cfg.App.LogFile != "" {
+	if cfg.App.LogFile != "" && cfg.App.View != "a" {
 		common.EnsurePath(cfg.App.LogFile, common.DefaultDirMod)
 
 		mod := os.O_CREATE | os.O_APPEND | os.O_WRONLY

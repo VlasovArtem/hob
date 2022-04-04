@@ -68,11 +68,13 @@ func (u *UserHandlerTestSuite) Test_AddUserWithInvalidRequest() {
 	testRequest.Verify(u.T(), http.StatusBadRequest)
 }
 
-func (u *UserHandlerTestSuite) Test_AddUserWithMissingDetails() {
+func (u *UserHandlerTestSuite) Test_AddUser_WithInvalidData() {
 	request := mocks.GenerateCreateUserRequest()
 
-	error := helperModel.NewWithDetails("error", "details")
-	u.userValidator.On("ValidateCreateRequest", request).Return(error)
+	errorResponse := helperModel.NewWithDetails("error", "details")
+	u.userValidator.On("ValidateCreateRequest", request).Return(&helperModel.ErrResponse{
+		Response: errorResponse,
+	})
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user").
@@ -82,7 +84,7 @@ func (u *UserHandlerTestSuite) Test_AddUserWithMissingDetails() {
 
 	response := testRequest.Verify(u.T(), http.StatusBadRequest)
 
-	assert.Equal(u.T(), *error.(*helperModel.ErrorResponseObject), testhelper.ReadErrorResponse(response))
+	assert.Equal(u.T(), *errorResponse.(*helperModel.ErrorResponseObject), testhelper.ReadErrorResponse(response))
 }
 
 func (u *UserHandlerTestSuite) Test_Add_WithErrorFromService() {
@@ -218,11 +220,13 @@ func (u *UserHandlerTestSuite) Test_Update_WithMissingIdParameter() {
 	u.userService.AssertNotCalled(u.T(), "Update", mock.Anything, mock.Anything)
 }
 
-func (u *UserHandlerTestSuite) Test_Update_WithMissingDetails() {
+func (u *UserHandlerTestSuite) Test_Update_WithInvalidDate() {
 	id, request := mocks.GenerateUpdateUserRequest()
 
 	errorResponse := helperModel.NewWithDetails("error", "details")
-	u.userValidator.On("ValidateUpdateRequest", request).Return(errorResponse)
+	u.userValidator.On("ValidateUpdateRequest", request).Return(&helperModel.ErrResponse{
+		Response: errorResponse,
+	})
 
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/user/{id}").

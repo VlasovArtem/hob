@@ -4,6 +4,7 @@ import (
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
+	"strconv"
 	"time"
 )
 
@@ -24,6 +25,16 @@ func GenerateCreatePaymentRequest() model.CreatePaymentRequest {
 		Date:        Date,
 		Sum:         1000,
 	}
+}
+
+func GenerateCreatePaymentBatchRequest(number int) model.CreatePaymentBatchRequest {
+	request := model.CreatePaymentBatchRequest{}
+	for i := 0; i < number; i++ {
+		incomeRequest := GenerateCreatePaymentRequest()
+		incomeRequest.Name = "Payment Name #" + strconv.Itoa(i)
+		request.Payments = append(request.Payments, incomeRequest)
+	}
+	return request
 }
 
 func GenerateUpdatePaymentRequest() model.UpdatePaymentRequest {

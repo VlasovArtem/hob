@@ -5,6 +5,7 @@ import (
 	"github.com/VlasovArtem/hob/src/common/rest"
 	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/VlasovArtem/hob/src/provider/service"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -18,14 +19,17 @@ type FindByNameRequest struct {
 }
 
 func (p *ProviderHandlerObject) Init(router *mux.Router) {
-	providerRouter := router.PathPrefix("/api/v1/provider").Subrouter()
+	providerRouter := router.PathPrefix("/api/v1/providers").Subrouter()
 
 	providerRouter.Path("").HandlerFunc(p.Add()).Methods("POST")
 	providerRouter.Path("/{id}").HandlerFunc(p.Delete()).Methods("DELETE")
 	providerRouter.Path("/{id}").HandlerFunc(p.Update()).Methods("PUT")
 	providerRouter.Path("/{id}").HandlerFunc(p.FindById()).Methods("GET")
-	providerRouter.Path("/user/{id}").HandlerFunc(p.FindByUserId()).Methods("GET")
-	providerRouter.Path("/user/{id}").HandlerFunc(p.FindByNameLikeAndUserId()).Methods("POST")
+	providerRouter.Path("").
+		Queries("userId", "{.*}").
+		HandlerFunc(p.FindBy()).
+		Methods("GET").
+		Name("Find By")
 }
 
 func NewProviderHandler(providerService service.ProviderService) ProviderHandler {
@@ -41,8 +45,7 @@ type ProviderHandler interface {
 	Delete() http.HandlerFunc
 	Update() http.HandlerFunc
 	FindById() http.HandlerFunc
-	FindByNameLikeAndUserId() http.HandlerFunc
-	FindByUserId() http.HandlerFunc
+	FindBy() http.HandlerFunc
 }
 
 func (p *ProviderHandlerObject) Add() http.HandlerFunc {
@@ -99,44 +102,34 @@ func (p *ProviderHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (p *ProviderHandlerObject) FindByUserId() http.HandlerFunc {
+func (p *ProviderHandlerObject) FindBy() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		if id, err := rest.GetIdRequestParameter(request); err != nil {
+		userId, err := rest.GetQueryParam[uuid.UUID](request, "userId")
+		if err != nil {
 			rest.HandleWithError(writer, err)
-		} else {
-			rest.NewAPIResponse(writer).
-				Body(p.providerService.FindByUserId(id)).
-				Perform()
+			return
 		}
-	}
-}
 
-func (p *ProviderHandlerObject) FindByNameLikeAndUserId() http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		if body, err := rest.ReadRequestBody[FindByNameRequest](request); err != nil {
+		page, err := rest.GetQueryParamOrDefault(request, "page", 0)
+		if err != nil {
 			rest.HandleWithError(writer, err)
-		} else {
-			page, err := rest.GetQueryIntParameterOrDefault(request, "page", 0)
-			if err != nil {
-				rest.HandleWithError(writer, err)
-				return
-			}
-
-			size, err := rest.GetQueryIntParameterOrDefault(request, "size", 25)
-			if err != nil {
-				rest.HandleWithError(writer, err)
-				return
-			}
-
-			id, err := rest.GetIdRequestParameter(request)
-			if err != nil {
-				rest.HandleWithError(writer, err)
-				return
-			}
-
-			rest.NewAPIResponse(writer).
-				Body(p.providerService.FindByNameLikeAndUserId(body.Name, id, page, size)).
-				Perform()
+			return
 		}
+
+		size, err := rest.GetQueryParamOrDefault(request, "size", 25)
+		if err != nil {
+			rest.HandleWithError(writer, err)
+			return
+		}
+
+		name, err := rest.GetQueryParamOrDefault(request, "name", "")
+		if err != nil {
+			rest.HandleWithError(writer, err)
+			return
+		}
+
+		rest.NewAPIResponse(writer).
+			Ok(p.providerService.FindByNameLikeAndUserId(name, userId, page, size), nil).
+			Perform()
 	}
 }

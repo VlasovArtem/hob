@@ -22,7 +22,7 @@ func (i *IncomeSchedulerHandlerObject) Initialize(factory dependency.Dependencie
 }
 
 func (i *IncomeSchedulerHandlerObject) Init(router *mux.Router) {
-	incomeSchedulerRouter := router.PathPrefix("/api/v1/income/scheduler").Subrouter()
+	incomeSchedulerRouter := router.PathPrefix("/api/v1/incomes/schedulers").Subrouter()
 
 	incomeSchedulerRouter.Path("").HandlerFunc(i.Add()).Methods("POST")
 	incomeSchedulerRouter.Path("/{id}").HandlerFunc(i.FindById()).Methods("GET")

@@ -39,6 +39,7 @@ func (h *HouseRepositoryObject) GetEntity() any {
 
 type HouseRepository interface {
 	Create(entity model.House) (model.House, error)
+	CreateBatch(entities []model.House) ([]model.House, error)
 	FindById(id uuid.UUID) (model.House, error)
 	FindByUserId(id uuid.UUID) []model.House
 	ExistsById(id uuid.UUID) bool
@@ -48,6 +49,10 @@ type HouseRepository interface {
 
 func (h *HouseRepositoryObject) Create(entity model.House) (model.House, error) {
 	return entity, h.db.D().Omit("Groups.*").Create(&entity).Error
+}
+
+func (h *HouseRepositoryObject) CreateBatch(entities []model.House) ([]model.House, error) {
+	return entities, h.db.D().Omit("Groups.*").Create(&entities).Error
 }
 
 func (h *HouseRepositoryObject) FindById(id uuid.UUID) (response model.House, err error) {
@@ -99,7 +104,7 @@ func (h *HouseRepositoryObject) Update(id uuid.UUID, request model.UpdateHouseRe
 		return err
 	}
 
-	var groups = common.Map(request.GroupIds, groupModel.GroupIdToGroup)
+	var groups = common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup)
 
 	return h.db.DM(&entity).Association("Groups").Replace(groups)
 }

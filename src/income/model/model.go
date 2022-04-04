@@ -28,6 +28,10 @@ type CreateIncomeRequest struct {
 	GroupIds    []uuid.UUID
 }
 
+type CreateIncomeBatchRequest struct {
+	Incomes []CreateIncomeRequest
+}
+
 type UpdateIncomeRequest struct {
 	Name        string
 	Description string
@@ -54,7 +58,7 @@ func (i Income) ToDto() IncomeDto {
 		Date:        i.Date,
 		Sum:         i.Sum,
 		HouseId:     i.HouseId,
-		Groups:      common.Map(i.Groups, groupModel.GroupToGroupDto),
+		Groups:      common.MapSlice(i.Groups, groupModel.GroupToGroupDto),
 	}
 }
 
@@ -66,8 +70,12 @@ func (c CreateIncomeRequest) ToEntity() Income {
 		Date:        c.Date,
 		Sum:         c.Sum,
 		HouseId:     c.HouseId,
-		Groups: common.Map(c.GroupIds, func(groupId uuid.UUID) groupModel.Group {
+		Groups: common.MapSlice(c.GroupIds, func(groupId uuid.UUID) groupModel.Group {
 			return groupModel.Group{Id: groupId}
 		}),
 	}
+}
+
+func IncomeToDto(income Income) IncomeDto {
+	return income.ToDto()
 }

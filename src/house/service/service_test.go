@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
 	countries "github.com/VlasovArtem/hob/src/country/service"
@@ -78,6 +79,84 @@ func (h *HouseServiceTestSuite) Test_Add_WithGroupsNotFound() {
 	assert.Equal(h.T(), model.HouseDto{}, income)
 
 	h.houseRepository.AssertNotCalled(h.T(), "Create", mock.Anything)
+}
+
+func (h *HouseServiceTestSuite) Test_Add_WithUserNotFound() {
+	request := mocks.GenerateCreateHouseRequest()
+
+	h.users.On("ExistsById", request.UserId).Return(false)
+	h.groups.On("ExistsByIds", mock.Anything).Return(true)
+
+	income, err := h.TestO.Add(request)
+
+	assert.Equal(h.T(), int_errors.NewErrNotFound("user with id %s not found", request.UserId), err)
+	assert.Equal(h.T(), model.HouseDto{}, income)
+
+	h.houseRepository.AssertNotCalled(h.T(), "Create", mock.Anything)
+}
+
+func (h *HouseServiceTestSuite) Test_AddBatch() {
+	request := mocks.GenerateCreateHouseBatchRequest(2)
+
+	h.users.On("ExistsById", mock.Anything).Return(true)
+	h.houseRepository.On("CreateBatch", mock.Anything).Return(
+		func(house []model.House) []model.House { return house },
+		nil,
+	)
+
+	actual, err := h.TestO.AddBatch(request)
+
+	assert.Nil(h.T(), err)
+	assert.Equal(h.T(),
+		[]model.HouseDto{
+			{
+				Id:          actual[0].Id,
+				Name:        "House Name #0",
+				CountryCode: "UA",
+				City:        "City",
+				StreetLine1: "StreetLine1",
+				StreetLine2: "StreetLine2",
+				UserId:      request.Houses[0].UserId,
+				Groups:      []groupModel.GroupDto{},
+			},
+			{
+				Id:          actual[1].Id,
+				Name:        "House Name #1",
+				CountryCode: "UA",
+				City:        "City",
+				StreetLine1: "StreetLine1",
+				StreetLine2: "StreetLine2",
+				UserId:      request.Houses[1].UserId,
+				Groups:      []groupModel.GroupDto{},
+			},
+		}, actual)
+}
+
+func (h *HouseServiceTestSuite) Test_AddBatch_WithIssues() {
+	request := mocks.GenerateCreateHouseBatchRequest(2)
+	request.Houses[0].GroupIds = []uuid.UUID{uuid.New()}
+
+	h.users.On("ExistsById", request.Houses[0].UserId).Return(false)
+	h.users.On("ExistsById", request.Houses[1].UserId).Return(true)
+	h.groups.On("ExistsByIds", mock.Anything).Return(false)
+
+	actual, err := h.TestO.AddBatch(request)
+
+	var expectedResult []model.HouseDto
+
+	assert.Equal(h.T(), expectedResult, actual)
+
+	builder := int_errors.NewBuilder()
+	builder.WithMessage("Create house batch failed")
+	builder.WithDetail(fmt.Sprintf("user with id %s not found", request.Houses[0].UserId.String()))
+	builder.WithDetail(fmt.Sprintf("not all group with ids %s found", common.Join(append(request.Houses[0].GroupIds, request.Houses[1].GroupIds...), ",")))
+
+	expectedError := int_errors.NewErrResponse(builder).(*int_errors.ErrResponse)
+	actualError := err.(*int_errors.ErrResponse)
+
+	assert.Equal(h.T(), *expectedError, *actualError)
+
+	h.houseRepository.AssertNotCalled(h.T(), "CreateBatch", mock.Anything)
 }
 
 func (h *HouseServiceTestSuite) Test_FindById() {

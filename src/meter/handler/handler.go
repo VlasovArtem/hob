@@ -22,7 +22,7 @@ func (m *MeterHandlerObject) Initialize(factory dependency.DependenciesProvider)
 }
 
 func (m *MeterHandlerObject) Init(router *mux.Router) {
-	meterRouter := router.PathPrefix("/api/v1/meter").Subrouter()
+	meterRouter := router.PathPrefix("/api/v1/meters").Subrouter()
 
 	meterRouter.Path("").HandlerFunc(m.Add()).Methods("POST")
 	meterRouter.Path("/{id}").HandlerFunc(m.FindById()).Methods("GET")
