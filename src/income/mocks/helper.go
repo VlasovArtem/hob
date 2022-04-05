@@ -9,7 +9,7 @@ import (
 
 var Date = time.Date(2021, time.January, 1, 0, 0, 0, 0, time.Local)
 
-func GenerateIncome(houseId uuid.UUID) model.Income {
+func GenerateIncome(houseId *uuid.UUID) model.Income {
 	return model.Income{
 		Id:          uuid.New(),
 		Name:        "Name",
@@ -21,12 +21,13 @@ func GenerateIncome(houseId uuid.UUID) model.Income {
 }
 
 func GenerateCreateIncomeRequest() model.CreateIncomeRequest {
+	houseId := uuid.New()
 	return model.CreateIncomeRequest{
 		Name:        "Name",
 		Date:        Date,
 		Description: "Description",
 		Sum:         100.1,
-		HouseId:     uuid.New(),
+		HouseId:     &houseId,
 	}
 }
 
@@ -50,12 +51,13 @@ func GenerateUpdateIncomeRequest() (uuid.UUID, model.UpdateIncomeRequest) {
 }
 
 func GenerateIncomeDto() model.IncomeDto {
+	houseId := uuid.New()
 	return model.IncomeDto{
 		Id:          uuid.New(),
 		Name:        "Name",
 		Date:        Date,
 		Description: "Description",
 		Sum:         100.1,
-		HouseId:     uuid.New(),
+		HouseId:     &houseId,
 	}
 }

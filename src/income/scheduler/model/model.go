@@ -41,7 +41,7 @@ func (i IncomeScheduler) ToDto() IncomeSchedulerDto {
 		Name:        i.Name,
 		Description: i.Description,
 		Sum:         i.Sum,
-		HouseId:     i.HouseId,
+		HouseId:     *i.HouseId,
 		Spec:        i.Spec,
 	}
 }
@@ -53,7 +53,7 @@ func (c CreateIncomeSchedulerRequest) ToEntity() IncomeScheduler {
 			Name:        c.Name,
 			Description: c.Description,
 			Sum:         c.Sum,
-			HouseId:     c.HouseId,
+			HouseId:     &c.HouseId,
 		},
 		Spec: c.Spec,
 	}

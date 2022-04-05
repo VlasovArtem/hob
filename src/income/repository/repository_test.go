@@ -52,7 +52,7 @@ func TestIncomeRepositoryTestSuite(t *testing.T) {
 }
 
 func (i *IncomeRepositoryTestSuite) Test_Create() {
-	income := mocks.GenerateIncome(i.createdHouse.Id)
+	income := mocks.GenerateIncome(&i.createdHouse.Id)
 
 	actual, err := i.repository.Create(income)
 
@@ -61,7 +61,8 @@ func (i *IncomeRepositoryTestSuite) Test_Create() {
 }
 
 func (i *IncomeRepositoryTestSuite) Test_Create_WithMissingHouse() {
-	income := mocks.GenerateIncome(uuid.New())
+	houseId := uuid.New()
+	income := mocks.GenerateIncome(&houseId)
 
 	actual, err := i.repository.Create(income)
 
@@ -72,7 +73,7 @@ func (i *IncomeRepositoryTestSuite) Test_Create_WithMissingHouse() {
 func (i *IncomeRepositoryTestSuite) Test_Create_WithGroupId() {
 	group := i.createGroup()
 
-	income := mocks.GenerateIncome(i.createdHouse.Id)
+	income := mocks.GenerateIncome(nil)
 	income.Groups = []groupModel.Group{group}
 
 	actual, err := i.repository.Create(income)
@@ -82,9 +83,9 @@ func (i *IncomeRepositoryTestSuite) Test_Create_WithGroupId() {
 }
 
 func (i *IncomeRepositoryTestSuite) Test_CreateBatch() {
-	first := mocks.GenerateIncome(i.createdHouse.Id)
+	first := mocks.GenerateIncome(&i.createdHouse.Id)
 	first.Name = "First Income"
-	second := mocks.GenerateIncome(i.createdHouse.Id)
+	second := mocks.GenerateIncome(&i.createdHouse.Id)
 	second.Name = "Second Income"
 
 	actual, err := i.repository.CreateBatch([]model.Income{first, second})
@@ -113,7 +114,7 @@ func (i *IncomeRepositoryTestSuite) Test_FindById_WithMissingId() {
 func (i *IncomeRepositoryTestSuite) Test_FindByHouseId() {
 	income := i.createIncomeWithHouse()
 
-	actual, err := i.repository.FindByHouseId(income.HouseId)
+	actual, err := i.repository.FindByHouseId(*income.HouseId)
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), []model.IncomeDto{income.ToDto()}, actual)
@@ -204,14 +205,14 @@ func (i *IncomeRepositoryTestSuite) createIncomeWithHouse() model.Income {
 	createdHouse := houseMocks.GenerateHouse(i.createdUser.Id)
 	i.CreateEntity(createdHouse)
 
-	income := mocks.GenerateIncome(createdHouse.Id)
+	income := mocks.GenerateIncome(&createdHouse.Id)
 	i.CreateEntity(income)
 
 	return income
 }
 
 func (i *IncomeRepositoryTestSuite) createIncome() model.Income {
-	income := mocks.GenerateIncome(i.createdHouse.Id)
+	income := mocks.GenerateIncome(&i.createdHouse.Id)
 
 	i.CreateEntity(income)
 
@@ -219,7 +220,7 @@ func (i *IncomeRepositoryTestSuite) createIncome() model.Income {
 }
 
 func (i *IncomeRepositoryTestSuite) createIncomeWithGroups(groups []groupModel.Group) (income model.Income) {
-	income = mocks.GenerateIncome(i.createdHouse.Id)
+	income = mocks.GenerateIncome(&i.createdHouse.Id)
 	income.Groups = groups
 
 	create, err := i.repository.Create(income)

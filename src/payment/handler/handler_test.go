@@ -55,7 +55,37 @@ func (p *PaymentHandlerTestSuite) Test_Add() {
 		Description: "Test Payment Description",
 		HouseId:     mocks.HouseId,
 		UserId:      mocks.UserId,
-		ProviderId:  mocks.ProviderId,
+		ProviderId:  &mocks.ProviderId,
+		Date:        mocks.Date,
+		Sum:         1000,
+	}, actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_Add_WithProviderIdNil() {
+	request := mocks.GenerateCreatePaymentRequest()
+	request.ProviderId = nil
+
+	p.payments.On("Add", request).Return(request.ToEntity().ToDto(), nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment").
+		WithMethod("POST").
+		WithHandler(p.TestO.Add()).
+		WithBody(request)
+
+	responseByteArray := testRequest.Verify(p.T(), http.StatusCreated)
+
+	actual := model.PaymentDto{}
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(p.T(), model.PaymentDto{
+		Id:          actual.Id,
+		Name:        "Test Payment",
+		Description: "Test Payment Description",
+		HouseId:     mocks.HouseId,
+		UserId:      mocks.UserId,
+		ProviderId:  nil,
 		Date:        mocks.Date,
 		Sum:         1000,
 	}, actual)
@@ -115,7 +145,7 @@ func (p *PaymentHandlerTestSuite) Test_AddBatch() {
 			Description: "Test Payment Description",
 			HouseId:     mocks.HouseId,
 			UserId:      mocks.UserId,
-			ProviderId:  mocks.ProviderId,
+			ProviderId:  &mocks.ProviderId,
 			Date:        mocks.Date,
 			Sum:         1000,
 		},

@@ -14,7 +14,7 @@ type Income struct {
 	Description string
 	Date        time.Time
 	Sum         float32
-	HouseId     uuid.UUID
+	HouseId     *uuid.UUID
 	House       houseModel.House   `gorm:"foreignKey:HouseId"`
 	Groups      []groupModel.Group `gorm:"many2many:income_groups"`
 }
@@ -24,7 +24,7 @@ type CreateIncomeRequest struct {
 	Description string
 	Date        time.Time
 	Sum         float32
-	HouseId     uuid.UUID
+	HouseId     *uuid.UUID
 	GroupIds    []uuid.UUID
 }
 
@@ -46,7 +46,7 @@ type IncomeDto struct {
 	Description string
 	Date        time.Time
 	Sum         float32
-	HouseId     uuid.UUID
+	HouseId     *uuid.UUID
 	Groups      []groupModel.GroupDto
 }
 

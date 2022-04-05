@@ -42,7 +42,7 @@ func (i *IncomeServiceTestSuite) Test_Add() {
 	var savedIncome model.Income
 	request := mocks.GenerateCreateIncomeRequest()
 
-	i.houses.On("ExistsById", request.HouseId).Return(true)
+	i.houses.On("ExistsById", *request.HouseId).Return(true)
 	i.incomeRepository.On("Create", mock.Anything).Return(func(income model.Income) model.Income {
 		savedIncome = income
 
@@ -59,7 +59,7 @@ func (i *IncomeServiceTestSuite) Test_Add() {
 func (i *IncomeServiceTestSuite) Test_Add_WithoutHouseIdAndWithGroups() {
 	var savedIncome model.Income
 	request := mocks.GenerateCreateIncomeRequest()
-	request.HouseId = uuid.Nil
+	request.HouseId = nil
 	request.GroupIds = []uuid.UUID{uuid.New()}
 
 	i.incomeRepository.On("Create", mock.Anything).Return(func(income model.Income) model.Income {
@@ -79,7 +79,7 @@ func (i *IncomeServiceTestSuite) Test_Add_WithoutHouseIdAndWithGroups() {
 
 func (i *IncomeServiceTestSuite) Test_Add_WithoutHouseIdAndGroups() {
 	request := mocks.GenerateCreateIncomeRequest()
-	request.HouseId = uuid.Nil
+	request.HouseId = nil
 	request.GroupIds = []uuid.UUID{}
 
 	_, err := i.TestO.Add(request)
@@ -94,7 +94,7 @@ func (i *IncomeServiceTestSuite) Test_Add_WithoutHouseIdAndGroups() {
 func (i *IncomeServiceTestSuite) Test_Add_WithHouseNotExists() {
 	request := mocks.GenerateCreateIncomeRequest()
 
-	i.houses.On("ExistsById", request.HouseId).Return(false)
+	i.houses.On("ExistsById", *request.HouseId).Return(false)
 
 	payment, err := i.TestO.Add(request)
 
@@ -108,7 +108,7 @@ func (i *IncomeServiceTestSuite) Test_Add_WithErrorFromRepository() {
 	expectedError := errors.New("error")
 	request := mocks.GenerateCreateIncomeRequest()
 
-	i.houses.On("ExistsById", request.HouseId).Return(true)
+	i.houses.On("ExistsById", *request.HouseId).Return(true)
 	i.incomeRepository.On("Create", mock.Anything).Return(model.Income{}, expectedError)
 
 	income, err := i.TestO.Add(request)
@@ -121,7 +121,7 @@ func (i *IncomeServiceTestSuite) Test_Add_WithDateAfterCurrentDate() {
 	request := mocks.GenerateCreateIncomeRequest()
 	request.Date = time.Now().Add(time.Hour)
 
-	i.houses.On("ExistsById", request.HouseId).Return(true)
+	i.houses.On("ExistsById", *request.HouseId).Return(true)
 
 	payment, err := i.TestO.Add(request)
 
@@ -135,7 +135,7 @@ func (i *IncomeServiceTestSuite) Test_Add_WithGroupsNotFound() {
 	request := mocks.GenerateCreateIncomeRequest()
 	request.GroupIds = []uuid.UUID{uuid.New()}
 
-	i.houses.On("ExistsById", request.HouseId).Return(true)
+	i.houses.On("ExistsById", *request.HouseId).Return(true)
 	i.groups.On("ExistsByIds", mock.Anything).Return(false)
 
 	income, err := i.TestO.Add(request)
@@ -164,7 +164,7 @@ func (i *IncomeServiceTestSuite) Test_AddBatch() {
 
 func (i *IncomeServiceTestSuite) Test_AddBatch_WithDefaultDetails() {
 	request := mocks.GenerateCreateIncomeBatchRequest(2)
-	request.Incomes[0].HouseId = uuid.Nil
+	request.Incomes[0].HouseId = nil
 	request.Incomes[0].GroupIds = []uuid.UUID{uuid.New()}
 	repositoryResponse := common.MapSlice(request.Incomes, func(income model.CreateIncomeRequest) model.Income {
 		return income.ToEntity()
@@ -182,7 +182,7 @@ func (i *IncomeServiceTestSuite) Test_AddBatch_WithDefaultDetails() {
 
 func (i *IncomeServiceTestSuite) Test_AddBatch_WithMissingGroupIdsAndHouseId() {
 	request := mocks.GenerateCreateIncomeBatchRequest(1)
-	request.Incomes[0].HouseId = uuid.Nil
+	request.Incomes[0].HouseId = nil
 	request.Incomes[0].GroupIds = []uuid.UUID{}
 
 	i.houses.On("ExistsById", mock.Anything).Return(true)
@@ -212,9 +212,9 @@ func (i *IncomeServiceTestSuite) Test_AddBatch_WithInvalidData() {
 	request.Incomes[0].Date = time.Now().Add(time.Hour)
 	request.Incomes[2].GroupIds = []uuid.UUID{uuid.New()}
 
-	i.houses.On("ExistsById", request.Incomes[0].HouseId).Return(true)
-	i.houses.On("ExistsById", request.Incomes[1].HouseId).Return(false)
-	i.houses.On("ExistsById", request.Incomes[2].HouseId).Return(true)
+	i.houses.On("ExistsById", *request.Incomes[0].HouseId).Return(true)
+	i.houses.On("ExistsById", *request.Incomes[1].HouseId).Return(false)
+	i.houses.On("ExistsById", *request.Incomes[2].HouseId).Return(true)
 	i.groups.On("ExistsByIds", request.Incomes[0].GroupIds).Return(true)
 	i.groups.On("ExistsByIds", request.Incomes[1].GroupIds).Return(true)
 	i.groups.On("ExistsByIds", request.Incomes[2].GroupIds).Return(false)
@@ -240,7 +240,8 @@ func (i *IncomeServiceTestSuite) Test_AddBatch_WithInvalidData() {
 }
 
 func (i *IncomeServiceTestSuite) Test_FindById() {
-	income := mocks.GenerateIncome(uuid.New())
+	houseId := uuid.New()
+	income := mocks.GenerateIncome(&houseId)
 
 	i.incomeRepository.On("FindById", income.Id).Return(income, nil)
 
@@ -276,9 +277,9 @@ func (i *IncomeServiceTestSuite) Test_FindById_WithError() {
 func (i *IncomeServiceTestSuite) Test_FindByHouseId() {
 	income := []model.IncomeDto{mocks.GenerateIncomeDto()}
 
-	i.incomeRepository.On("FindByHouseId", income[0].HouseId).Return(income, nil)
+	i.incomeRepository.On("FindByHouseId", *income[0].HouseId).Return(income, nil)
 
-	actual := i.TestO.FindByHouseId(income[0].HouseId)
+	actual := i.TestO.FindByHouseId(*income[0].HouseId)
 
 	assert.Equal(i.T(), income, actual)
 }

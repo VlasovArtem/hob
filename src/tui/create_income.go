@@ -34,7 +34,7 @@ func NewCreateIncome(app *TerminalApp) *CreateIncome {
 	f := &CreateIncome{
 		FlexApp: NewFlexApp(),
 		request: model.CreateIncomeRequest{
-			HouseId: app.House.Id,
+			HouseId: &app.House.Id,
 			Date:    time.Now(),
 		},
 	}

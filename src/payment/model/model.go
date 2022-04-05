@@ -18,7 +18,7 @@ type Payment struct {
 	Sum         float32
 	User        userModel.User   `gorm:"foreignKey:UserId"`
 	House       houseModel.House `gorm:"foreignKey:HouseId"`
-	ProviderId  uuid.UUID
+	ProviderId  *uuid.UUID
 	Provider    providerModel.Provider `gorm:"foreignKey:ProviderId"`
 }
 
@@ -27,7 +27,7 @@ type CreatePaymentRequest struct {
 	Description string
 	HouseId     uuid.UUID
 	UserId      uuid.UUID
-	ProviderId  uuid.UUID
+	ProviderId  *uuid.UUID
 	Date        time.Time
 	Sum         float32
 }
@@ -41,7 +41,7 @@ type UpdatePaymentRequest struct {
 	Description string
 	Date        time.Time
 	Sum         float32
-	ProviderId  uuid.UUID
+	ProviderId  *uuid.UUID
 }
 
 type PaymentDto struct {
@@ -50,7 +50,7 @@ type PaymentDto struct {
 	Description string
 	HouseId     uuid.UUID
 	UserId      uuid.UUID
-	ProviderId  uuid.UUID
+	ProviderId  *uuid.UUID
 	Date        time.Time
 	Sum         float32
 }

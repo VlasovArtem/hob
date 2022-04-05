@@ -21,7 +21,7 @@ func GenerateCreatePaymentRequest() model.CreatePaymentRequest {
 		Description: "Test Payment Description",
 		HouseId:     HouseId,
 		UserId:      UserId,
-		ProviderId:  ProviderId,
+		ProviderId:  &ProviderId,
 		Date:        Date,
 		Sum:         1000,
 	}
@@ -43,7 +43,7 @@ func GenerateUpdatePaymentRequest() model.UpdatePaymentRequest {
 		Description: "Test Payment Description",
 		Date:        Date,
 		Sum:         1000,
-		ProviderId:  ProviderId,
+		ProviderId:  &ProviderId,
 	}
 }
 
@@ -56,7 +56,7 @@ func GeneratePayment(houseId uuid.UUID, userId uuid.UUID, providerId uuid.UUID) 
 		UserId:      userId,
 		Date:        Date,
 		Sum:         1000,
-		ProviderId:  providerId,
+		ProviderId:  &providerId,
 	}
 }
 
@@ -67,7 +67,7 @@ func GeneratePaymentResponse() model.PaymentDto {
 		Description: "Test Payment Description",
 		HouseId:     HouseId,
 		UserId:      UserId,
-		ProviderId:  ProviderId,
+		ProviderId:  &ProviderId,
 		Date:        Date,
 		Sum:         1000,
 	}

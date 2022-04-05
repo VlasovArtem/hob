@@ -60,6 +60,35 @@ func (i *IncomeHandlerTestSuite) Test_Add() {
 	}, actual)
 }
 
+func (i *IncomeHandlerTestSuite) Test_Add_WithNilHouseId() {
+	request := mocks.GenerateCreateIncomeRequest()
+	request.HouseId = nil
+
+	i.incomes.On("Add", request).Return(request.ToEntity().ToDto(), nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/income").
+		WithMethod("POST").
+		WithHandler(i.TestO.Add()).
+		WithBody(request)
+
+	responseByteArray := testRequest.Verify(i.T(), http.StatusCreated)
+
+	actual := model.IncomeDto{}
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(i.T(), model.IncomeDto{
+		Id:          actual.Id,
+		Name:        "Name",
+		Date:        mocks.Date,
+		Description: "Description",
+		Sum:         100.1,
+		HouseId:     nil,
+		Groups:      []groupModel.GroupDto{},
+	}, actual)
+}
+
 func (i *IncomeHandlerTestSuite) Test_Add_WithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
 		WithURL("https://test.com/api/v1/income").
@@ -207,7 +236,7 @@ func (i *IncomeHandlerTestSuite) Test_FindById_WithInvalidParameter() {
 func (i *IncomeHandlerTestSuite) Test_FindByHouseId() {
 	response := []model.IncomeDto{mocks.GenerateIncomeDto()}
 
-	i.incomes.On("FindByHouseId", response[0].HouseId).
+	i.incomes.On("FindByHouseId", *response[0].HouseId).
 		Return(response, nil)
 
 	testRequest := testhelper.NewTestRequest().

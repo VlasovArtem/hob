@@ -73,6 +73,9 @@ func MapData[OKEY comparable, NKEY comparable, OVALUE any, NVALUE any](source ma
 
 func MapSlice[T any, V any](source []T, mapper func(T) V) []V {
 	target := make([]V, 0)
+	if source == nil {
+		return target
+	}
 	for _, t := range source {
 		target = append(target, mapper(t))
 	}

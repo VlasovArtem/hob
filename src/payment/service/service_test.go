@@ -63,6 +63,29 @@ func (p *PaymentServiceTestSuite) Test_Add() {
 	assert.Equal(p.T(), expectedResponse, payment)
 }
 
+func (p *PaymentServiceTestSuite) Test_Add_WithProviderIdNil() {
+	p.userService.On("ExistsById", mocks.UserId).Return(true)
+	p.houseService.On("ExistsById", mocks.HouseId).Return(true)
+	p.paymentRepository.On("Create", mock.Anything).Return(
+		func(payment model.Payment) model.Payment { return payment },
+		nil,
+	)
+
+	request := mocks.GenerateCreatePaymentRequest()
+	request.ProviderId = nil
+
+	payment, err := p.TestO.Add(request)
+
+	expectedEntity := request.ToEntity()
+	expectedEntity.Id = payment.Id
+	expectedResponse := expectedEntity.ToDto()
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), expectedResponse, payment)
+
+	p.providerService.AssertNotCalled(p.T(), "ExistsById", mock.Anything)
+}
+
 func (p *PaymentServiceTestSuite) Test_Add_WithUserNotExists() {
 	p.userService.On("ExistsById", mocks.UserId).Return(false)
 
@@ -118,6 +141,26 @@ func (p *PaymentServiceTestSuite) Test_AddBatch() {
 	assert.Equal(p.T(), common.MapSlice(repositoryResponse, model.EntityToDto), batch)
 }
 
+func (p *PaymentServiceTestSuite) Test_AddBatch_WithProviderIdNil() {
+	request := mocks.GenerateCreatePaymentBatchRequest(2)
+	request.Payments[0].ProviderId = nil
+	repositoryResponse := common.MapSlice(request.Payments, func(income model.CreatePaymentRequest) model.Payment {
+		return income.ToEntity()
+	})
+
+	p.userService.On("ExistsById", mock.Anything).Return(true)
+	p.houseService.On("ExistsById", mock.Anything).Return(true)
+	p.providerService.On("ExistsById", *request.Payments[1].ProviderId).Return(true)
+	p.paymentRepository.On("CreateBatch", mock.Anything).Return(repositoryResponse, nil)
+
+	batch, err := p.TestO.AddBatch(request)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), common.MapSlice(repositoryResponse, model.EntityToDto), batch)
+
+	p.providerService.AssertNumberOfCalls(p.T(), "ExistsById", 1)
+}
+
 func (p *PaymentServiceTestSuite) Test_AddBatch_WithEmptyData() {
 	request := mocks.GenerateCreatePaymentBatchRequest(0)
 
@@ -136,7 +179,8 @@ func (p *PaymentServiceTestSuite) Test_AddBatch_WithInvalidData() {
 	request := mocks.GenerateCreatePaymentBatchRequest(3)
 	request.Payments[0].UserId = uuid.New()
 	request.Payments[1].HouseId = uuid.New()
-	request.Payments[2].ProviderId = uuid.New()
+	providerId := uuid.New()
+	request.Payments[2].ProviderId = &providerId
 
 	p.userService.On("ExistsById", request.Payments[0].UserId).Return(false)
 	p.userService.On("ExistsById", request.Payments[1].UserId).Return(true)
@@ -144,9 +188,9 @@ func (p *PaymentServiceTestSuite) Test_AddBatch_WithInvalidData() {
 	p.houseService.On("ExistsById", request.Payments[0].HouseId).Return(true)
 	p.houseService.On("ExistsById", request.Payments[1].HouseId).Return(false)
 	p.houseService.On("ExistsById", request.Payments[2].HouseId).Return(true)
-	p.providerService.On("ExistsById", request.Payments[0].ProviderId).Return(true)
-	p.providerService.On("ExistsById", request.Payments[1].ProviderId).Return(true)
-	p.providerService.On("ExistsById", request.Payments[2].ProviderId).Return(false)
+	p.providerService.On("ExistsById", *request.Payments[0].ProviderId).Return(true)
+	p.providerService.On("ExistsById", *request.Payments[1].ProviderId).Return(true)
+	p.providerService.On("ExistsById", *request.Payments[2].ProviderId).Return(false)
 
 	actual, err := p.TestO.AddBatch(request)
 
@@ -311,7 +355,7 @@ func (p *PaymentServiceTestSuite) Test_Update() {
 	id := uuid.New()
 
 	p.paymentRepository.On("ExistsById", id).Return(true)
-	p.providerService.On("ExistsById", request.ProviderId).Return(true)
+	p.providerService.On("ExistsById", *request.ProviderId).Return(true)
 	p.paymentRepository.On("Update", mock.Anything).Return(nil)
 
 	assert.Nil(p.T(), p.TestO.Update(id, request))
@@ -331,7 +375,7 @@ func (p *PaymentServiceTestSuite) Test_Update_WithErrorFromDatabase() {
 	id := uuid.New()
 
 	p.paymentRepository.On("ExistsById", id).Return(true)
-	p.providerService.On("ExistsById", request.ProviderId).Return(true)
+	p.providerService.On("ExistsById", *request.ProviderId).Return(true)
 	p.paymentRepository.On("Update", mock.Anything).Return(errors.New("test"))
 
 	err := p.TestO.Update(id, request)
@@ -356,7 +400,7 @@ func (p *PaymentServiceTestSuite) Test_Update_WithDateAfterCurrentDate() {
 	id := uuid.New()
 
 	p.paymentRepository.On("ExistsById", id).Return(true)
-	p.providerService.On("ExistsById", request.ProviderId).Return(true)
+	p.providerService.On("ExistsById", *request.ProviderId).Return(true)
 
 	err := p.TestO.Update(id, request)
 	assert.Equal(p.T(), errors.New("date should not be after current date"), err)
@@ -369,7 +413,7 @@ func (p *PaymentServiceTestSuite) Test_Update_WithProviderNotExists() {
 	id := uuid.New()
 
 	p.paymentRepository.On("ExistsById", id).Return(true)
-	p.providerService.On("ExistsById", request.ProviderId).Return(false)
+	p.providerService.On("ExistsById", *request.ProviderId).Return(false)
 
 	err := p.TestO.Update(id, request)
 	assert.Equal(p.T(), fmt.Errorf("provider with id %s not found", request.ProviderId), err)

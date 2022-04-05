@@ -6,7 +6,7 @@ import (
 	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	int_errors "github.com/VlasovArtem/hob/src/common/int-errors"
+	interrors "github.com/VlasovArtem/hob/src/common/int-errors"
 	houses "github.com/VlasovArtem/hob/src/house/service"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/repository"
@@ -15,8 +15,6 @@ import (
 	"github.com/google/uuid"
 	"time"
 )
-
-var defaultUUID = uuid.UUID{}
 
 type PaymentServiceObject struct {
 	userService       users.UserService
@@ -67,8 +65,8 @@ func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response
 		return response, fmt.Errorf("house with id %s not found", request.HouseId)
 	}
 
-	if request.ProviderId != defaultUUID {
-		if !p.providerService.ExistsById(request.ProviderId) {
+	if request.ProviderId != nil {
+		if !p.providerService.ExistsById(*request.ProviderId) {
 			return response, fmt.Errorf("provider with id %s not found", request.ProviderId)
 		}
 	}
@@ -90,35 +88,35 @@ func (p *PaymentServiceObject) AddBatch(request model.CreatePaymentBatchRequest)
 	entities := common.MapSlice(request.Payments, func(paymentRequest model.CreatePaymentRequest) model.Payment {
 		userIds[paymentRequest.UserId] = true
 		houseIds[paymentRequest.HouseId] = true
-		if paymentRequest.ProviderId != defaultUUID {
-			providerIds[paymentRequest.ProviderId] = true
+		if paymentRequest.ProviderId != nil {
+			providerIds[*paymentRequest.ProviderId] = true
 		}
 
 		return paymentRequest.ToEntity()
 	})
 
-	builder := int_errors.NewBuilder()
+	builder := interrors.NewBuilder()
 
-	for userId, _ := range userIds {
+	for userId := range userIds {
 		if !p.userService.ExistsById(userId) {
 			builder.WithDetail(fmt.Sprintf("user with id %s not found", userId))
 		}
 	}
 
-	for houseId, _ := range houseIds {
+	for houseId := range houseIds {
 		if !p.houseService.ExistsById(houseId) {
 			builder.WithDetail(fmt.Sprintf("house with id %s not found", houseId))
 		}
 	}
 
-	for providerId, _ := range providerIds {
+	for providerId := range providerIds {
 		if !p.providerService.ExistsById(providerId) {
 			builder.WithDetail(fmt.Sprintf("provider with id %s not found", providerId))
 		}
 	}
 
 	if builder.HasErrors() {
-		return nil, int_errors.NewErrResponse(builder.WithMessage("Create payment batch failed"))
+		return nil, interrors.NewErrResponse(builder.WithMessage("Create payment batch failed"))
 	}
 
 	if batch, err := p.paymentRepository.CreateBatch(entities); err != nil {
@@ -163,7 +161,7 @@ func (p *PaymentServiceObject) Update(id uuid.UUID, request model.UpdatePaymentR
 	if !p.ExistsById(id) {
 		return fmt.Errorf("payment with id %s not found", id)
 	}
-	if !p.providerService.ExistsById(request.ProviderId) {
+	if request.ProviderId != nil && !p.providerService.ExistsById(*request.ProviderId) {
 		return fmt.Errorf("provider with id %s not found", request.ProviderId)
 	}
 	if request.Date.After(time.Now()) {
