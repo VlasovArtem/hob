@@ -33,9 +33,10 @@ func (u *UserRepositoryObject) GetEntity() any {
 type UserRepository interface {
 	Create(user model.User) (model.User, error)
 	FindById(id uuid.UUID) (model.User, error)
+	FindByEmail(email string) (model.User, error)
 	ExistsById(id uuid.UUID) bool
 	ExistsByEmail(email string) bool
-	FindByEmail(email string) (model.User, error)
+	Verify(email string, password []byte) bool
 	Update(id uuid.UUID, user model.UpdateUserRequest) error
 	Delete(id uuid.UUID) error
 }
@@ -48,6 +49,10 @@ func (u *UserRepositoryObject) FindById(id uuid.UUID) (user model.User, err erro
 	return user, u.database.Find(&user, id)
 }
 
+func (u *UserRepositoryObject) FindByEmail(email string) (user model.User, error error) {
+	return user, u.database.FindByQuery(&user, "email = ?", email)
+}
+
 func (u *UserRepositoryObject) ExistsById(id uuid.UUID) bool {
 	return u.database.Exists(id)
 }
@@ -56,8 +61,8 @@ func (u *UserRepositoryObject) ExistsByEmail(email string) bool {
 	return u.database.ExistsBy("email = ?", email)
 }
 
-func (u *UserRepositoryObject) FindByEmail(email string) (user model.User, err error) {
-	return user, u.database.FindBy(&user, "email = ?", email)
+func (u *UserRepositoryObject) Verify(email string, password []byte) bool {
+	return u.database.ExistsByQuery(u.database.Model, "email = ? AND password = ?", email, password)
 }
 
 func (u *UserRepositoryObject) Delete(id uuid.UUID) error {

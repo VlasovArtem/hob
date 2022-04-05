@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
+	"os"
 )
 
 const HomePageName = "home"
@@ -134,6 +135,10 @@ func (h *Home) bindKeys() {
 		tcell.KeyCtrlE: NewKeyAction("Show Houses", h.housesPage),
 		tcell.KeyCtrlF: NewKeyAction("Show Incomes", h.incomesPage),
 		tcell.KeyCtrlP: NewKeyAction("Show Providers", h.providersPage),
+		tcell.KeyCtrlQ: NewKeyAction("Quit", func(key *tcell.EventKey) *tcell.EventKey {
+			os.Exit(0)
+			return key
+		}),
 	}
 }
 

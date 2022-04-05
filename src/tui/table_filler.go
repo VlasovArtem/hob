@@ -149,14 +149,14 @@ func (t *TableFiller) Fill(content any) {
 	t.empty = false
 
 	for i := 0; i < array.Len(); i++ {
-		provider := t.TableHeaders[i].customProvider
+		//provider := t.TableHeaders[i].customProvider
+		//
+		//var value = array.Index(i).Interface()
+		//if provider != nil {
+		//	value = provider(value)
+		//}
 
-		var value = array.Index(i).Interface()
-		if provider != nil {
-			value = provider(value)
-		}
-
-		t.fillRowContent(i+row, value)
+		t.fillRowContent(i+row, array.Index(i).Interface())
 	}
 }
 

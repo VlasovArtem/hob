@@ -76,6 +76,22 @@ func (p *UserRepositoryTestSuite) Test_FindById_WithNotExistsUser() {
 	assert.Equal(p.T(), model.User{}, actual)
 }
 
+func (p *UserRepositoryTestSuite) Test_FindByEmail() {
+	user := p.createUser()
+
+	actual, err := p.repository.FindByEmail(user.Email)
+
+	assert.Nil(p.T(), err)
+	assert.Equal(p.T(), user, actual)
+}
+
+func (p *UserRepositoryTestSuite) Test_FindByEmail_WithNotExistsUser() {
+	actual, err := p.repository.FindByEmail("test")
+
+	assert.Equal(p.T(), gorm.ErrRecordNotFound, err)
+	assert.Equal(p.T(), model.User{}, actual)
+}
+
 func (p *UserRepositoryTestSuite) Test_ExistsById() {
 	user := p.createUser()
 
@@ -127,6 +143,24 @@ func (p *UserRepositoryTestSuite) Test_Update() {
 		Password:  []byte("new"),
 		Email:     user.Email,
 	}, user1)
+}
+
+func (p *UserRepositoryTestSuite) Test_Verify() {
+	user := p.createUser()
+
+	assert.True(p.T(), p.repository.Verify(user.Email, user.Password))
+}
+
+func (p *UserRepositoryTestSuite) Test_Verify_WithNotFoundEmail() {
+	user := p.createUser()
+
+	assert.False(p.T(), p.repository.Verify("mail@mail.com", user.Password))
+}
+
+func (p *UserRepositoryTestSuite) Test_Verify_WithNotFoundPassword() {
+	user := p.createUser()
+
+	assert.False(p.T(), p.repository.Verify(user.Email, []byte("invalid")))
 }
 
 func (p *UserRepositoryTestSuite) createUser() model.User {

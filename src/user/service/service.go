@@ -74,11 +74,13 @@ func (u *UserServiceObject) ExistsById(id uuid.UUID) bool {
 }
 
 func (u *UserServiceObject) VerifyUser(email string, password string) (response model.UserDto, err error) {
+	if !u.repository.Verify(email, []byte(password)) {
+		return response, errors.New("credentials are not valid")
+	}
+
 	if user, err := u.repository.FindByEmail(email); err != nil {
-		return response, database.HandlerFindError(err, "user not found")
-	} else if string(user.Password) != password {
-		return response, errors.New("credentials is not valid")
+		return response, err
 	} else {
-		return user.ToDto(), nil
+		return user.ToDto(), err
 	}
 }
