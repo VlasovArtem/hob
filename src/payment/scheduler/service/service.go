@@ -183,7 +183,7 @@ func (p *PaymentSchedulerServiceObject) schedulerFunc(payment model.PaymentSched
 				Description: payment.Description,
 				HouseId:     payment.HouseId,
 				UserId:      payment.UserId,
-				ProviderId:  payment.ProviderId,
+				ProviderId:  &payment.ProviderId,
 				Date:        time.Now(),
 				Sum:         payment.Sum,
 			},

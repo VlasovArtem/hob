@@ -97,12 +97,12 @@ func (u *UpdatePayment) update(update updatePaymentReq, id uuid.UUID) func() {
 			request.Date = newDate
 		}
 
-		if request.ProviderId == DefaultUUID {
+		if request.ProviderId == nil {
 			u.ShowErrorTo(errors.New("provider id is not valid"))
 
 			return
 		}
-		request.ProviderId = update.providerId
+		request.ProviderId = &update.providerId
 
 		if err := u.app.GetPaymentService().Update(id, request); err != nil {
 			u.ShowErrorTo(err)

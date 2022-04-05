@@ -62,7 +62,7 @@ func (p *Payments) fillTable() *TableFiller {
 func (p *Payments) findProviderName(payment any) any {
 	providerId := payment.(model.PaymentDto).ProviderId
 
-	providerDto, err := p.App.GetProviderService().FindById(providerId)
+	providerDto, err := p.App.GetProviderService().FindById(*providerId)
 
 	if err != nil {
 		p.ShowErrorTo(err)

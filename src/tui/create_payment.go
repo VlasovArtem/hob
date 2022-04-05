@@ -97,7 +97,7 @@ func (c *CreatePayment) create(request createPaymentReq) func() {
 		paymentRequest := model.CreatePaymentRequest{
 			UserId:      c.app.AuthorizedUser.Id,
 			HouseId:     c.app.House.Id,
-			ProviderId:  request.providerId,
+			ProviderId:  &request.providerId,
 			Date:        newDate,
 			Name:        request.name,
 			Description: request.description,
