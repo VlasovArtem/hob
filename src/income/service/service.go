@@ -54,7 +54,10 @@ type IncomeService interface {
 }
 
 func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response model.IncomeDto, err error) {
-	if !i.houseService.ExistsById(request.HouseId) {
+	if request.HouseId == uuid.Nil && len(request.GroupIds) == 0 {
+		return response, errors.New("houseId or groupId must be set")
+	}
+	if request.HouseId != uuid.Nil && !i.houseService.ExistsById(request.HouseId) {
 		return response, int_errors.NewErrNotFound("house with id %s not found", request.HouseId)
 	}
 	if len(request.GroupIds) != 0 && !i.groupService.ExistsByIds(request.GroupIds) {
@@ -79,12 +82,25 @@ func (i *IncomeServiceObject) AddBatch(request model.CreateIncomeBatchRequest) (
 	houseIds := make(map[uuid.UUID]bool)
 	groups := make(map[uuid.UUID]bool)
 
-	common.ForEach(request.Incomes, func(income model.CreateIncomeRequest) {
-		houseIds[income.HouseId] = true
-		common.ForEach(income.GroupIds, func(groupId uuid.UUID) {
+	err = common.ForEach(request.Incomes, func(income model.CreateIncomeRequest) error {
+		if income.HouseId == uuid.Nil && len(income.GroupIds) == 0 {
+			return errors.New("houseId or groupId must be set")
+		}
+
+		if income.HouseId != uuid.Nil {
+			houseIds[income.HouseId] = true
+		}
+		_ = common.ForEach(income.GroupIds, func(groupId uuid.UUID) error {
 			groups[groupId] = true
+			return nil
 		})
+
+		return nil
 	})
+
+	if err != nil {
+		return make([]model.IncomeDto, 0), err
+	}
 
 	builder := int_errors.NewBuilder()
 

@@ -41,7 +41,6 @@ func TestIncomeServiceTestSuite(t *testing.T) {
 func (i *IncomeServiceTestSuite) Test_Add() {
 	var savedIncome model.Income
 	request := mocks.GenerateCreateIncomeRequest()
-	request.GroupIds = []uuid.UUID{uuid.New()}
 
 	i.houses.On("ExistsById", request.HouseId).Return(true)
 	i.incomeRepository.On("Create", mock.Anything).Return(func(income model.Income) model.Income {
@@ -55,6 +54,41 @@ func (i *IncomeServiceTestSuite) Test_Add() {
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), savedIncome.ToDto(), income)
+}
+
+func (i *IncomeServiceTestSuite) Test_Add_WithoutHouseIdAndWithGroups() {
+	var savedIncome model.Income
+	request := mocks.GenerateCreateIncomeRequest()
+	request.HouseId = uuid.Nil
+	request.GroupIds = []uuid.UUID{uuid.New()}
+
+	i.incomeRepository.On("Create", mock.Anything).Return(func(income model.Income) model.Income {
+		savedIncome = income
+
+		return income
+	}, nil)
+	i.groups.On("ExistsByIds", mock.Anything).Return(true)
+
+	income, err := i.TestO.Add(request)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), savedIncome.ToDto(), income)
+
+	i.houses.AssertNotCalled(i.T(), "ExistsById", mock.Anything)
+}
+
+func (i *IncomeServiceTestSuite) Test_Add_WithoutHouseIdAndGroups() {
+	request := mocks.GenerateCreateIncomeRequest()
+	request.HouseId = uuid.Nil
+	request.GroupIds = []uuid.UUID{}
+
+	_, err := i.TestO.Add(request)
+
+	assert.EqualError(i.T(), err, "houseId or groupId must be set")
+
+	i.groups.AssertNotCalled(i.T(), "ExistsByIds", mock.Anything)
+	i.houses.AssertNotCalled(i.T(), "ExistsById", mock.Anything)
+	i.incomeRepository.AssertNotCalled(i.T(), "Create", mock.Anything)
 }
 
 func (i *IncomeServiceTestSuite) Test_Add_WithHouseNotExists() {
@@ -126,6 +160,38 @@ func (i *IncomeServiceTestSuite) Test_AddBatch() {
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), common.MapSlice(repositoryResponse, model.IncomeToDto), batch)
+}
+
+func (i *IncomeServiceTestSuite) Test_AddBatch_WithDefaultDetails() {
+	request := mocks.GenerateCreateIncomeBatchRequest(2)
+	request.Incomes[0].HouseId = uuid.Nil
+	request.Incomes[0].GroupIds = []uuid.UUID{uuid.New()}
+	repositoryResponse := common.MapSlice(request.Incomes, func(income model.CreateIncomeRequest) model.Income {
+		return income.ToEntity()
+	})
+
+	i.houses.On("ExistsById", mock.Anything).Return(true)
+	i.groups.On("ExistsByIds", mock.Anything).Return(true)
+	i.incomeRepository.On("CreateBatch", mock.Anything).Return(repositoryResponse, nil)
+
+	batch, err := i.TestO.AddBatch(request)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), common.MapSlice(repositoryResponse, model.IncomeToDto), batch)
+}
+
+func (i *IncomeServiceTestSuite) Test_AddBatch_WithMissingGroupIdsAndHouseId() {
+	request := mocks.GenerateCreateIncomeBatchRequest(1)
+	request.Incomes[0].HouseId = uuid.Nil
+	request.Incomes[0].GroupIds = []uuid.UUID{}
+
+	i.houses.On("ExistsById", mock.Anything).Return(true)
+	i.groups.On("ExistsByIds", mock.Anything).Return(true)
+
+	_, err := i.TestO.AddBatch(request)
+
+	assert.EqualError(i.T(), err, "houseId or groupId must be set")
+	i.incomeRepository.AssertNotCalled(i.T(), "CreateBatch", mock.Anything)
 }
 
 func (i *IncomeServiceTestSuite) Test_AddBatch_WithEmptyData() {

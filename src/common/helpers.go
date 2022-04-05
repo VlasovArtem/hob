@@ -79,10 +79,13 @@ func MapSlice[T any, V any](source []T, mapper func(T) V) []V {
 	return target
 }
 
-func ForEach[T any](source []T, action func(T)) {
+func ForEach[T any](source []T, action func(T) error) error {
 	for _, t := range source {
-		action(t)
+		if err := action(t); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func Join[T fmt.Stringer](t []T, sep string) string {
