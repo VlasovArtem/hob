@@ -49,9 +49,9 @@ type PaymentService interface {
 	Add(request model.CreatePaymentRequest) (model.PaymentDto, error)
 	AddBatch(request model.CreatePaymentBatchRequest) ([]model.PaymentDto, error)
 	FindById(id uuid.UUID) (model.PaymentDto, error)
-	FindByHouseId(id uuid.UUID) []model.PaymentDto
-	FindByUserId(id uuid.UUID) []model.PaymentDto
-	FindByProviderId(id uuid.UUID) []model.PaymentDto
+	FindByHouseId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto
+	FindByUserId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto
+	FindByProviderId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdatePaymentRequest) error
@@ -134,16 +134,16 @@ func (p *PaymentServiceObject) FindById(id uuid.UUID) (model.PaymentDto, error) 
 	}
 }
 
-func (p *PaymentServiceObject) FindByHouseId(houseId uuid.UUID) []model.PaymentDto {
-	return p.paymentRepository.FindByHouseId(houseId)
+func (p *PaymentServiceObject) FindByHouseId(houseId uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
+	return p.paymentRepository.FindByHouseId(houseId, limit, offset, from, to)
 }
 
-func (p *PaymentServiceObject) FindByUserId(userId uuid.UUID) []model.PaymentDto {
-	return p.paymentRepository.FindByUserId(userId)
+func (p *PaymentServiceObject) FindByUserId(userId uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
+	return p.paymentRepository.FindByUserId(userId, limit, offset, from, to)
 }
 
-func (p *PaymentServiceObject) FindByProviderId(id uuid.UUID) []model.PaymentDto {
-	return p.paymentRepository.FindByProviderId(id)
+func (p *PaymentServiceObject) FindByProviderId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
+	return p.paymentRepository.FindByProviderId(id, limit, offset, from, to)
 }
 
 func (p *PaymentServiceObject) ExistsById(id uuid.UUID) bool {

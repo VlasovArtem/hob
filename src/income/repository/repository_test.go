@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"testing"
+	"time"
 )
 
 type IncomeRepositoryTestSuite struct {
@@ -35,6 +36,9 @@ func (i *IncomeRepositoryTestSuite) SetupSuite() {
 	).
 		AddAfterTest(truncateDynamic).
 		AddAfterSuite(func(service db.DatabaseService) {
+			service.D().Exec("DELETE FROM income_groups")
+			database.TruncateTable(service, groupModel.Group{})
+			database.TruncateTable(service, model.Income{})
 			database.TruncateTable(service, houseModel.House{})
 			database.TruncateTable(service, userModel.User{})
 		}).
@@ -114,14 +118,70 @@ func (i *IncomeRepositoryTestSuite) Test_FindById_WithMissingId() {
 func (i *IncomeRepositoryTestSuite) Test_FindByHouseId() {
 	income := i.createIncomeWithHouse()
 
-	actual, err := i.repository.FindByHouseId(*income.HouseId)
+	actual, err := i.repository.FindByHouseId(*income.HouseId, 10, 0, nil, nil)
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), []model.IncomeDto{income.ToDto()}, actual)
 }
 
+func (i *IncomeRepositoryTestSuite) Test_FindByHouseId_WithFromAndTo() {
+	first := mocks.GenerateIncome(&i.createdHouse.Id)
+	first.Date = time.Now().AddDate(0, 0, -1)
+	i.CreateEntity(&first)
+
+	second := mocks.GenerateIncome(&i.createdHouse.Id)
+	second.Date = time.Now().Truncate(time.Microsecond)
+	i.CreateEntity(&second)
+
+	from := time.Now().Add(-time.Hour * 12)
+	to := time.Now()
+
+	actual, err := i.repository.FindByHouseId(i.createdHouse.Id, 10, 0, &from, &to)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []model.IncomeDto{second.ToDto()}, actual)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_FindByHouseId_WithFrom() {
+	first := mocks.GenerateIncome(&i.createdHouse.Id)
+	first.Date = time.Now().AddDate(0, 0, -1)
+	i.CreateEntity(&first)
+
+	second := mocks.GenerateIncome(&i.createdHouse.Id)
+	second.Date = time.Now().Truncate(time.Microsecond)
+	i.CreateEntity(&second)
+
+	from := time.Now().Add(-time.Hour * 12)
+
+	actual, err := i.repository.FindByHouseId(i.createdHouse.Id, 10, 0, &from, nil)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []model.IncomeDto{second.ToDto()}, actual)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_FindByHouseId_WithGroupsAndHouseId() {
+	group := i.createGroup()
+	house := houseMocks.GenerateHouse(i.createdUser.Id)
+	house.Groups = []groupModel.Group{group}
+	i.CreateEntity(&house)
+
+	incomeWithHouseId := mocks.GenerateIncome(&house.Id)
+	incomeWithHouseId.Date = time.Now().Truncate(time.Microsecond)
+	i.CreateEntity(&incomeWithHouseId)
+
+	incomeWithGroups := mocks.GenerateIncome(nil)
+	incomeWithGroups.Groups = []groupModel.Group{group}
+	incomeWithGroups.Date = time.Now().Truncate(time.Microsecond)
+	i.CreateEntity(&incomeWithGroups)
+
+	actual, err := i.repository.FindByHouseId(house.Id, 10, 0, nil, nil)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []model.IncomeDto{incomeWithGroups.ToDto(), incomeWithHouseId.ToDto()}, actual)
+}
+
 func (i *IncomeRepositoryTestSuite) Test_FindByHouseId_WithMissingId() {
-	actual, err := i.repository.FindByHouseId(uuid.New())
+	actual, err := i.repository.FindByHouseId(uuid.New(), 10, 0, nil, nil)
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), []model.IncomeDto{}, actual)
@@ -135,19 +195,66 @@ func (i *IncomeRepositoryTestSuite) Test_FindByGroupIds() {
 	secondIncome := i.createIncomeWithGroups([]groupModel.Group{second})
 	i.createIncomeWithGroups([]groupModel.Group{third})
 
-	actual, err := i.repository.FindByGroupIds([]uuid.UUID{first.Id, second.Id})
+	actual, err := i.repository.FindByGroupIds([]uuid.UUID{first.Id, second.Id}, 10, 0, nil, nil)
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), []model.IncomeDto{
-		firstIncome.ToDto(),
 		secondIncome.ToDto(),
+		firstIncome.ToDto(),
 	}, actual)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_FindByGroupIds_WithFromAndTo() {
+	first := i.createGroup()
+	firstIncome := mocks.GenerateIncome(&i.createdHouse.Id)
+	firstIncome.Date = time.Now().AddDate(0, 0, -1).Truncate(time.Microsecond)
+	firstIncome.Groups = []groupModel.Group{first}
+	i.CreateEntity(&firstIncome)
+
+	second := i.createGroup()
+	secondIncome := mocks.GenerateIncome(&i.createdHouse.Id)
+	secondIncome.Date = time.Now().Truncate(time.Microsecond)
+	secondIncome.Groups = []groupModel.Group{second}
+	i.CreateEntity(&secondIncome)
+
+	i.createIncomeWithGroups([]groupModel.Group{i.createGroup()})
+
+	from := time.Now().Add(-time.Hour * 12)
+	to := time.Now()
+
+	actual, err := i.repository.FindByGroupIds([]uuid.UUID{first.Id, second.Id}, 10, 0, &from, &to)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []model.IncomeDto{secondIncome.ToDto()}, actual)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_FindByGroupIds_WithFrom() {
+	first := i.createGroup()
+	firstIncome := mocks.GenerateIncome(&i.createdHouse.Id)
+	firstIncome.Date = time.Now().AddDate(0, 0, -1)
+	firstIncome.Groups = []groupModel.Group{first}
+	i.CreateEntity(&firstIncome)
+
+	second := i.createGroup()
+	secondIncome := mocks.GenerateIncome(&i.createdHouse.Id)
+	secondIncome.Date = time.Now().Truncate(time.Microsecond)
+	secondIncome.Groups = []groupModel.Group{second}
+	i.CreateEntity(&secondIncome)
+
+	i.createIncomeWithGroups([]groupModel.Group{i.createGroup()})
+
+	from := time.Now().Add(-time.Hour * 12)
+
+	actual, err := i.repository.FindByGroupIds([]uuid.UUID{first.Id, second.Id}, 10, 0, &from, nil)
+
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []model.IncomeDto{secondIncome.ToDto()}, actual)
 }
 
 func (i *IncomeRepositoryTestSuite) Test_FindByGroupIds_WithNotMatchingIds() {
 	i.createIncome()
 
-	actual, err := i.repository.FindByGroupIds([]uuid.UUID{uuid.New()})
+	actual, err := i.repository.FindByGroupIds([]uuid.UUID{uuid.New()}, 10, 0, nil, nil)
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), []model.IncomeDto{}, actual)

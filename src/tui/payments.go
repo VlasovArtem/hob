@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/ctime"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	providerModel "github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/gdamore/tcell/v2"
@@ -54,7 +55,8 @@ func (p *Payments) fillTable() *TableFiller {
 	p.payments.SetTitle("Payments")
 	p.payments.AddContentProvider("Provider", p.findProviderName)
 	p.payments.AddContentProvider("Meter Id", p.findMeterId)
-	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id)
+
+	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id, 50, 0, ctime.Now().StartOfMonth(), nil)
 	p.payments.Fill(content)
 	return p.payments
 }

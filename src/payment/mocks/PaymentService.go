@@ -6,6 +6,8 @@ import (
 	model "github.com/VlasovArtem/hob/src/payment/model"
 	mock "github.com/stretchr/testify/mock"
 
+	time "time"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -86,13 +88,13 @@ func (_m *PaymentService) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindByHouseId provides a mock function with given fields: id
-func (_m *PaymentService) FindByHouseId(id uuid.UUID) []model.PaymentDto {
-	ret := _m.Called(id)
+// FindByHouseId provides a mock function with given fields: id, limit, offset, from, to
+func (_m *PaymentService) FindByHouseId(id uuid.UUID, limit int, offset int, from *time.Time, to *time.Time) []model.PaymentDto {
+	ret := _m.Called(id, limit, offset, from, to)
 
 	var r0 []model.PaymentDto
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
-		r0 = rf(id)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, int, int, *time.Time, *time.Time) []model.PaymentDto); ok {
+		r0 = rf(id, limit, offset, from, to)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.PaymentDto)
@@ -123,13 +125,13 @@ func (_m *PaymentService) FindById(id uuid.UUID) (model.PaymentDto, error) {
 	return r0, r1
 }
 
-// FindByProviderId provides a mock function with given fields: id
-func (_m *PaymentService) FindByProviderId(id uuid.UUID) []model.PaymentDto {
-	ret := _m.Called(id)
+// FindByProviderId provides a mock function with given fields: id, limit, offset, from, to
+func (_m *PaymentService) FindByProviderId(id uuid.UUID, limit int, offset int, from *time.Time, to *time.Time) []model.PaymentDto {
+	ret := _m.Called(id, limit, offset, from, to)
 
 	var r0 []model.PaymentDto
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
-		r0 = rf(id)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, int, int, *time.Time, *time.Time) []model.PaymentDto); ok {
+		r0 = rf(id, limit, offset, from, to)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.PaymentDto)
@@ -139,13 +141,13 @@ func (_m *PaymentService) FindByProviderId(id uuid.UUID) []model.PaymentDto {
 	return r0
 }
 
-// FindByUserId provides a mock function with given fields: id
-func (_m *PaymentService) FindByUserId(id uuid.UUID) []model.PaymentDto {
-	ret := _m.Called(id)
+// FindByUserId provides a mock function with given fields: id, limit, offset, from, to
+func (_m *PaymentService) FindByUserId(id uuid.UUID, limit int, offset int, from *time.Time, to *time.Time) []model.PaymentDto {
+	ret := _m.Called(id, limit, offset, from, to)
 
 	var r0 []model.PaymentDto
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.PaymentDto); ok {
-		r0 = rf(id)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, int, int, *time.Time, *time.Time) []model.PaymentDto); ok {
+		r0 = rf(id, limit, offset, from, to)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.PaymentDto)

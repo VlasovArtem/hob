@@ -12,7 +12,10 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"time"
 )
+
+var nilTime *time.Time
 
 var mappers = map[reflect.Type]func(value string) (any, error){
 	reflect.TypeOf(uuid.UUID{}): func(value string) (any, error) {
@@ -30,6 +33,13 @@ var mappers = map[reflect.Type]func(value string) (any, error){
 	},
 	reflect.TypeOf(""): func(value string) (any, error) {
 		return value, nil
+	},
+	reflect.TypeOf(nilTime): func(value string) (any, error) {
+		if parse, err := time.Parse(time.RFC3339, value); err != nil {
+			return nil, errors.New("the time is not valid RFC3339")
+		} else {
+			return &parse, nil
+		}
 	},
 }
 
@@ -115,14 +125,34 @@ func GetQueryParamOrDefault[T any](request *http.Request, name string, defaultVa
 
 	var t T
 
-	if mapper, ok := mappers[reflect.TypeOf(defaultValue)]; ok {
+	if mapper, ok := mappers[reflect.TypeOf(t)]; ok {
 		if mappedValue, err := mapper(parameter); err != nil {
 			return t, err
 		} else {
 			return mappedValue.(T), nil
 		}
 	} else {
-		return t, errors.New(fmt.Sprintf("mapper not found %s", reflect.TypeOf(defaultValue)))
+		return t, errors.New(fmt.Sprintf("mapper not found %s", reflect.TypeOf(t)))
+	}
+}
+
+func GetQueryParamOrDefaultReference[T any](request *http.Request, name string, defaultValue *T) (*T, error) {
+	parameter := request.URL.Query().Get(name)
+
+	if parameter == "" {
+		return defaultValue, nil
+	}
+
+	var t *T
+
+	if mapper, ok := mappers[reflect.TypeOf(t)]; ok {
+		if mappedValue, err := mapper(parameter); err != nil {
+			return nil, err
+		} else {
+			return mappedValue.(*T), nil
+		}
+	} else {
+		return nil, errors.New(fmt.Sprintf("mapper not found %s", reflect.TypeOf(t)))
 	}
 }
 
@@ -208,4 +238,38 @@ func handleBadRequestWithErrorResponse(writer http.ResponseWriter, response int_
 			log.Error().Err(err).Msg("ErrorResponse encoding failure")
 		}
 	}
+}
+
+func GetRequestPaging(request *http.Request, defaultLimit, defaultOffset int) (limit, offset int) {
+	limit, err := GetQueryParamOrDefault(request, "limit", defaultLimit)
+
+	if err != nil {
+		log.Err(err).Msg("Failed to get limit query parameter")
+		limit = defaultLimit
+	}
+
+	offset, err = GetQueryParamOrDefault(request, "offset", defaultOffset)
+
+	if err != nil {
+		log.Err(err).Msg("Failed to get offset query parameter")
+		offset = defaultOffset
+	}
+
+	return limit, offset
+}
+
+func GetRequestFiltering(request *http.Request) (from, to *time.Time) {
+	from, err := GetQueryParamOrDefaultReference[time.Time](request, "from", nil)
+	if err != nil {
+		log.Err(err).Msg("Failed to get from query parameter 'from'")
+		return nil, nil
+	}
+
+	to, err = GetQueryParamOrDefaultReference[time.Time](request, "to", nil)
+	if err != nil {
+		log.Err(err).Msg("Failed to get to query parameter 'to'")
+		return from, nil
+	}
+
+	return from, to
 }

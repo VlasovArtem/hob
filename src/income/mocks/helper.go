@@ -13,7 +13,7 @@ func GenerateIncome(houseId *uuid.UUID) model.Income {
 	return model.Income{
 		Id:          uuid.New(),
 		Name:        "Name",
-		Date:        Date,
+		Date:        time.Now().Truncate(time.Microsecond),
 		Description: "Description",
 		Sum:         100.1,
 		HouseId:     houseId,

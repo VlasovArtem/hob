@@ -86,7 +86,7 @@ func (p *PaymentSchedulerServiceTestSuite) Test_Add() {
 		Description: "Test Payment Description",
 		HouseId:     mocks.HouseId,
 		UserId:      mocks.UserId,
-		ProviderId:  mocks.ProviderId,
+		ProviderId:  &mocks.ProviderId,
 		Date:        createPaymentRequest.Date,
 		Sum:         1000,
 	}, createPaymentRequest)

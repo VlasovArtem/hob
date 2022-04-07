@@ -19,6 +19,8 @@ import (
 	"time"
 )
 
+var nilTime *time.Time
+
 type IncomeServiceTestSuite struct {
 	testhelper.MockTestSuite[IncomeService]
 	houses           *houseMocks.HouseService
@@ -277,9 +279,9 @@ func (i *IncomeServiceTestSuite) Test_FindById_WithError() {
 func (i *IncomeServiceTestSuite) Test_FindByHouseId() {
 	income := []model.IncomeDto{mocks.GenerateIncomeDto()}
 
-	i.incomeRepository.On("FindByHouseId", *income[0].HouseId).Return(income, nil)
+	i.incomeRepository.On("FindByHouseId", *income[0].HouseId, 10, 0, nilTime, nilTime).Return(income, nil)
 
-	actual := i.TestO.FindByHouseId(*income[0].HouseId)
+	actual := i.TestO.FindByHouseId(*income[0].HouseId, 10, 0, nilTime, nilTime)
 
 	assert.Equal(i.T(), income, actual)
 }
@@ -289,9 +291,9 @@ func (i *IncomeServiceTestSuite) Test_FindByHouseId_WithNotExistingRecords() {
 
 	houseId := uuid.New()
 
-	i.incomeRepository.On("FindByHouseId", houseId).Return(income, nil)
+	i.incomeRepository.On("FindByHouseId", houseId, 10, 0, nilTime, nilTime).Return(income, nil)
 
-	actual := i.TestO.FindByHouseId(houseId)
+	actual := i.TestO.FindByHouseId(houseId, 10, 0, nilTime, nilTime)
 
 	assert.Equal(i.T(), income, actual)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"reflect"
 )
 
@@ -21,9 +22,9 @@ type DBTestSuite struct {
 func (db *DBTestSuite) InitDBTestSuite() {
 	config := database.NewDefaultDatabaseConfiguration()
 	config.DBName = "hob_test"
-	//config.GormConfig = &gorm.Config{
-	//	Logger: logger.Default.LogMode(logger.Info),
-	//}
+	config.GormConfig = &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	}
 	db.Database = database.NewDatabaseService(config)
 }
 
@@ -97,5 +98,17 @@ func (db *DBTestSuite) Delete(entity any) {
 }
 
 func TruncateTable(service database.DatabaseService, entity any) {
-	service.D().Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(entity)
+	err := service.D().Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(entity).Error
+
+	if err != nil {
+		log.Err(err).Msg("Cannot truncate table")
+	}
+}
+
+func TruncateTableCascade(service database.DatabaseService, tableName string) {
+	err := service.D().Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", tableName)).Error
+
+	if err != nil {
+		log.Err(err).Msg("Cannot truncate table")
+	}
 }

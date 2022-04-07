@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"testing"
+	"time"
 )
 
 func Test_Initialize(t *testing.T) {
@@ -146,43 +147,185 @@ func (p *PaymentRepositoryTestSuite) Test_FindById_WithMissingId() {
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindByUserId() {
-	payment := p.createPayment()
+	first := p.createPayment()
+	second := p.createPayment()
 
-	actual := p.repository.FindByUserId(payment.UserId)
+	actual := p.repository.FindByUserId(p.createdUser.Id, 2, 0, nil, nil)
 
-	assert.Equal(p.T(), []model.PaymentDto{payment.ToDto()}, actual)
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto(), first.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByUserId_WithFromAndTo() {
+	first := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	first.Date = time.Now().AddDate(0, 0, -1)
+	p.CreateEntity(&first)
+
+	second := p.createPayment()
+
+	from := time.Now().Add(-time.Hour * 12)
+	to := time.Now()
+	actual := p.repository.FindByUserId(p.createdUser.Id, 2, 0, &from, &to)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByUserId_WithFrom() {
+	first := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	first.Date = time.Now().AddDate(0, 0, -1)
+	p.CreateEntity(&first)
+
+	second := p.createPayment()
+
+	from := time.Now().Add(-time.Hour * 12)
+	actual := p.repository.FindByUserId(p.createdUser.Id, 2, 0, &from, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByUserId_WithLimit() {
+	_ = p.createPayment()
+	second := p.createPayment()
+
+	actual := p.repository.FindByUserId(p.createdUser.Id, 1, 0, nil, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByUserId_WithOffset() {
+	first := p.createPayment()
+	_ = p.createPayment()
+
+	actual := p.repository.FindByUserId(p.createdUser.Id, 1, 1, nil, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{first.ToDto()}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindByUserId_WithMissingUserId() {
-	actual := p.repository.FindByUserId(uuid.New())
+	actual := p.repository.FindByUserId(uuid.New(), 0, 1, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindByHouseId() {
-	payment := p.createPayment()
+	first := p.createPayment()
+	second := p.createPayment()
 
-	actual := p.repository.FindByHouseId(payment.HouseId)
+	actual := p.repository.FindByHouseId(p.createdHouse.Id, 2, 0, nil, nil)
 
-	assert.Equal(p.T(), []model.PaymentDto{payment.ToDto()}, actual)
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto(), first.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByHouseId_WithFromAndTo() {
+	first := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	first.Date = time.Now().AddDate(0, 0, -1)
+	p.CreateEntity(&first)
+
+	second := p.createPayment()
+
+	from := time.Now().Add(-time.Hour * 12)
+	to := time.Now()
+
+	actual := p.repository.FindByHouseId(p.createdHouse.Id, 2, 0, &from, &to)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByHouseId_WithFrom() {
+	first := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	first.Date = time.Now().AddDate(0, 0, -1)
+	p.CreateEntity(&first)
+
+	second := p.createPayment()
+
+	from := time.Now().Add(-time.Hour * 12)
+
+	actual := p.repository.FindByHouseId(p.createdHouse.Id, 2, 0, &from, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByHouseId_WithLimit() {
+	_ = p.createPayment()
+	second := p.createPayment()
+
+	actual := p.repository.FindByHouseId(p.createdHouse.Id, 1, 0, nil, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByHouseId_WithOffset() {
+	first := p.createPayment()
+	_ = p.createPayment()
+
+	actual := p.repository.FindByHouseId(p.createdHouse.Id, 1, 1, nil, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{first.ToDto()}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindByHouseId_WithMissingId() {
-	actual := p.repository.FindByHouseId(uuid.New())
+	actual := p.repository.FindByHouseId(uuid.New(), 0, 10, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindByProviderId() {
-	payment := p.createPayment()
+	first := p.createPayment()
+	second := p.createPayment()
 
-	actual := p.repository.FindByProviderId(payment.ProviderId)
+	actual := p.repository.FindByProviderId(p.createdProvider.Id, 2, 0, nil, nil)
 
-	assert.Equal(p.T(), []model.PaymentDto{payment.ToDto()}, actual)
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto(), first.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByProviderId_WithFromAndTo() {
+	first := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	first.Date = time.Now().AddDate(0, 0, -1)
+	p.CreateEntity(&first)
+
+	second := p.createPayment()
+
+	from := time.Now().Add(-time.Hour * 12)
+	to := time.Now()
+
+	actual := p.repository.FindByProviderId(p.createdProvider.Id, 2, 0, &from, &to)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByProviderId_WithFrom() {
+	first := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	first.Date = time.Now().AddDate(0, 0, -1)
+	p.CreateEntity(&first)
+
+	second := p.createPayment()
+
+	from := time.Now().Add(-time.Hour * 12)
+
+	actual := p.repository.FindByProviderId(p.createdProvider.Id, 2, 0, &from, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByProviderId_WithLimit() {
+	_ = p.createPayment()
+	second := p.createPayment()
+
+	actual := p.repository.FindByProviderId(p.createdProvider.Id, 1, 0, nil, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{second.ToDto()}, actual)
+}
+
+func (p *PaymentRepositoryTestSuite) Test_FindByProviderId_WithOffset() {
+	first := p.createPayment()
+	_ = p.createPayment()
+
+	actual := p.repository.FindByProviderId(p.createdProvider.Id, 1, 1, nil, nil)
+
+	assert.Equal(p.T(), []model.PaymentDto{first.ToDto()}, actual)
 }
 
 func (p *PaymentRepositoryTestSuite) Test_FindByProviderId_WithMissingId() {
-	actual := p.repository.FindByProviderId(uuid.New())
+	actual := p.repository.FindByProviderId(uuid.New(), 0, 1, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{}, actual)
 }
@@ -261,6 +404,7 @@ func (p *PaymentRepositoryTestSuite) Test_Delete_WithMissingEntity() {
 
 func (p *PaymentRepositoryTestSuite) createPayment() model.Payment {
 	payment := mocks.GeneratePayment(p.createdHouse.Id, p.createdUser.Id, p.createdProvider.Id)
+	payment.Date = time.Now().Truncate(time.Microsecond)
 
 	p.CreateEntity(payment)
 

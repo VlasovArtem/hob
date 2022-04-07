@@ -116,8 +116,11 @@ func (p *PaymentHandlerObject) FindByHouseId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
+			limit, offset := rest.GetRequestPaging(request, 25, 0)
+			from, to := rest.GetRequestFiltering(request)
+
 			rest.NewAPIResponse(writer).
-				Body(p.paymentService.FindByHouseId(id)).
+				Body(p.paymentService.FindByHouseId(id, limit, offset, from, to)).
 				Perform()
 		}
 	}
@@ -128,8 +131,11 @@ func (p *PaymentHandlerObject) FindByUserId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
+			limit, offset := rest.GetRequestPaging(request, 25, 0)
+			from, to := rest.GetRequestFiltering(request)
+
 			rest.NewAPIResponse(writer).
-				Body(p.paymentService.FindByUserId(id)).
+				Body(p.paymentService.FindByUserId(id, limit, offset, from, to)).
 				Perform()
 		}
 	}
@@ -140,8 +146,11 @@ func (p *PaymentHandlerObject) FindByProviderId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
+			limit, offset := rest.GetRequestPaging(request, 25, 0)
+			from, to := rest.GetRequestFiltering(request)
+
 			rest.NewAPIResponse(writer).
-				Body(p.paymentService.FindByProviderId(id)).
+				Body(p.paymentService.FindByProviderId(id, limit, offset, from, to)).
 				Perform()
 		}
 	}

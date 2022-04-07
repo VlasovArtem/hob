@@ -6,6 +6,8 @@ import (
 	model "github.com/VlasovArtem/hob/src/income/model"
 	mock "github.com/stretchr/testify/mock"
 
+	time "time"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -86,13 +88,13 @@ func (_m *IncomeRepository) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindByGroupIds provides a mock function with given fields: groupIds
-func (_m *IncomeRepository) FindByGroupIds(groupIds []uuid.UUID) ([]model.IncomeDto, error) {
-	ret := _m.Called(groupIds)
+// FindByGroupIds provides a mock function with given fields: groupIds, limit, offset, from, to
+func (_m *IncomeRepository) FindByGroupIds(groupIds []uuid.UUID, limit int, offset int, from *time.Time, to *time.Time) ([]model.IncomeDto, error) {
+	ret := _m.Called(groupIds, limit, offset, from, to)
 
 	var r0 []model.IncomeDto
-	if rf, ok := ret.Get(0).(func([]uuid.UUID) []model.IncomeDto); ok {
-		r0 = rf(groupIds)
+	if rf, ok := ret.Get(0).(func([]uuid.UUID, int, int, *time.Time, *time.Time) []model.IncomeDto); ok {
+		r0 = rf(groupIds, limit, offset, from, to)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.IncomeDto)
@@ -100,8 +102,8 @@ func (_m *IncomeRepository) FindByGroupIds(groupIds []uuid.UUID) ([]model.Income
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func([]uuid.UUID) error); ok {
-		r1 = rf(groupIds)
+	if rf, ok := ret.Get(1).(func([]uuid.UUID, int, int, *time.Time, *time.Time) error); ok {
+		r1 = rf(groupIds, limit, offset, from, to)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -109,13 +111,13 @@ func (_m *IncomeRepository) FindByGroupIds(groupIds []uuid.UUID) ([]model.Income
 	return r0, r1
 }
 
-// FindByHouseId provides a mock function with given fields: id
-func (_m *IncomeRepository) FindByHouseId(id uuid.UUID) ([]model.IncomeDto, error) {
-	ret := _m.Called(id)
+// FindByHouseId provides a mock function with given fields: id, limit, offset, from, to
+func (_m *IncomeRepository) FindByHouseId(id uuid.UUID, limit int, offset int, from *time.Time, to *time.Time) ([]model.IncomeDto, error) {
+	ret := _m.Called(id, limit, offset, from, to)
 
 	var r0 []model.IncomeDto
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.IncomeDto); ok {
-		r0 = rf(id)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, int, int, *time.Time, *time.Time) []model.IncomeDto); ok {
+		r0 = rf(id, limit, offset, from, to)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.IncomeDto)
@@ -123,8 +125,8 @@ func (_m *IncomeRepository) FindByHouseId(id uuid.UUID) ([]model.IncomeDto, erro
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(uuid.UUID) error); ok {
-		r1 = rf(id)
+	if rf, ok := ret.Get(1).(func(uuid.UUID, int, int, *time.Time, *time.Time) error); ok {
+		r1 = rf(id, limit, offset, from, to)
 	} else {
 		r1 = ret.Error(1)
 	}

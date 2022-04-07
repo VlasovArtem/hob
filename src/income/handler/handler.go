@@ -78,8 +78,11 @@ func (i *IncomeHandlerObject) FindByHouseId() http.HandlerFunc {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
 		} else {
+			limit, offset := rest.GetRequestPaging(request, 25, 0)
+			from, to := rest.GetRequestFiltering(request)
+
 			rest.NewAPIResponse(writer).
-				Body(i.incomeService.FindByHouseId(id)).
+				Body(i.incomeService.FindByHouseId(id, limit, offset, from, to)).
 				Perform()
 		}
 	}

@@ -15,7 +15,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
+	"time"
 )
+
+var nilTime *time.Time
 
 type IncomeHandlerTestSuite struct {
 	testhelper.MockTestSuite[IncomeHandler]
@@ -235,8 +238,59 @@ func (i *IncomeHandlerTestSuite) Test_FindById_WithInvalidParameter() {
 
 func (i *IncomeHandlerTestSuite) Test_FindByHouseId() {
 	response := []model.IncomeDto{mocks.GenerateIncomeDto()}
+	from, fromString, to, toString := createFromAndTo()
 
-	i.incomes.On("FindByHouseId", *response[0].HouseId).
+	i.incomes.On("FindByHouseId", *response[0].HouseId, 10, 0, from, to).
+		Return(response, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/meter/house/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
+		WithMethod("GET").
+		WithHandler(i.TestO.FindByHouseId()).
+		WithVar("id", response[0].HouseId.String()).
+		WithParameter("limit", "10").
+		WithParameter("offset", "0").
+		WithParameter("from", fromString).
+		WithParameter("to", toString)
+
+	responseByteArray := testRequest.Verify(i.T(), http.StatusOK)
+
+	var actual []model.IncomeDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(i.T(), response, actual)
+}
+
+func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithFrom() {
+	response := []model.IncomeDto{mocks.GenerateIncomeDto()}
+	from, fromString, _, _ := createFromAndTo()
+
+	i.incomes.On("FindByHouseId", *response[0].HouseId, 10, 0, from, nilTime).
+		Return(response, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/meter/house/{id}?limit={limit}&offset={offset}&from={from}").
+		WithMethod("GET").
+		WithHandler(i.TestO.FindByHouseId()).
+		WithVar("id", response[0].HouseId.String()).
+		WithParameter("limit", "10").
+		WithParameter("offset", "0").
+		WithParameter("from", fromString)
+
+	responseByteArray := testRequest.Verify(i.T(), http.StatusOK)
+
+	var actual []model.IncomeDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(i.T(), response, actual)
+}
+
+func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithDefaultLimitAndOffset() {
+	response := []model.IncomeDto{mocks.GenerateIncomeDto()}
+
+	i.incomes.On("FindByHouseId", *response[0].HouseId, 25, 0, nilTime, nilTime).
 		Return(response, nil)
 
 	testRequest := testhelper.NewTestRequest().
@@ -257,7 +311,7 @@ func (i *IncomeHandlerTestSuite) Test_FindByHouseId() {
 func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithEmptyResult() {
 	id := uuid.New()
 
-	i.incomes.On("FindByHouseId", id).
+	i.incomes.On("FindByHouseId", id, 25, 0, nilTime, nilTime).
 		Return([]model.IncomeDto{})
 
 	testRequest := testhelper.NewTestRequest().
@@ -285,4 +339,12 @@ func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithInvalidParameter() {
 	responseByteArray := testRequest.Verify(i.T(), http.StatusBadRequest)
 
 	assert.Equal(i.T(), "the id is not valid id\n", string(responseByteArray))
+}
+
+func createFromAndTo() (from *time.Time, fromString string, to *time.Time, toString string) {
+	fromString = time.Now().UTC().Format(time.RFC3339)
+	toString = time.Now().UTC().Format(time.RFC3339)
+	fromDate, _ := time.Parse(time.RFC3339, fromString)
+	toDate, _ := time.Parse(time.RFC3339, toString)
+	return &fromDate, fromString, &toDate, toString
 }

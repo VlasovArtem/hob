@@ -214,9 +214,9 @@ func (i *IncomeSchedulerServiceTestSuite) Test_FindByHouseId() {
 
 	scheduler := mocks.GenerateIncomeScheduler(uuid.New())
 
-	i.schedulerRepository.On("FindByHouseId", scheduler.HouseId).Return([]model.IncomeSchedulerDto{scheduler.ToDto()}, nil)
+	i.schedulerRepository.On("FindByHouseId", *scheduler.HouseId).Return([]model.IncomeSchedulerDto{scheduler.ToDto()}, nil)
 
-	actual := i.TestO.FindByHouseId(scheduler.HouseId)
+	actual := i.TestO.FindByHouseId(*scheduler.HouseId)
 
 	assert.Equal(i.T(), []model.IncomeSchedulerDto{scheduler.ToDto()}, actual)
 }

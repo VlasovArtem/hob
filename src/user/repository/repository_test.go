@@ -26,7 +26,7 @@ func (p *UserRepositoryTestSuite) SetupSuite() {
 		},
 	).
 		AddAfterTest(func(service db.DatabaseService) {
-			database.TruncateTable(service, model.User{})
+			database.TruncateTableCascade(service, "users")
 		}).
 		ExecuteMigration(model.User{})
 }

@@ -46,8 +46,8 @@ type IncomeService interface {
 	Add(request model.CreateIncomeRequest) (model.IncomeDto, error)
 	AddBatch(request model.CreateIncomeBatchRequest) ([]model.IncomeDto, error)
 	FindById(id uuid.UUID) (model.IncomeDto, error)
-	FindByHouseId(id uuid.UUID) []model.IncomeDto
-	FindByGroupIds(ids []uuid.UUID) []model.IncomeDto
+	FindByHouseId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.IncomeDto
+	FindByGroupIds(ids []uuid.UUID, limit int, offset int, from, to *time.Time) []model.IncomeDto
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateIncomeRequest) error
@@ -152,21 +152,21 @@ func (i *IncomeServiceObject) FindById(id uuid.UUID) (response model.IncomeDto, 
 	}
 }
 
-func (i *IncomeServiceObject) FindByHouseId(id uuid.UUID) []model.IncomeDto {
-	response, err := i.repository.FindByHouseId(id)
+func (i *IncomeServiceObject) FindByHouseId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.IncomeDto {
+	response, err := i.repository.FindByHouseId(id, limit, offset, from, to)
 
 	if err != nil {
-		log.Err(err)
+		log.Err(err).Msg("failed to find incomes by house id")
 	}
 
 	return response
 }
 
-func (i *IncomeServiceObject) FindByGroupIds(ids []uuid.UUID) []model.IncomeDto {
-	response, err := i.repository.FindByGroupIds(ids)
+func (i *IncomeServiceObject) FindByGroupIds(ids []uuid.UUID, limit int, offset int, from, to *time.Time) []model.IncomeDto {
+	response, err := i.repository.FindByGroupIds(ids, limit, offset, from, to)
 
 	if err != nil {
-		log.Err(err)
+		log.Err(err).Msg("failed to find incomes by group ids")
 	}
 
 	return response

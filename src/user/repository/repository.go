@@ -50,7 +50,7 @@ func (u *UserRepositoryObject) FindById(id uuid.UUID) (user model.User, err erro
 }
 
 func (u *UserRepositoryObject) FindByEmail(email string) (user model.User, error error) {
-	return user, u.database.FindByQuery(&user, "email = ?", email)
+	return user, u.database.FirstBy(&user, "email = ?", email)
 }
 
 func (u *UserRepositoryObject) ExistsById(id uuid.UUID) bool {

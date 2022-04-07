@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+var nilTime *time.Time
+
 type PaymentServiceTestSuite struct {
 	testhelper.MockTestSuite[PaymentService]
 	userService       *userMocks.UserService
@@ -252,9 +254,9 @@ func (p *PaymentServiceTestSuite) Test_FindByHouseId() {
 	houseId := uuid.New()
 
 	dto := payment.ToDto()
-	p.paymentRepository.On("FindByHouseId", houseId).Return([]model.PaymentDto{dto})
+	p.paymentRepository.On("FindByHouseId", houseId, 0, 1, nilTime, nilTime).Return([]model.PaymentDto{dto})
 
-	payments := p.TestO.FindByHouseId(houseId)
+	payments := p.TestO.FindByHouseId(houseId, 0, 1, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{dto}, payments)
 }
@@ -262,9 +264,9 @@ func (p *PaymentServiceTestSuite) Test_FindByHouseId() {
 func (p *PaymentServiceTestSuite) Test_FindByHouseId_WithNotExistingRecords() {
 	houseId := uuid.New()
 
-	p.paymentRepository.On("FindByHouseId", houseId).Return([]model.PaymentDto{})
+	p.paymentRepository.On("FindByHouseId", houseId, 0, 1, nilTime, nilTime).Return([]model.PaymentDto{})
 
-	payments := p.TestO.FindByHouseId(houseId)
+	payments := p.TestO.FindByHouseId(houseId, 0, 1, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{}, payments)
 }
@@ -275,9 +277,9 @@ func (p *PaymentServiceTestSuite) Test_FindByUserId() {
 	userId := uuid.New()
 
 	dto := payment.ToDto()
-	p.paymentRepository.On("FindByUserId", userId).Return([]model.PaymentDto{dto})
+	p.paymentRepository.On("FindByUserId", userId, 0, 1, nilTime, nilTime).Return([]model.PaymentDto{dto})
 
-	payments := p.TestO.FindByUserId(userId)
+	payments := p.TestO.FindByUserId(userId, 0, 1, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{dto}, payments)
 }
@@ -285,9 +287,9 @@ func (p *PaymentServiceTestSuite) Test_FindByUserId() {
 func (p *PaymentServiceTestSuite) Test_FindByUserId_WithNotExistingRecords() {
 	userId := uuid.New()
 
-	p.paymentRepository.On("FindByUserId", userId).Return([]model.PaymentDto{})
+	p.paymentRepository.On("FindByUserId", userId, 0, 1, nilTime, nilTime).Return([]model.PaymentDto{})
 
-	payments := p.TestO.FindByUserId(userId)
+	payments := p.TestO.FindByUserId(userId, 0, 1, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{}, payments)
 }
@@ -298,9 +300,9 @@ func (p *PaymentServiceTestSuite) Test_FindByProviderId() {
 	userId := uuid.New()
 
 	dto := payment.ToDto()
-	p.paymentRepository.On("FindByProviderId", userId).Return([]model.PaymentDto{dto})
+	p.paymentRepository.On("FindByProviderId", userId, 0, 1, nilTime, nilTime).Return([]model.PaymentDto{dto})
 
-	payments := p.TestO.FindByProviderId(userId)
+	payments := p.TestO.FindByProviderId(userId, 0, 1, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{dto}, payments)
 }
@@ -308,9 +310,9 @@ func (p *PaymentServiceTestSuite) Test_FindByProviderId() {
 func (p *PaymentServiceTestSuite) Test_FindByProviderId_WithNotExistingRecords() {
 	userId := uuid.New()
 
-	p.paymentRepository.On("FindByProviderId", userId).Return([]model.PaymentDto{})
+	p.paymentRepository.On("FindByProviderId", userId, 0, 1, nilTime, nilTime).Return([]model.PaymentDto{})
 
-	payments := p.TestO.FindByProviderId(userId)
+	payments := p.TestO.FindByProviderId(userId, 0, 1, nil, nil)
 
 	assert.Equal(p.T(), []model.PaymentDto{}, payments)
 }

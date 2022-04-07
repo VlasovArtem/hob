@@ -18,7 +18,7 @@ func GenerateIncomeScheduler(houseId uuid.UUID) model.IncomeScheduler {
 			Description: "Description",
 			Date:        Date,
 			Sum:         1000,
-			HouseId:     houseId,
+			HouseId:     &houseId,
 		},
 		Spec: scheduler.DAILY,
 	}

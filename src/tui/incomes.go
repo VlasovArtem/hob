@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/ctime"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
 	"github.com/rivo/tview"
@@ -53,7 +54,9 @@ func NewIncomes(app *TerminalApp) *Incomes {
 func (i *Incomes) fillTable() *TableFiller {
 	i.incomes.SetSelectable(true, false)
 	i.incomes.SetTitle("Incomes")
-	content := i.App.GetIncomeService().FindByHouseId(i.App.House.Id)
+
+	content := i.App.GetIncomeService().FindByHouseId(i.App.House.Id, 50, 0, ctime.Now().StartOfMonth(), nil)
+
 	i.incomes.Fill(content)
 	return i.incomes
 }

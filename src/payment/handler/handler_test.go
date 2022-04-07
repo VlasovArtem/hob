@@ -15,7 +15,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
+	"time"
 )
+
+var nilTime *time.Time
 
 type PaymentHandlerTestSuite struct {
 	testhelper.MockTestSuite[PaymentHandler]
@@ -340,9 +343,65 @@ func (p *PaymentHandlerTestSuite) Test_FindById_WithInvalidParameter() {
 func (p *PaymentHandlerTestSuite) Test_FindByHouseId() {
 	response := mocks.GeneratePaymentResponse()
 
+	from, fromString, to, toString := createFromAndTo()
+
 	paymentResponses := []model.PaymentDto{response}
 
-	p.payments.On("FindByHouseId", response.Id).
+	p.payments.On("FindByHouseId", response.Id, 10, 1, from, to).
+		Return(paymentResponses, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/house/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
+		WithMethod("GET").
+		WithHandler(p.TestO.FindByHouseId()).
+		WithVar("id", response.Id.String()).
+		WithParameter("limit", "10").
+		WithParameter("offset", "1").
+		WithParameter("from", fromString).
+		WithParameter("to", toString)
+
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
+
+	actual := []model.PaymentDto{}
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(p.T(), paymentResponses, actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithFrom() {
+	response := mocks.GeneratePaymentResponse()
+	from, fromString, _, _ := createFromAndTo()
+
+	paymentResponses := []model.PaymentDto{response}
+
+	p.payments.On("FindByHouseId", response.Id, 10, 1, from, nilTime).
+		Return(paymentResponses, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/house/{id}?limit={limit}&offset={offset}&from={from}").
+		WithMethod("GET").
+		WithHandler(p.TestO.FindByHouseId()).
+		WithVar("id", response.Id.String()).
+		WithParameter("limit", "10").
+		WithParameter("offset", "1").
+		WithParameter("from", fromString)
+
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
+
+	actual := []model.PaymentDto{}
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(p.T(), paymentResponses, actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WIthDefaultLimitAndOffset() {
+	response := mocks.GeneratePaymentResponse()
+
+	paymentResponses := []model.PaymentDto{response}
+
+	p.payments.On("FindByHouseId", response.Id, 25, 0, nilTime, nilTime).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
@@ -365,7 +424,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithEmptyResponse() {
 
 	paymentResponses := []model.PaymentDto{}
 
-	p.payments.On("FindByHouseId", id).
+	p.payments.On("FindByHouseId", id, 25, 0, nilTime, nilTime).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
@@ -397,10 +456,65 @@ func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithInvalidParameter() {
 
 func (p *PaymentHandlerTestSuite) Test_FindByUserId() {
 	response := mocks.GeneratePaymentResponse()
+	from, fromString, to, toString := createFromAndTo()
 
 	paymentResponses := []model.PaymentDto{response}
 
-	p.payments.On("FindByUserId", response.Id).
+	p.payments.On("FindByUserId", response.Id, 10, 1, from, to).
+		Return(paymentResponses, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/user/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
+		WithMethod("GET").
+		WithHandler(p.TestO.FindByUserId()).
+		WithVar("id", response.Id.String()).
+		WithParameter("limit", "10").
+		WithParameter("offset", "1").
+		WithParameter("from", fromString).
+		WithParameter("to", toString)
+
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
+
+	var actual []model.PaymentDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(p.T(), paymentResponses, actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithFrom() {
+	response := mocks.GeneratePaymentResponse()
+	from, fromString, _, _ := createFromAndTo()
+
+	paymentResponses := []model.PaymentDto{response}
+
+	p.payments.On("FindByUserId", response.Id, 10, 1, from, nilTime).
+		Return(paymentResponses, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/user/{id}?limit={limit}&offset={offset}&from={from}").
+		WithMethod("GET").
+		WithHandler(p.TestO.FindByUserId()).
+		WithVar("id", response.Id.String()).
+		WithParameter("limit", "10").
+		WithParameter("offset", "1").
+		WithParameter("from", fromString)
+
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
+
+	var actual []model.PaymentDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(p.T(), paymentResponses, actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithDefaultLimitAndOffset() {
+	response := mocks.GeneratePaymentResponse()
+
+	paymentResponses := []model.PaymentDto{response}
+
+	p.payments.On("FindByUserId", response.Id, 25, 0, nilTime, nilTime).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
@@ -423,11 +537,11 @@ func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithEmptyResponse() {
 
 	var paymentResponses []model.PaymentDto
 
-	p.payments.On("FindByUserId", id).
+	p.payments.On("FindByUserId", id, 25, 0, nilTime, nilTime).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}").
+		WithURL("https://test.com/api/v1/payment/user/{id}?limit={limit}&offset={offset}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", id.String())
@@ -455,10 +569,65 @@ func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithInvalidParameter() {
 
 func (p *PaymentHandlerTestSuite) Test_FindByProviderId() {
 	response := mocks.GeneratePaymentResponse()
+	from, fromString, to, toString := createFromAndTo()
 
 	paymentResponses := []model.PaymentDto{response}
 
-	p.payments.On("FindByProviderId", response.Id).
+	p.payments.On("FindByProviderId", response.Id, 10, 1, from, to).
+		Return(paymentResponses, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/provider/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
+		WithMethod("GET").
+		WithHandler(p.TestO.FindByProviderId()).
+		WithVar("id", response.Id.String()).
+		WithParameter("limit", "10").
+		WithParameter("offset", "1").
+		WithParameter("from", fromString).
+		WithParameter("to", toString)
+
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
+
+	var actual []model.PaymentDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(p.T(), paymentResponses, actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithFrom() {
+	response := mocks.GeneratePaymentResponse()
+	from, fromString, _, _ := createFromAndTo()
+
+	paymentResponses := []model.PaymentDto{response}
+
+	p.payments.On("FindByProviderId", response.Id, 10, 1, from, nilTime).
+		Return(paymentResponses, nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/payment/provider/{id}?limit={limit}&offset={offset}&from={from}").
+		WithMethod("GET").
+		WithHandler(p.TestO.FindByProviderId()).
+		WithVar("id", response.Id.String()).
+		WithParameter("limit", "10").
+		WithParameter("offset", "1").
+		WithParameter("from", fromString)
+
+	responseByteArray := testRequest.Verify(p.T(), http.StatusOK)
+
+	var actual []model.PaymentDto
+
+	json.Unmarshal(responseByteArray, &actual)
+
+	assert.Equal(p.T(), paymentResponses, actual)
+}
+
+func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithDefaultLimitAndOffset() {
+	response := mocks.GeneratePaymentResponse()
+
+	paymentResponses := []model.PaymentDto{response}
+
+	p.payments.On("FindByProviderId", response.Id, 25, 0, nilTime, nilTime).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
@@ -481,11 +650,11 @@ func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithEmptyResponse() {
 
 	var paymentResponses []model.PaymentDto
 
-	p.payments.On("FindByProviderId", id).
+	p.payments.On("FindByProviderId", id, 25, 0, nilTime, nilTime).
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/provider/{id}").
+		WithURL("https://test.com/api/v1/payment/provider/{id}?limit={limit}&offset={offset}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByProviderId()).
 		WithVar("id", id.String())
@@ -509,4 +678,12 @@ func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithInvalidParameter() {
 	responseByteArray := testRequest.Verify(p.T(), http.StatusBadRequest)
 
 	assert.Equal(p.T(), "the id is not valid id\n", string(responseByteArray))
+}
+
+func createFromAndTo() (from *time.Time, fromString string, to *time.Time, toString string) {
+	fromString = time.Now().UTC().Format(time.RFC3339)
+	toString = time.Now().UTC().Format(time.RFC3339)
+	fromDate, _ := time.Parse(time.RFC3339, fromString)
+	toDate, _ := time.Parse(time.RFC3339, toString)
+	return &fromDate, fromString, &toDate, toString
 }

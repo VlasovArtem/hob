@@ -6,6 +6,8 @@ import (
 	model "github.com/VlasovArtem/hob/src/income/model"
 	mock "github.com/stretchr/testify/mock"
 
+	time "time"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -86,13 +88,13 @@ func (_m *IncomeService) ExistsById(id uuid.UUID) bool {
 	return r0
 }
 
-// FindByGroupIds provides a mock function with given fields: ids
-func (_m *IncomeService) FindByGroupIds(ids []uuid.UUID) []model.IncomeDto {
-	ret := _m.Called(ids)
+// FindByGroupIds provides a mock function with given fields: ids, limit, offset, from, to
+func (_m *IncomeService) FindByGroupIds(ids []uuid.UUID, limit int, offset int, from *time.Time, to *time.Time) []model.IncomeDto {
+	ret := _m.Called(ids, limit, offset, from, to)
 
 	var r0 []model.IncomeDto
-	if rf, ok := ret.Get(0).(func([]uuid.UUID) []model.IncomeDto); ok {
-		r0 = rf(ids)
+	if rf, ok := ret.Get(0).(func([]uuid.UUID, int, int, *time.Time, *time.Time) []model.IncomeDto); ok {
+		r0 = rf(ids, limit, offset, from, to)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.IncomeDto)
@@ -102,13 +104,13 @@ func (_m *IncomeService) FindByGroupIds(ids []uuid.UUID) []model.IncomeDto {
 	return r0
 }
 
-// FindByHouseId provides a mock function with given fields: id
-func (_m *IncomeService) FindByHouseId(id uuid.UUID) []model.IncomeDto {
-	ret := _m.Called(id)
+// FindByHouseId provides a mock function with given fields: id, limit, offset, from, to
+func (_m *IncomeService) FindByHouseId(id uuid.UUID, limit int, offset int, from *time.Time, to *time.Time) []model.IncomeDto {
+	ret := _m.Called(id, limit, offset, from, to)
 
 	var r0 []model.IncomeDto
-	if rf, ok := ret.Get(0).(func(uuid.UUID) []model.IncomeDto); ok {
-		r0 = rf(id)
+	if rf, ok := ret.Get(0).(func(uuid.UUID, int, int, *time.Time, *time.Time) []model.IncomeDto); ok {
+		r0 = rf(id, limit, offset, from, to)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.IncomeDto)

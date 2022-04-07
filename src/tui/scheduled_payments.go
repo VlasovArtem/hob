@@ -52,7 +52,7 @@ func (p *ScheduledPayments) fillTable() *TableFiller {
 	p.payments.SetSelectable(true, false)
 	p.payments.SetTitle("Scheduled Payments")
 	p.payments.AddContentProvider("Provider", p.findProviderName)
-	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id)
+	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id, 100, 0, nil, nil)
 	p.payments.Fill(content)
 	return p.payments
 }

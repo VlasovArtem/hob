@@ -7,14 +7,10 @@ import (
 	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/income/model"
 	"github.com/google/uuid"
-	"reflect"
 	"time"
 )
 
-var (
-	IncomeRepositoryType = reflect.TypeOf(IncomeRepositoryObject{})
-	entity               = model.Income{}
-)
+var entity = model.Income{}
 
 type IncomeRepositoryObject struct {
 	db db.ModeledDatabase
@@ -41,8 +37,8 @@ type IncomeRepository interface {
 	Create(entity model.Income) (model.Income, error)
 	CreateBatch(entity []model.Income) ([]model.Income, error)
 	FindById(id uuid.UUID) (model.Income, error)
-	FindByHouseId(id uuid.UUID) ([]model.IncomeDto, error)
-	FindByGroupIds(groupIds []uuid.UUID) ([]model.IncomeDto, error)
+	FindByHouseId(id uuid.UUID, limit int, offset int, from, to *time.Time) ([]model.IncomeDto, error)
+	FindByGroupIds(groupIds []uuid.UUID, limit int, offset int, from, to *time.Time) ([]model.IncomeDto, error)
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateIncomeRequest) error
@@ -64,10 +60,28 @@ func (i *IncomeRepositoryObject) FindById(id uuid.UUID) (response model.Income, 
 	return response, err
 }
 
-func (i *IncomeRepositoryObject) FindByHouseId(id uuid.UUID) (response []model.IncomeDto, err error) {
+func (i *IncomeRepositoryObject) FindByHouseId(id uuid.UUID, limit int, offset int, from, to *time.Time) (response []model.IncomeDto, err error) {
 	var responseEntities []model.Income
 
-	if err := i.db.Modeled().Preload("Groups").Find(&responseEntities, "house_id = ?", id).Error; err != nil {
+	whereQuery := "(incomes.house_id = ? OR hg.house_id = ?)"
+	whereArgs := []any{id, id}
+
+	if from != nil && to != nil {
+		whereQuery += " AND date BETWEEN ? AND ?"
+		whereArgs = append(whereArgs, from, to)
+	} else if from != nil {
+		whereQuery += " AND date >= ?"
+		whereArgs = append(whereArgs, from)
+	}
+
+	if err := i.db.D().
+		Joins("FULL JOIN income_groups ig ON ig.income_id = incomes.id FULL JOIN house_groups hg ON hg.group_id = ig.group_id").
+		Order("incomes.date desc").
+		Where(whereQuery, whereArgs...).
+		Limit(limit).
+		Offset(offset).
+		Preload("Groups").
+		Find(&responseEntities).Error; err != nil {
 		return []model.IncomeDto{}, err
 	}
 
@@ -76,9 +90,30 @@ func (i *IncomeRepositoryObject) FindByHouseId(id uuid.UUID) (response []model.I
 	}), nil
 }
 
-func (i *IncomeRepositoryObject) FindByGroupIds(groupIds []uuid.UUID) (response []model.IncomeDto, err error) {
+func (i *IncomeRepositoryObject) FindByGroupIds(groupIds []uuid.UUID, limit int, offset int, from, to *time.Time) (response []model.IncomeDto, err error) {
 	var responseEntity []model.Income
-	if err = i.db.D().Joins("JOIN income_groups ON income_groups.income_id = incomes.id AND income_groups.group_id IN ?", groupIds).Preload("Groups").Find(&responseEntity).Error; err != nil {
+
+	whereQuery := ""
+	whereArgs := []any{}
+
+	if from != nil && to != nil {
+		whereQuery += "date BETWEEN ? AND ?"
+		whereArgs = append(whereArgs, from, to)
+	} else if from != nil {
+		if len(whereArgs) == 0 {
+			whereQuery += "date >= ?"
+		} else {
+			whereQuery += " AND date >= ?"
+		}
+		whereArgs = append(whereArgs, from)
+	}
+
+	if err = i.db.D().
+		Order("incomes.date desc").
+		Where(whereQuery, whereArgs...).
+		Limit(limit).
+		Offset(offset).
+		Joins("JOIN income_groups ON income_groups.income_id = incomes.id AND income_groups.group_id IN ?", groupIds).Preload("Groups").Find(&responseEntity).Error; err != nil {
 		return []model.IncomeDto{}, err
 	}
 	return common.MapSlice(responseEntity, func(entity model.Income) model.IncomeDto {

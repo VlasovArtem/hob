@@ -92,7 +92,7 @@ func (i *IncomeSchedulerRepositoryTestSuite) Test_FindById_WithMissingId() {
 func (i *IncomeSchedulerRepositoryTestSuite) Test_FindByHouseId() {
 	payment := i.createIncomeSchedulerWithNewHouse()
 
-	actual, err := i.repository.FindByHouseId(payment.HouseId)
+	actual, err := i.repository.FindByHouseId(*payment.HouseId)
 
 	assert.Nil(i.T(), err)
 	assert.Equal(i.T(), []model.IncomeSchedulerDto{payment.ToDto()}, actual)

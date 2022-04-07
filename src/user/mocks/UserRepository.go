@@ -132,3 +132,17 @@ func (_m *UserRepository) Update(id uuid.UUID, user model.UpdateUserRequest) err
 
 	return r0
 }
+
+// Verify provides a mock function with given fields: email, password
+func (_m *UserRepository) Verify(email string, password []byte) bool {
+	ret := _m.Called(email, password)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string, []byte) bool); ok {
+		r0 = rf(email, password)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}

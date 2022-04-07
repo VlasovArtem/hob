@@ -49,7 +49,7 @@ func NewScheduledIncomes(app *TerminalApp) *ScheduledIncomes {
 func (p *ScheduledIncomes) fillTable() *TableFiller {
 	p.scheduledIncomes.SetSelectable(true, false)
 	p.scheduledIncomes.SetTitle("Scheduled Incomes")
-	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id)
+	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id, 100, 0, nil, nil)
 	p.scheduledIncomes.Fill(content)
 	return p.scheduledIncomes
 }
