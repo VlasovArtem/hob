@@ -27,11 +27,15 @@ func (i *IncomeHandlerObject) Init(router *mux.Router) {
 	incomeRouter.Path("").HandlerFunc(i.Add()).Methods("POST")
 	incomeRouter.Path("/batch").HandlerFunc(i.AddBatch()).Methods("POST")
 	incomeRouter.Path("/{id}").HandlerFunc(i.FindById()).Methods("GET")
+	incomeRouter.Path("/{id}").HandlerFunc(i.Delete()).Methods("DELETE")
+	incomeRouter.Path("/{id}").HandlerFunc(i.Update()).Methods("PUT")
 	incomeRouter.Path("/house/{id}").HandlerFunc(i.FindByHouseId()).Methods("GET")
 }
 
 type IncomeHandler interface {
 	Add() http.HandlerFunc
+	Delete() http.HandlerFunc
+	Update() http.HandlerFunc
 	AddBatch() http.HandlerFunc
 	FindById() http.HandlerFunc
 	FindByHouseId() http.HandlerFunc
@@ -45,6 +49,35 @@ func (i *IncomeHandlerObject) Add() http.HandlerFunc {
 			rest.NewAPIResponse(writer).
 				Created(i.incomeService.Add(body)).
 				Perform()
+		}
+	}
+}
+
+func (i *IncomeHandlerObject) Delete() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if id, err := rest.GetIdRequestParameter(request); err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			rest.NewAPIResponse(writer).
+				StatusCode(http.StatusNoContent).
+				Error(i.incomeService.DeleteById(id)).
+				Perform()
+		}
+	}
+}
+
+func (i *IncomeHandlerObject) Update() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if id, err := rest.GetIdRequestParameter(request); err != nil {
+			rest.HandleWithError(writer, err)
+		} else {
+			if body, err := rest.ReadRequestBody[model.UpdateIncomeRequest](request); err != nil {
+				rest.HandleWithError(writer, err)
+			} else {
+				rest.NewAPIResponse(writer).
+					Error(i.incomeService.Update(id, body)).
+					Perform()
+			}
 		}
 	}
 }

@@ -27,8 +27,8 @@ func (h *HouseHandlerObject) Init(router *mux.Router) {
 	subrouter.Path("").HandlerFunc(h.Add()).Methods("POST")
 	subrouter.Path("/batch").HandlerFunc(h.AddBatch()).Methods("POST")
 	subrouter.Path("/{id}").HandlerFunc(h.FindById()).Methods("GET")
-	subrouter.Path("/{id}").HandlerFunc(h.Update()).Methods("DELETE")
-	subrouter.Path("/{id}").HandlerFunc(h.Delete()).Methods("PUT")
+	subrouter.Path("/{id}").HandlerFunc(h.Delete()).Methods("DELETE")
+	subrouter.Path("/{id}").HandlerFunc(h.Update()).Methods("PUT")
 	subrouter.Path("/user/{id}").HandlerFunc(h.FindByUserId()).Methods("GET")
 }
 

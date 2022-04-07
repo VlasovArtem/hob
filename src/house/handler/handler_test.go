@@ -13,6 +13,7 @@ import (
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
@@ -35,7 +36,7 @@ func TestHouseHandlerTestSuite(t *testing.T) {
 
 func (h *HouseHandlerTestSuite) Test_Add_WithNotValidRequest() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house").
+		WithURL("https://test.com/api/v1/houses").
 		WithMethod("POST").
 		WithHandler(h.TestO.Add())
 
@@ -48,7 +49,7 @@ func (h *HouseHandlerTestSuite) Test_Add() {
 	h.houses.On("Add", request).Return(request.ToEntity(test.CountryObject).ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house").
+		WithURL("https://test.com/api/v1/houses").
 		WithMethod("POST").
 		WithBody(request).
 		WithHandler(h.TestO.Add())
@@ -78,7 +79,7 @@ func (h *HouseHandlerTestSuite) Test_Add_WithErrorFromService() {
 	h.houses.On("Add", request).Return(model.HouseDto{}, errors.New("error"))
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house").
+		WithURL("https://test.com/api/v1/houses").
 		WithMethod("POST").
 		WithBody(request).
 		WithHandler(h.TestO.Add())
@@ -98,7 +99,7 @@ func (h *HouseHandlerTestSuite) Test_AddBatch() {
 	h.houses.On("AddBatch", request).Return(serviceResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/batch").
+		WithURL("https://test.com/api/v1/houses/batch").
 		WithMethod("POST").
 		WithBody(request).
 		WithHandler(h.TestO.AddBatch())
@@ -146,7 +147,7 @@ func (h *HouseHandlerTestSuite) Test_AddBatch_WithErrorFromService() {
 	h.houses.On("AddBatch", request).Return([]model.HouseDto{}, err)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/batch").
+		WithURL("https://test.com/api/v1/houses/batch").
 		WithMethod("POST").
 		WithBody(request).
 		WithHandler(h.TestO.AddBatch())
@@ -165,7 +166,7 @@ func (h *HouseHandlerTestSuite) Test_FindById() {
 	h.houses.On("FindById", houseResponse.Id).Return(houseResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/{id}").
+		WithURL("https://test.com/api/v1/houses/{id}").
 		WithMethod("GET").
 		WithHandler(h.TestO.FindById()).
 		WithVar("id", houseResponse.Id.String())
@@ -199,7 +200,7 @@ func (h *HouseHandlerTestSuite) Test_FindById_WithErrorFromService() {
 		h.houses.On("FindById", id).Return(model.HouseDto{}, test.err)
 
 		testRequest := testhelper.NewTestRequest().
-			WithURL("https://test.com/api/v1/house/{id}").
+			WithURL("https://test.com/api/v1/houses/{id}").
 			WithMethod("GET").
 			WithHandler(h.TestO.FindById()).
 			WithVar("id", id.String())
@@ -212,7 +213,7 @@ func (h *HouseHandlerTestSuite) Test_FindById_WithErrorFromService() {
 
 func (h *HouseHandlerTestSuite) Test_FindById_WithInvalidId() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/{id}").
+		WithURL("https://test.com/api/v1/houses/{id}").
 		WithMethod("GET").
 		WithHandler(h.TestO.FindById()).
 		WithVar("id", "id")
@@ -224,7 +225,7 @@ func (h *HouseHandlerTestSuite) Test_FindById_WithInvalidId() {
 
 func (h *HouseHandlerTestSuite) Test_FindById_WithMissingId() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/{id}").
+		WithURL("https://test.com/api/v1/houses/{id}").
 		WithMethod("GET").
 		WithHandler(h.TestO.FindById())
 
@@ -240,7 +241,7 @@ func (h *HouseHandlerTestSuite) Test_FindByUserId() {
 	h.houses.On("FindByUserId", houseResponse.Id).Return(houseResponses)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/user/{id}").
+		WithURL("https://test.com/api/v1/houses/user/{id}").
 		WithMethod("GET").
 		WithHandler(h.TestO.FindByUserId()).
 		WithVar("id", houseResponse.Id.String())
@@ -259,7 +260,7 @@ func (h *HouseHandlerTestSuite) Test_FindByUserId_WithEmptyResponse() {
 	h.houses.On("FindByUserId", id).Return([]model.HouseDto{})
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/user/{id}").
+		WithURL("https://test.com/api/v1/houses/user/{id}").
 		WithMethod("GET").
 		WithHandler(h.TestO.FindByUserId()).
 		WithVar("id", id.String())
@@ -274,7 +275,7 @@ func (h *HouseHandlerTestSuite) Test_FindByUserId_WithEmptyResponse() {
 
 func (h *HouseHandlerTestSuite) Test_FindByUserId_WithInvalidId() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/user/{id}").
+		WithURL("https://test.com/api/v1/houses/user/{id}").
 		WithMethod("GET").
 		WithHandler(h.TestO.FindByUserId()).
 		WithVar("id", "id")
@@ -286,11 +287,109 @@ func (h *HouseHandlerTestSuite) Test_FindByUserId_WithInvalidId() {
 
 func (h *HouseHandlerTestSuite) Test_FindByUserId_WithMissingId() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/house/user/{id}").
+		WithURL("https://test.com/api/v1/houses/user/{id}").
 		WithMethod("GET").
 		WithHandler(h.TestO.FindByUserId())
 
 	body := testRequest.Verify(h.T(), http.StatusBadRequest)
 
 	assert.Equal(h.T(), "parameter 'id' not found\n", string(body))
+}
+
+func (h *HouseHandlerTestSuite) Test_Update() {
+	id, request := mocks.GenerateUpdateHouseRequest()
+
+	h.houses.On("Update", id, request).Return(nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/houses/{id}").
+		WithMethod("PUT").
+		WithHandler(h.TestO.Update()).
+		WithBody(request).
+		WithVar("id", id.String())
+
+	testRequest.Verify(h.T(), http.StatusOK)
+}
+
+func (h *HouseHandlerTestSuite) Test_Update_WithInvalidId() {
+	_, request := mocks.GenerateUpdateHouseRequest()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/houses/{id}").
+		WithMethod("PUT").
+		WithHandler(h.TestO.Update()).
+		WithBody(request).
+		WithVar("id", "id")
+
+	responseByteArray := testRequest.Verify(h.T(), http.StatusBadRequest)
+
+	assert.Equal(h.T(), "the id is not valid id\n", string(responseByteArray))
+
+	h.houses.AssertNotCalled(h.T(), "Update", mock.Anything, mock.Anything)
+}
+
+func (h *HouseHandlerTestSuite) Test_Update_WithInvalidRequest() {
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/houses/{id}").
+		WithMethod("PUT").
+		WithHandler(h.TestO.Update()).
+		WithVar("id", uuid.New().String())
+
+	testRequest.Verify(h.T(), http.StatusBadRequest)
+}
+
+func (h *HouseHandlerTestSuite) Test_Update_WithErrorFromService() {
+	id, request := mocks.GenerateUpdateHouseRequest()
+
+	expected := errors.New("error")
+
+	h.houses.On("Update", id, request).Return(expected)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/houses/{id}").
+		WithMethod("PUT").
+		WithHandler(h.TestO.Update()).
+		WithVar("id", id.String()).
+		WithBody(request)
+
+	responseByteArray := testRequest.Verify(h.T(), http.StatusBadRequest)
+
+	assert.Equal(h.T(), fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
+}
+
+func (h *HouseHandlerTestSuite) Test_Delete() {
+	id := uuid.New()
+
+	h.houses.On("DeleteById", id).Return(nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/houses/{id}").
+		WithMethod("DELETE").
+		WithHandler(h.TestO.Delete()).
+		WithVar("id", id.String())
+
+	testRequest.Verify(h.T(), http.StatusNoContent)
+}
+
+func (h *HouseHandlerTestSuite) Test_Delete_WithMissingParameter() {
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/houses/{id}").
+		WithMethod("DELETE").
+		WithHandler(h.TestO.Delete())
+
+	responseByteArray := testRequest.Verify(h.T(), http.StatusBadRequest)
+
+	assert.Equal(h.T(), "parameter 'id' not found\n", string(responseByteArray))
+}
+
+func (h *HouseHandlerTestSuite) Test_Delete_WithInvalidParameter() {
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/houses/{id}").
+		WithMethod("DELETE").
+		WithHandler(h.TestO.Delete()).
+		WithVar("id", "id")
+
+	responseByteArray := testRequest.Verify(h.T(), http.StatusBadRequest)
+
+	assert.Equal(h.T(), "the id is not valid id\n", string(responseByteArray))
 }

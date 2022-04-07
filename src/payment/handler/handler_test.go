@@ -41,7 +41,7 @@ func (p *PaymentHandlerTestSuite) Test_Add() {
 	p.payments.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment").
+		WithURL("https://test.com/api/v1/payments").
 		WithMethod("POST").
 		WithHandler(p.TestO.Add()).
 		WithBody(request)
@@ -71,7 +71,7 @@ func (p *PaymentHandlerTestSuite) Test_Add_WithProviderIdNil() {
 	p.payments.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment").
+		WithURL("https://test.com/api/v1/payments").
 		WithMethod("POST").
 		WithHandler(p.TestO.Add()).
 		WithBody(request)
@@ -96,7 +96,7 @@ func (p *PaymentHandlerTestSuite) Test_Add_WithProviderIdNil() {
 
 func (p *PaymentHandlerTestSuite) Test_Add_WithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment").
+		WithURL("https://test.com/api/v1/payments").
 		WithMethod("POST").
 		WithHandler(p.TestO.Add())
 
@@ -111,7 +111,7 @@ func (p *PaymentHandlerTestSuite) Test_Add_WithErrorFromService() {
 	p.payments.On("Add", request).Return(model.PaymentDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment").
+		WithURL("https://test.com/api/v1/payments").
 		WithMethod("POST").
 		WithHandler(p.TestO.Add()).
 		WithBody(request)
@@ -129,7 +129,7 @@ func (p *PaymentHandlerTestSuite) Test_AddBatch() {
 	}), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/batch").
+		WithURL("https://test.com/api/v1/payments/batch").
 		WithMethod("POST").
 		WithHandler(p.TestO.AddBatch()).
 		WithBody(request)
@@ -157,7 +157,7 @@ func (p *PaymentHandlerTestSuite) Test_AddBatch() {
 
 func (p *PaymentHandlerTestSuite) Test_AddBatch_WithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/batch").
+		WithURL("https://test.com/api/v1/payments/batch").
 		WithMethod("POST").
 		WithHandler(p.TestO.AddBatch())
 
@@ -175,7 +175,7 @@ func (p *PaymentHandlerTestSuite) Test_AddBatch_WithErrorFromService() {
 	p.payments.On("AddBatch", request).Return([]model.PaymentDto{}, err)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/batch").
+		WithURL("https://test.com/api/v1/payments/batch").
 		WithMethod("POST").
 		WithHandler(p.TestO.AddBatch()).
 		WithBody(request)
@@ -195,7 +195,7 @@ func (p *PaymentHandlerTestSuite) Test_Update() {
 	p.payments.On("Update", id, request).Return(nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("PUT").
 		WithHandler(p.TestO.Update()).
 		WithBody(request).
@@ -208,7 +208,7 @@ func (p *PaymentHandlerTestSuite) Test_Update_WithInvalidId() {
 	request := mocks.GenerateUpdatePaymentRequest()
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("PUT").
 		WithHandler(p.TestO.Update()).
 		WithBody(request).
@@ -223,7 +223,7 @@ func (p *PaymentHandlerTestSuite) Test_Update_WithInvalidId() {
 
 func (p *PaymentHandlerTestSuite) Test_Update_WithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("PUT").
 		WithHandler(p.TestO.Update()).
 		WithVar("id", uuid.New().String())
@@ -240,7 +240,7 @@ func (p *PaymentHandlerTestSuite) Test_Update_WithErrorFromService() {
 	p.payments.On("Update", id, request).Return(expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("PUT").
 		WithHandler(p.TestO.Update()).
 		WithVar("id", id.String()).
@@ -257,7 +257,7 @@ func (p *PaymentHandlerTestSuite) Test_Delete() {
 	p.payments.On("DeleteById", id).Return(nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("DELETE").
 		WithHandler(p.TestO.Delete()).
 		WithVar("id", id.String())
@@ -267,7 +267,7 @@ func (p *PaymentHandlerTestSuite) Test_Delete() {
 
 func (p *PaymentHandlerTestSuite) Test_Delete_WithMissingParameter() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("DELETE").
 		WithHandler(p.TestO.Delete())
 
@@ -278,7 +278,7 @@ func (p *PaymentHandlerTestSuite) Test_Delete_WithMissingParameter() {
 
 func (p *PaymentHandlerTestSuite) Test_Delete_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("DELETE").
 		WithHandler(p.TestO.Delete()).
 		WithVar("id", "id")
@@ -295,7 +295,7 @@ func (p *PaymentHandlerTestSuite) Test_FindById() {
 		Return(paymentResponse, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindById()).
 		WithVar("id", paymentResponse.Id.String())
@@ -318,7 +318,7 @@ func (p *PaymentHandlerTestSuite) Test_FindById_WithError() {
 		Return(model.PaymentDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindById()).
 		WithVar("id", id.String())
@@ -330,7 +330,7 @@ func (p *PaymentHandlerTestSuite) Test_FindById_WithError() {
 
 func (p *PaymentHandlerTestSuite) Test_FindById_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/{id}").
+		WithURL("https://test.com/api/v1/payments/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindById()).
 		WithVar("id", "id")
@@ -351,7 +351,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByHouseId() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/house/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
+		WithURL("https://test.com/api/v1/payments/house/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByHouseId()).
 		WithVar("id", response.Id.String()).
@@ -379,7 +379,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithFrom() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/house/{id}?limit={limit}&offset={offset}&from={from}").
+		WithURL("https://test.com/api/v1/payments/house/{id}?limit={limit}&offset={offset}&from={from}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByHouseId()).
 		WithVar("id", response.Id.String()).
@@ -405,7 +405,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WIthDefaultLimitAndOffset()
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/house/{id}").
+		WithURL("https://test.com/api/v1/payments/house/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByHouseId()).
 		WithVar("id", response.Id.String())
@@ -428,7 +428,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithEmptyResponse() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/house/{id}").
+		WithURL("https://test.com/api/v1/payments/house/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByHouseId()).
 		WithVar("id", id.String())
@@ -444,7 +444,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithEmptyResponse() {
 
 func (p *PaymentHandlerTestSuite) Test_FindByHouseId_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/house/{id}").
+		WithURL("https://test.com/api/v1/payments/house/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByHouseId()).
 		WithVar("id", "id")
@@ -464,7 +464,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByUserId() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
+		WithURL("https://test.com/api/v1/payments/user/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", response.Id.String()).
@@ -492,7 +492,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithFrom() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}?limit={limit}&offset={offset}&from={from}").
+		WithURL("https://test.com/api/v1/payments/user/{id}?limit={limit}&offset={offset}&from={from}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", response.Id.String()).
@@ -518,7 +518,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithDefaultLimitAndOffset() 
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}").
+		WithURL("https://test.com/api/v1/payments/user/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", response.Id.String())
@@ -541,7 +541,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithEmptyResponse() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}?limit={limit}&offset={offset}").
+		WithURL("https://test.com/api/v1/payments/user/{id}?limit={limit}&offset={offset}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", id.String())
@@ -557,7 +557,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithEmptyResponse() {
 
 func (p *PaymentHandlerTestSuite) Test_FindByUserId_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/user/{id}").
+		WithURL("https://test.com/api/v1/payments/user/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", "id")
@@ -577,7 +577,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByProviderId() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/provider/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
+		WithURL("https://test.com/api/v1/payments/provider/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByProviderId()).
 		WithVar("id", response.Id.String()).
@@ -605,7 +605,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithFrom() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/provider/{id}?limit={limit}&offset={offset}&from={from}").
+		WithURL("https://test.com/api/v1/payments/provider/{id}?limit={limit}&offset={offset}&from={from}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByProviderId()).
 		WithVar("id", response.Id.String()).
@@ -631,7 +631,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithDefaultLimitAndOffse
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/provider/{id}").
+		WithURL("https://test.com/api/v1/payments/provider/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByProviderId()).
 		WithVar("id", response.Id.String())
@@ -654,7 +654,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithEmptyResponse() {
 		Return(paymentResponses, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/provider/{id}?limit={limit}&offset={offset}").
+		WithURL("https://test.com/api/v1/payments/provider/{id}?limit={limit}&offset={offset}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByProviderId()).
 		WithVar("id", id.String())
@@ -670,7 +670,7 @@ func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithEmptyResponse() {
 
 func (p *PaymentHandlerTestSuite) Test_FindByProviderId_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/payment/provider/{id}").
+		WithURL("https://test.com/api/v1/payments/provider/{id}").
 		WithMethod("GET").
 		WithHandler(p.TestO.FindByUserId()).
 		WithVar("id", "id")

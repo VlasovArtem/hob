@@ -12,6 +12,7 @@ import (
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
@@ -41,7 +42,7 @@ func (i *IncomeHandlerTestSuite) Test_Add() {
 	i.incomes.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income").
+		WithURL("https://test.com/api/v1/incomes").
 		WithMethod("POST").
 		WithHandler(i.TestO.Add()).
 		WithBody(request)
@@ -70,7 +71,7 @@ func (i *IncomeHandlerTestSuite) Test_Add_WithNilHouseId() {
 	i.incomes.On("Add", request).Return(request.ToEntity().ToDto(), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income").
+		WithURL("https://test.com/api/v1/incomes").
 		WithMethod("POST").
 		WithHandler(i.TestO.Add()).
 		WithBody(request)
@@ -94,7 +95,7 @@ func (i *IncomeHandlerTestSuite) Test_Add_WithNilHouseId() {
 
 func (i *IncomeHandlerTestSuite) Test_Add_WithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income").
+		WithURL("https://test.com/api/v1/incomes").
 		WithMethod("POST").
 		WithHandler(i.TestO.Add())
 
@@ -108,7 +109,7 @@ func (i *IncomeHandlerTestSuite) Test_Add_WithErrorFromService() {
 	i.incomes.On("Add", request).Return(model.IncomeDto{}, err)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income").
+		WithURL("https://test.com/api/v1/incomes").
 		WithMethod("POST").
 		WithHandler(i.TestO.Add()).
 		WithBody(request)
@@ -126,7 +127,7 @@ func (i *IncomeHandlerTestSuite) Test_AddBatch() {
 	}), nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income/batch").
+		WithURL("https://test.com/api/v1/incomes/batch").
 		WithMethod("POST").
 		WithHandler(i.TestO.AddBatch()).
 		WithBody(request)
@@ -153,7 +154,7 @@ func (i *IncomeHandlerTestSuite) Test_AddBatch() {
 
 func (i *IncomeHandlerTestSuite) Test_AddBatch_WithInvalidRequest() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income/batch").
+		WithURL("https://test.com/api/v1/incomes/batch").
 		WithMethod("POST").
 		WithHandler(i.TestO.AddBatch())
 
@@ -171,7 +172,7 @@ func (i *IncomeHandlerTestSuite) Test_AddBatch_WithErrorFromService() {
 	i.incomes.On("AddBatch", request).Return([]model.IncomeDto{}, err)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income/batch").
+		WithURL("https://test.com/api/v1/incomes/batch").
 		WithMethod("POST").
 		WithHandler(i.TestO.AddBatch()).
 		WithBody(request)
@@ -191,7 +192,7 @@ func (i *IncomeHandlerTestSuite) Test_FindById() {
 		Return(response, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income/{id}").
+		WithURL("https://test.com/api/v1/incomes/{id}").
 		WithMethod("GET").
 		WithHandler(i.TestO.FindById()).
 		WithVar("id", response.Id.String())
@@ -214,7 +215,7 @@ func (i *IncomeHandlerTestSuite) Test_FindById_WithError() {
 		Return(model.IncomeDto{}, expected)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income/{id}").
+		WithURL("https://test.com/api/v1/incomes/{id}").
 		WithMethod("GET").
 		WithHandler(i.TestO.FindById()).
 		WithVar("id", id.String())
@@ -226,7 +227,7 @@ func (i *IncomeHandlerTestSuite) Test_FindById_WithError() {
 
 func (i *IncomeHandlerTestSuite) Test_FindById_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/income/{id}").
+		WithURL("https://test.com/api/v1/incomes/{id}").
 		WithMethod("GET").
 		WithHandler(i.TestO.FindById()).
 		WithVar("id", "id")
@@ -244,7 +245,7 @@ func (i *IncomeHandlerTestSuite) Test_FindByHouseId() {
 		Return(response, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
+		WithURL("https://test.com/api/v1/incomes/house/{id}?limit={limit}&offset={offset}&from={from}&to={to}").
 		WithMethod("GET").
 		WithHandler(i.TestO.FindByHouseId()).
 		WithVar("id", response[0].HouseId.String()).
@@ -270,7 +271,7 @@ func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithFrom() {
 		Return(response, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}?limit={limit}&offset={offset}&from={from}").
+		WithURL("https://test.com/api/v1/incomes/house/{id}?limit={limit}&offset={offset}&from={from}").
 		WithMethod("GET").
 		WithHandler(i.TestO.FindByHouseId()).
 		WithVar("id", response[0].HouseId.String()).
@@ -294,7 +295,7 @@ func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithDefaultLimitAndOffset() 
 		Return(response, nil)
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}").
+		WithURL("https://test.com/api/v1/incomes/house/{id}").
 		WithMethod("GET").
 		WithHandler(i.TestO.FindByHouseId()).
 		WithVar("id", response[0].HouseId.String())
@@ -315,7 +316,7 @@ func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithEmptyResult() {
 		Return([]model.IncomeDto{})
 
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}").
+		WithURL("https://test.com/api/v1/incomes/house/{id}").
 		WithMethod("GET").
 		WithHandler(i.TestO.FindByHouseId()).
 		WithVar("id", id.String())
@@ -331,9 +332,107 @@ func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithEmptyResult() {
 
 func (i *IncomeHandlerTestSuite) Test_FindByHouseId_WithInvalidParameter() {
 	testRequest := testhelper.NewTestRequest().
-		WithURL("https://test.com/api/v1/meter/house/{id}").
+		WithURL("https://test.com/api/v1/incomes/house/{id}").
 		WithMethod("GET").
 		WithHandler(i.TestO.FindByHouseId()).
+		WithVar("id", "id")
+
+	responseByteArray := testRequest.Verify(i.T(), http.StatusBadRequest)
+
+	assert.Equal(i.T(), "the id is not valid id\n", string(responseByteArray))
+}
+
+func (i *IncomeHandlerTestSuite) Test_Update() {
+	id, request := mocks.GenerateUpdateIncomeRequest()
+
+	i.incomes.On("Update", id, request).Return(nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/incomes/{id}").
+		WithMethod("PUT").
+		WithHandler(i.TestO.Update()).
+		WithBody(request).
+		WithVar("id", id.String())
+
+	testRequest.Verify(i.T(), http.StatusOK)
+}
+
+func (i *IncomeHandlerTestSuite) Test_Update_WithInvalidId() {
+	_, request := mocks.GenerateUpdateIncomeRequest()
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/incomes/{id}").
+		WithMethod("PUT").
+		WithHandler(i.TestO.Update()).
+		WithBody(request).
+		WithVar("id", "id")
+
+	responseByteArray := testRequest.Verify(i.T(), http.StatusBadRequest)
+
+	assert.Equal(i.T(), "the id is not valid id\n", string(responseByteArray))
+
+	i.incomes.AssertNotCalled(i.T(), "Update", mock.Anything, mock.Anything)
+}
+
+func (i *IncomeHandlerTestSuite) Test_Update_WithInvalidRequest() {
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/incomes/{id}").
+		WithMethod("PUT").
+		WithHandler(i.TestO.Update()).
+		WithVar("id", uuid.New().String())
+
+	testRequest.Verify(i.T(), http.StatusBadRequest)
+}
+
+func (i *IncomeHandlerTestSuite) Test_Update_WithErrorFromService() {
+	id, request := mocks.GenerateUpdateIncomeRequest()
+
+	expected := errors.New("error")
+
+	i.incomes.On("Update", id, request).Return(expected)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/incomes/{id}").
+		WithMethod("PUT").
+		WithHandler(i.TestO.Update()).
+		WithVar("id", id.String()).
+		WithBody(request)
+
+	responseByteArray := testRequest.Verify(i.T(), http.StatusBadRequest)
+
+	assert.Equal(i.T(), fmt.Sprintf("%s\n", expected.Error()), string(responseByteArray))
+}
+
+func (i *IncomeHandlerTestSuite) Test_Delete() {
+	id := uuid.New()
+
+	i.incomes.On("DeleteById", id).Return(nil)
+
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/incomes/{id}").
+		WithMethod("DELETE").
+		WithHandler(i.TestO.Delete()).
+		WithVar("id", id.String())
+
+	testRequest.Verify(i.T(), http.StatusNoContent)
+}
+
+func (i *IncomeHandlerTestSuite) Test_Delete_WithMissingParameter() {
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/incomes/{id}").
+		WithMethod("DELETE").
+		WithHandler(i.TestO.Delete())
+
+	responseByteArray := testRequest.Verify(i.T(), http.StatusBadRequest)
+
+	assert.Equal(i.T(), "parameter 'id' not found\n", string(responseByteArray))
+}
+
+func (i *IncomeHandlerTestSuite) Test_Delete_WithInvalidParameter() {
+	testRequest := testhelper.NewTestRequest().
+		WithURL("https://test.com/api/v1/incomes/{id}").
+		WithMethod("DELETE").
+		WithHandler(i.TestO.Delete()).
 		WithVar("id", "id")
 
 	responseByteArray := testRequest.Verify(i.T(), http.StatusBadRequest)
