@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/ctime"
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
@@ -166,7 +167,7 @@ func (h *Home) fillPaymentsTable() *TableFiller {
 	if h.App.House == nil {
 		return h.payments
 	}
-	payments := h.App.GetPaymentService().FindByHouseId(h.App.House.Id, 100, 0, nil, nil)
+	payments := h.App.GetPaymentService().FindByHouseId(h.App.House.Id, 50, 0, ctime.Now().StartOfMonth(), nil)
 
 	h.payments.Fill(payments)
 	var sum float64
@@ -181,7 +182,7 @@ func (h *Home) fillIncomesTable() *TableFiller {
 	if h.App.House == nil {
 		return h.incomes
 	}
-	incomes := h.App.GetIncomeService().FindByHouseId(h.App.House.Id, 100, 0, nil, nil)
+	incomes := h.App.GetIncomeService().FindByHouseId(h.App.House.Id, 50, 0, ctime.Now().StartOfMonth(), nil)
 
 	h.incomes.Fill(incomes)
 	var sum float64
