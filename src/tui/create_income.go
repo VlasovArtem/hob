@@ -47,7 +47,7 @@ func NewCreateIncome(app *TerminalApp) *CreateIncome {
 	form := tview.NewForm().
 		AddInputField("Name", "", 20, nil, func(text string) { create.name = text }).
 		AddInputField("Description", "", 20, nil, func(text string) { create.description = text }).
-		AddInputField("Date (ex. 2006-01-02)", "", 20, nil, func(text string) { create.date = text }).
+		AddInputField("Date (ex. 2006-01-22)", "", 20, nil, func(text string) { create.date = text }).
 		AddInputField("Sum", "", 20, nil, func(text string) { create.sum = text }).
 		AddButton("Create", f.create(create))
 
@@ -74,8 +74,8 @@ func (c *CreateIncome) create(create createIncome) func() {
 			c.request.Sum = float32(newSum)
 		}
 
-		if newDate, err := time.Parse("2006-01-02", create.date); err != nil {
-			c.ShowErrorTo(errors.New("date is not valid format. The valid format is 2006-01-25"))
+		if newDate, err := time.Parse("2006-01-22", create.date); err != nil {
+			c.ShowErrorTo(errors.New("date is not valid format. The valid format is 2006-01-22"))
 		} else {
 			c.request.Date = newDate
 		}

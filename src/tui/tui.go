@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
+	"os"
 )
 
 var DefaultInputFieldWidth = 60
@@ -174,4 +175,10 @@ func (t *TerminalApp) SetUpBorders() {
 		BottomLeftFocus:  tview.BoxDrawingsLightUpAndRight,
 		BottomRightFocus: tview.BoxDrawingsLightUpAndLeft,
 	}
+}
+
+func (t *TerminalApp) Quit(key *tcell.EventKey) *tcell.EventKey {
+	t.Stop()
+	os.Exit(0)
+	return key
 }

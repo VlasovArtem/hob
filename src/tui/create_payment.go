@@ -47,10 +47,12 @@ func NewCreatePayment(app *TerminalApp) *CreatePayment {
 	form := tview.NewForm().
 		AddInputField("Name", "", 20, nil, func(text string) { request.name = text }).
 		AddInputField("Description", "", 20, nil, func(text string) { request.description = text }).
-		AddInputField("Date (ex. 2006-01-02)", "", 20, nil, func(text string) { request.date = text }).
+		AddInputField("Date (ex. 2006-01-22)", "", 20, nil, func(text string) { request.date = text }).
 		AddInputField("Sum", "", 20, nil, func(text string) { request.sum = text }).
 		AddDropDown("Provider", providerOptions, -1, func(option string, optionIndex int) {
-			request.providerId = providers[optionIndex].Id
+			if len(providers) > 0 {
+				request.providerId = providers[optionIndex].Id
+			}
 		}).
 		AddButton("Create", f.create(request)).
 		AddButton("Cancel", f.BackFunc())
@@ -74,9 +76,9 @@ func (c *CreatePayment) create(request createPaymentReq) func() {
 	return func() {
 		newDate := time.Now()
 		if request.date != "" {
-			parsedDate, err := time.Parse("2006-01-02", request.date)
+			parsedDate, err := time.Parse("2006-01-22", request.date)
 			if err != nil {
-				c.ShowErrorTo(errors.New("date is not valid"))
+				c.ShowErrorTo(errors.New("date is not valid format. The valid format is 2006-01-22"))
 				return
 			}
 			newDate = parsedDate

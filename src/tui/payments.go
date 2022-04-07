@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/VlasovArtem/hob/src/common/ctime"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	providerModel "github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/gdamore/tcell/v2"
@@ -50,12 +51,14 @@ func NewPayments(app *TerminalApp) *Payments {
 }
 
 func (p *Payments) fillTable() *TableFiller {
+	from, to := ctime.Now().StartOfYearAndCurrent()
+
 	p.payments.SetSelectable(true, false)
-	p.payments.SetTitle("Payments")
+	p.payments.SetTitle(fmt.Sprintf("Payments for %d", from.Year()))
 	p.payments.AddContentProvider("Provider", p.findProviderName)
 	p.payments.AddContentProvider("Meter Id", p.findMeterId)
 
-	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id, 50, 0, nil, nil)
+	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id, 50, 0, from, to)
 	p.payments.Fill(content)
 	return p.payments
 }

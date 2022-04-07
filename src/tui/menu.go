@@ -17,6 +17,7 @@ type MenuBlock struct {
 
 func NewMenuBlock(app *TerminalApp, keyboard *Keyboard) *MenuBlock {
 	menuBlock := &MenuBlock{tview.NewFlex(), app, NewSessionInfo(app)}
+	keyboard.Actions[tcell.KeyCtrlQ] = NewKeyAction("Quit", app.Quit)
 	menuBlock.
 		AddItem(NewLogo(), 0, 1, false).
 		AddItem(menuBlock.info, 0, 2, false).

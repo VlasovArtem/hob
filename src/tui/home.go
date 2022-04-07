@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
-	"os"
 )
 
 const HomePageName = "home"
@@ -41,7 +40,10 @@ func (h *Home) enrichNavigation(app *TerminalApp) {
 		AddCustomPage(&Payments{}).
 		AddCustomPage(&Houses{}).
 		AddCustomPage(&Incomes{}).
-		AddCustomPage(&Providers{})
+		AddCustomPage(&Providers{}).
+		AddCustomPage(&CreateIncome{}).
+		AddCustomPage(&CreatePayment{}).
+		AddCustomPage(&CreateHouse{})
 }
 
 func NewHome(app *TerminalApp) *Home {
@@ -69,13 +71,15 @@ func (h *Home) Init(app *TerminalApp) {
 		SetTitle("Houses").
 		SetBorder(true)
 
+	monthName := ctime.Now().CurrentMonthName()
+
 	h.payments.
 		SetSelectable(false, false).
-		SetTitle("Payments for Current Month").
+		SetTitle(fmt.Sprintf("Payments for %s", monthName)).
 		SetBorder(true)
 	h.incomes.
 		SetSelectable(false, false).
-		SetTitle("Incomes for Current Month").
+		SetTitle(fmt.Sprintf("Incomes for %s", monthName)).
 		SetBorder(true)
 
 	info := tview.NewFlex().
@@ -136,10 +140,9 @@ func (h *Home) bindKeys() {
 		tcell.KeyCtrlE: NewKeyAction("Show Houses", h.housesPage),
 		tcell.KeyCtrlF: NewKeyAction("Show Incomes", h.incomesPage),
 		tcell.KeyCtrlP: NewKeyAction("Show Providers", h.providersPage),
-		tcell.KeyCtrlQ: NewKeyAction("Quit", func(key *tcell.EventKey) *tcell.EventKey {
-			os.Exit(0)
-			return key
-		}),
+		tcell.KeyF1:    NewKeyAction("Create Payment", h.createPayment),
+		tcell.KeyF2:    NewKeyAction("Create Income", h.createIncome),
+		tcell.KeyF3:    NewKeyAction("Create House", h.createHouse),
 	}
 }
 
@@ -160,6 +163,21 @@ func (h *Home) incomesPage(key *tcell.EventKey) *tcell.EventKey {
 
 func (h *Home) providersPage(key *tcell.EventKey) *tcell.EventKey {
 	h.NavigateTo(ProvidersPageName)
+	return key
+}
+
+func (h *Home) createPayment(key *tcell.EventKey) *tcell.EventKey {
+	h.NavigateTo(CreatePaymentPageName)
+	return key
+}
+
+func (h *Home) createIncome(key *tcell.EventKey) *tcell.EventKey {
+	h.NavigateTo(CreateIncomePageName)
+	return key
+}
+
+func (h *Home) createHouse(key *tcell.EventKey) *tcell.EventKey {
+	h.NavigateTo(CreateHousePageName)
 	return key
 }
 
