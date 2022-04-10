@@ -40,8 +40,10 @@ func NewTApp(rootApplication *app.RootApplication) *TerminalApp {
 	tapp := &TerminalApp{
 		Application: tview.NewApplication(),
 		root:        rootApplication,
-		Main:        tview.NewPages(),
 	}
+
+	pages := tview.NewPages()
+	tapp.Main = pages
 
 	tapp.SetUpBorders()
 

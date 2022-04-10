@@ -14,7 +14,7 @@ const CreatePaymentPageName = "create-payment"
 
 type createPaymentReq struct {
 	name, description, date, sum string
-	providerId                   uuid.UUID
+	providerId                   *uuid.UUID
 }
 
 type CreatePayment struct {
@@ -47,14 +47,14 @@ func NewCreatePayment(app *TerminalApp) *CreatePayment {
 	form := tview.NewForm().
 		AddInputField("Name", "", 20, nil, func(text string) { request.name = text }).
 		AddInputField("Description", "", 20, nil, func(text string) { request.description = text }).
-		AddInputField("Date (ex. 2006-01-22)", "", 20, nil, func(text string) { request.date = text }).
+		AddInputField("Date (ex. 2006-01-02)", time.Now().Format("2006-01-02"), 20, nil, func(text string) { request.date = text }).
 		AddInputField("Sum", "", 20, nil, func(text string) { request.sum = text }).
 		AddDropDown("Provider", providerOptions, -1, func(option string, optionIndex int) {
 			if len(providers) > 0 {
-				request.providerId = providers[optionIndex].Id
+				request.providerId = &providers[optionIndex].Id
 			}
 		}).
-		AddButton("Create", f.create(request)).
+		AddButton("Create", f.create(&request)).
 		AddButton("Cancel", f.BackFunc())
 
 	form.SetBorder(true).SetTitle("Add Payment").SetTitleAlign(tview.AlignCenter).SetRect(150, 30, 60, 15)
@@ -72,13 +72,13 @@ func (c *CreatePayment) bindKeys() {
 	}
 }
 
-func (c *CreatePayment) create(request createPaymentReq) func() {
+func (c *CreatePayment) create(request *createPaymentReq) func() {
 	return func() {
 		newDate := time.Now()
 		if request.date != "" {
-			parsedDate, err := time.Parse("2006-01-22", request.date)
+			parsedDate, err := time.Parse("2006-01-02", request.date)
 			if err != nil {
-				c.ShowErrorTo(errors.New("date is not valid format. The valid format is 2006-01-22"))
+				c.ShowErrorTo(errors.New("date is not valid format. The valid format is 2006-01-02 (02 Jan 2006)"))
 				return
 			}
 			newDate = parsedDate
@@ -91,15 +91,10 @@ func (c *CreatePayment) create(request createPaymentReq) func() {
 			return
 		}
 
-		if request.providerId == DefaultUUID {
-			c.ShowErrorTo(errors.New("provider id is not valid"))
-			return
-		}
-
 		paymentRequest := model.CreatePaymentRequest{
 			UserId:      c.app.AuthorizedUser.Id,
 			HouseId:     c.app.House.Id,
-			ProviderId:  &request.providerId,
+			ProviderId:  request.providerId,
 			Date:        newDate,
 			Name:        request.name,
 			Description: request.description,

@@ -47,9 +47,9 @@ func NewCreateIncome(app *TerminalApp) *CreateIncome {
 	form := tview.NewForm().
 		AddInputField("Name", "", 20, nil, func(text string) { create.name = text }).
 		AddInputField("Description", "", 20, nil, func(text string) { create.description = text }).
-		AddInputField("Date (ex. 2006-01-22)", "", 20, nil, func(text string) { create.date = text }).
+		AddInputField("Date (ex. 2006-01-02)", time.Now().Format("2006-01-02"), 20, nil, func(text string) { create.date = text }).
 		AddInputField("Sum", "", 20, nil, func(text string) { create.sum = text }).
-		AddButton("Create", f.create(create))
+		AddButton("Create", f.create(&create))
 
 	form.SetBorder(true).SetTitle("Add Income").SetTitleAlign(tview.AlignCenter).SetRect(150, 30, 60, 15)
 
@@ -66,7 +66,7 @@ func (c *CreateIncome) bindKeys() {
 	}
 }
 
-func (c *CreateIncome) create(create createIncome) func() {
+func (c *CreateIncome) create(create *createIncome) func() {
 	return func() {
 		if newSum, err := strconv.ParseFloat(create.sum, 32); err != nil {
 			c.ShowErrorTo(errors.New("sum is not valid"))
@@ -74,8 +74,8 @@ func (c *CreateIncome) create(create createIncome) func() {
 			c.request.Sum = float32(newSum)
 		}
 
-		if newDate, err := time.Parse("2006-01-22", create.date); err != nil {
-			c.ShowErrorTo(errors.New("date is not valid format. The valid format is 2006-01-22"))
+		if newDate, err := time.Parse("2006-01-02", create.date); err != nil {
+			c.ShowErrorTo(errors.New("date is not valid format. The valid format is 2006-01-02"))
 		} else {
 			c.request.Date = newDate
 		}

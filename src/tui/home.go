@@ -52,6 +52,9 @@ func NewHome(app *TerminalApp) *Home {
 		payments: NewTableFiller(homePaymentFields),
 		incomes:  NewTableFiller(homeIncomeFields),
 	}
+	app.Main.SetFocusFunc(func() {
+		h.Init(app)
+	})
 
 	h.Init(app)
 
@@ -65,13 +68,9 @@ func (h *Home) Init(app *TerminalApp) {
 
 	h.enrichNavigation(app)
 
-	houseList := tview.NewList().ShowSecondaryText(false)
-	houseList.
-		SetBorderPadding(1, 1, 1, 1).
-		SetTitle("Houses").
-		SetBorder(true)
-
 	monthName := ctime.Now().CurrentMonthName()
+
+	houseList := h.createHouseList()
 
 	h.payments.
 		SetSelectable(false, false).
@@ -84,8 +83,8 @@ func (h *Home) Init(app *TerminalApp) {
 
 	info := tview.NewFlex().
 		AddItem(houseList, 0, 1, true).
-		AddItem(h.fillPaymentsTable(), 0, 2, false).
-		AddItem(h.fillIncomesTable(), 0, 2, false)
+		AddItem(h.payments, 0, 2, false).
+		AddItem(h.incomes, 0, 2, false)
 
 	h.AddItem(info, 0, 8, true)
 
@@ -96,6 +95,23 @@ func (h *Home) Init(app *TerminalApp) {
 	})
 
 	h.SetInputCapture(h.KeyboardFunc)
+}
+
+func (h *Home) createHouseList() *tview.List {
+	houseList := tview.NewList().ShowSecondaryText(false)
+	houseList.
+		SetBorderPadding(1, 1, 1, 1).
+		SetTitle("Houses").
+		SetBorder(true)
+
+	houseList.SetFocusFunc(
+		func() {
+			h.fillIncomesTable()
+			h.fillPaymentsTable()
+			h.menu.refreshSessionInfo()
+		})
+
+	return houseList
 }
 
 func (h *Home) showHouses(houseList *tview.List, onSelect func(dto houseModel.HouseDto)) {
@@ -181,9 +197,9 @@ func (h *Home) createHouse(key *tcell.EventKey) *tcell.EventKey {
 	return key
 }
 
-func (h *Home) fillPaymentsTable() *TableFiller {
+func (h *Home) fillPaymentsTable() {
 	if h.App.House == nil {
-		return h.payments
+		return
 	}
 	payments := h.App.GetPaymentService().FindByHouseId(h.App.House.Id, 50, 0, ctime.Now().StartOfMonth(), nil)
 
@@ -193,12 +209,11 @@ func (h *Home) fillPaymentsTable() *TableFiller {
 		sum += float64(payment.Sum)
 	}
 	h.payments.addResultRow(fmt.Sprintf("%v", sum))
-	return h.payments
 }
 
-func (h *Home) fillIncomesTable() *TableFiller {
+func (h *Home) fillIncomesTable() {
 	if h.App.House == nil {
-		return h.incomes
+		return
 	}
 	incomes := h.App.GetIncomeService().FindByHouseId(h.App.House.Id, 50, 0, ctime.Now().StartOfMonth(), nil)
 
@@ -208,5 +223,5 @@ func (h *Home) fillIncomesTable() *TableFiller {
 		sum += float64(income.Sum)
 	}
 	h.incomes.addResultRow(fmt.Sprintf("%v", sum))
-	return h.incomes
+	return
 }

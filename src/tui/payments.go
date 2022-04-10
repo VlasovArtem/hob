@@ -8,6 +8,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
 	"github.com/rivo/tview"
+	"time"
 )
 
 const PaymentsPageName = "payments"
@@ -43,24 +44,29 @@ func NewPayments(app *TerminalApp) *Payments {
 	p.bindKeys()
 	p.InitFlexApp(app)
 
+	p.initTable()
+
 	p.
-		AddItem(p.fillTable(), 0, 8, true).
+		AddItem(p.payments, 0, 8, true).
 		SetInputCapture(p.KeyboardFunc)
 
 	return p
 }
 
-func (p *Payments) fillTable() *TableFiller {
-	from, to := ctime.Now().StartOfYearAndCurrent()
-
+func (p *Payments) initTable() {
 	p.payments.SetSelectable(true, false)
-	p.payments.SetTitle(fmt.Sprintf("Payments for %d", from.Year()))
+	p.payments.SetTitle(fmt.Sprintf("Payments for %d", time.Now().Year()))
 	p.payments.AddContentProvider("Provider", p.findProviderName)
 	p.payments.AddContentProvider("Meter Id", p.findMeterId)
 
-	content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id, 50, 0, from, to)
-	p.payments.Fill(content)
-	return p.payments
+	p.payments.SetFocusFunc(func() {
+		from, to := ctime.Now().StartOfYearAndCurrent()
+
+		content := p.App.GetPaymentService().FindByHouseId(p.App.House.Id, 50, 0, from, to)
+		p.payments.Fill(content)
+	})
+
+	return
 }
 
 func (p *Payments) findProviderName(payment any) any {
@@ -176,7 +182,7 @@ func (p *Payments) showScheduled(key *tcell.EventKey) *tcell.EventKey {
 
 func (p *Payments) deletePayment(key *tcell.EventKey) *tcell.EventKey {
 	row, _ := p.payments.GetSelection()
-	if row == 1 {
+	if row == 0 {
 		return key
 	}
 	paymentIdString := p.payments.GetCell(row, 1).Text

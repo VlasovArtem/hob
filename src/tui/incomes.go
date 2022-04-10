@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
 	"github.com/rivo/tview"
+	"time"
 )
 
 const IncomesPageName = "incomes"
@@ -44,23 +45,25 @@ func NewIncomes(app *TerminalApp) *Incomes {
 	p.bindKeys()
 	p.InitFlexApp(app)
 
+	p.initTable()
+
 	p.
-		AddItem(p.fillTable(), 0, 8, true).
+		AddItem(p.incomes, 0, 8, true).
 		SetInputCapture(p.KeyboardFunc)
 
 	return p
 }
 
-func (i *Incomes) fillTable() *TableFiller {
-	from, to := ctime.Now().StartOfYearAndCurrent()
-
+func (i *Incomes) initTable() {
 	i.incomes.SetSelectable(true, false)
-	i.incomes.SetTitle(fmt.Sprintf("Incomes for %d", from.Year()))
+	i.incomes.SetTitle(fmt.Sprintf("Incomes for %d", time.Now().Year()))
 
-	content := i.App.GetIncomeService().FindByHouseId(i.App.House.Id, 50, 0, from, to)
+	i.incomes.SetFocusFunc(func() {
+		from, to := ctime.Now().StartOfYearAndCurrent()
+		content := i.App.GetIncomeService().FindByHouseId(i.App.House.Id, 50, 0, from, to)
 
-	i.incomes.Fill(content)
-	return i.incomes
+		i.incomes.Fill(content)
+	})
 }
 
 func (i *Incomes) bindKeys() {
