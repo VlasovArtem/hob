@@ -10,6 +10,7 @@ import (
 	houses "github.com/VlasovArtem/hob/src/house/service"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/repository"
+	"github.com/VlasovArtem/hob/src/pivotal/cache"
 	providers "github.com/VlasovArtem/hob/src/provider/service"
 	users "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
@@ -21,18 +22,22 @@ type PaymentServiceObject struct {
 	houseService      houses.HouseService
 	providerService   providers.ProviderService
 	paymentRepository repository.PaymentRepository
+	pivotalCache      cache.PivotalCache
 }
 
 func NewPaymentService(
 	userService users.UserService,
 	houseService houses.HouseService,
 	providerService providers.ProviderService,
-	paymentRepository repository.PaymentRepository) PaymentService {
+	paymentRepository repository.PaymentRepository,
+	pivotalCache cache.PivotalCache,
+) PaymentService {
 	return &PaymentServiceObject{
 		userService:       userService,
 		houseService:      houseService,
 		providerService:   providerService,
 		paymentRepository: paymentRepository,
+		pivotalCache:      pivotalCache,
 	}
 }
 
@@ -42,6 +47,7 @@ func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesProvide
 		dependency.FindRequiredDependency[houses.HouseServiceObject, houses.HouseService](factory),
 		dependency.FindRequiredDependency[providers.ProviderServiceObject, providers.ProviderService](factory),
 		dependency.FindRequiredDependency[repository.PaymentRepositoryObject, repository.PaymentRepository](factory),
+		dependency.FindRequiredDependency[cache.PivotalCacheObject, cache.PivotalCache](factory),
 	)
 }
 
@@ -55,6 +61,7 @@ type PaymentService interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdatePaymentRequest) error
+	CalculateSum(houseIds []uuid.UUID, from *time.Time) float64
 }
 
 func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentDto, err error) {
@@ -73,7 +80,11 @@ func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response
 
 	payment, err := p.paymentRepository.Create(request.ToEntity())
 
-	return payment.ToDto(), err
+	dto := payment.ToDto()
+
+	p.invalidateCache(dto)
+
+	return dto, err
 }
 
 func (p *PaymentServiceObject) AddBatch(request model.CreatePaymentBatchRequest) (response []model.PaymentDto, err error) {
@@ -122,7 +133,13 @@ func (p *PaymentServiceObject) AddBatch(request model.CreatePaymentBatchRequest)
 	if batch, err := p.paymentRepository.CreateBatch(entities); err != nil {
 		return response, err
 	} else {
-		return common.MapSlice(batch, model.EntityToDto), nil
+		dtos := common.MapSlice(batch, model.EntityToDto)
+
+		for _, dto := range dtos {
+			p.invalidateCache(dto)
+		}
+
+		return dtos, nil
 	}
 }
 
@@ -168,4 +185,13 @@ func (p *PaymentServiceObject) Update(id uuid.UUID, request model.UpdatePaymentR
 		return errors.New("date should not be after current date")
 	}
 	return p.paymentRepository.Update(request.UpdateToEntity(id))
+}
+
+func (p *PaymentServiceObject) CalculateSum(houseIds []uuid.UUID, from *time.Time) (sum float64) {
+	p.paymentRepository.CalculateSum(houseIds, from, &sum)
+	return
+}
+
+func (p *PaymentServiceObject) invalidateCache(payment model.PaymentDto) {
+	p.pivotalCache.Invalidate(payment.HouseId)
 }

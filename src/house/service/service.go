@@ -58,6 +58,7 @@ type HouseService interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateHouseRequest) error
+	FindHousesByGroupId(groupId uuid.UUID) []model.HouseDto
 }
 
 func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response model.HouseDto, err error) {
@@ -186,4 +187,10 @@ func (h *HouseServiceObject) Update(id uuid.UUID, request model.UpdateHouseReque
 	} else {
 		return h.houseRepository.Update(id, request)
 	}
+}
+
+func (h *HouseServiceObject) FindHousesByGroupId(groupId uuid.UUID) []model.HouseDto {
+	return common.MapSlice(h.houseRepository.FindHousesByGroupId(groupId), func(entity model.House) model.HouseDto {
+		return entity.ToDto()
+	})
 }

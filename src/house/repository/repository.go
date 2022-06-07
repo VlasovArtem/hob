@@ -8,13 +8,9 @@ import (
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"reflect"
 )
 
-var (
-	HouseRepositoryType = reflect.TypeOf(HouseRepositoryObject{})
-	entity              = model.House{}
-)
+var entity = model.House{}
 
 type HouseRepositoryObject struct {
 	db db.ModeledDatabase
@@ -45,6 +41,7 @@ type HouseRepository interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateHouseRequest) error
+	FindHousesByGroupId(groupId uuid.UUID) []model.House
 }
 
 func (h *HouseRepositoryObject) Create(entity model.House) (model.House, error) {
@@ -107,4 +104,16 @@ func (h *HouseRepositoryObject) Update(id uuid.UUID, request model.UpdateHouseRe
 	var groups = common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup)
 
 	return h.db.DM(&entity).Association("Groups").Replace(groups)
+}
+
+func (h *HouseRepositoryObject) FindHousesByGroupId(groupId uuid.UUID) (response []model.House) {
+	if err := h.db.D().
+		Preload("Groups").
+		Joins("FULL JOIN house_groups hg ON hg.house_id = houses.id").
+		Where("hg.group_id = ?", groupId).
+		Find(&response).Error; err != nil {
+		log.Error().Err(err)
+	}
+
+	return response
 }

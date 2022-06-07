@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/payment/model"
@@ -43,6 +44,7 @@ type PaymentRepository interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(entity model.Payment) error
+	CalculateSum(houseIds []uuid.UUID, from *time.Time, f *float64)
 }
 
 func (p *PaymentRepositoryObject) Create(entity model.Payment) (model.Payment, error) {
@@ -73,11 +75,18 @@ func (p *PaymentRepositoryObject) FindByHouseId(houseId uuid.UUID, limit int, of
 		whereArgs = append(whereArgs, from)
 	}
 
-	err := p.database.Modeled().
+	query := p.database.Modeled().
 		Where(whereQuery, whereArgs...).
-		Order("date desc").
-		Limit(limit).
-		Offset(offset).
+		Order("date desc")
+
+	if limit >= 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+
+	err := query.
 		Find(&response).
 		Error
 
@@ -100,11 +109,18 @@ func (p *PaymentRepositoryObject) FindByUserId(userId uuid.UUID, limit int, offs
 		whereArgs = append(whereArgs, from)
 	}
 
-	err := p.database.Modeled().
+	query := p.database.Modeled().
 		Where(whereQuery, whereArgs...).
-		Order("date desc").
-		Limit(limit).
-		Offset(offset).
+		Order("date desc")
+
+	if limit >= 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+
+	err := query.
 		Find(&response).
 		Error
 
@@ -158,4 +174,22 @@ func (p *PaymentRepositoryObject) DeleteById(id uuid.UUID) error {
 
 func (p *PaymentRepositoryObject) Update(entity model.Payment) error {
 	return p.database.Update(entity.Id, entity, "HouseId", "House", "UserId", "User")
+}
+
+func (p *PaymentRepositoryObject) CalculateSum(houseIds []uuid.UUID, from *time.Time, sum *float64) {
+	if len(houseIds) == 0 {
+		return
+	}
+
+	sql := `SELECT SUM(sum) FROM payments WHERE house_id IN (?)%s ORDER BY date DESC`
+
+	if from != nil {
+		sql = fmt.Sprintf(sql, " AND date > ?")
+	} else {
+		sql = fmt.Sprintf(sql, "")
+	}
+
+	p.database.D().
+		Exec(sql, houseIds, from).
+		Scan(sum)
 }

@@ -11,6 +11,7 @@ import (
 	meters "github.com/VlasovArtem/hob/src/meter/service"
 	paymentSchedulers "github.com/VlasovArtem/hob/src/payment/scheduler/service"
 	payments "github.com/VlasovArtem/hob/src/payment/service"
+	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	providers "github.com/VlasovArtem/hob/src/provider/service"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	users "github.com/VlasovArtem/hob/src/user/service"
@@ -116,6 +117,10 @@ func (t *TerminalApp) GetPaymentSchedulerService() paymentSchedulers.PaymentSche
 
 func (t *TerminalApp) GetIncomeSchedulerService() incomeSchedulers.IncomeSchedulerService {
 	return dependency.FindRequiredDependency[incomeSchedulers.IncomeSchedulerServiceObject, incomeSchedulers.IncomeSchedulerService](t.root.DependenciesFactory)
+}
+
+func (t *TerminalApp) GetPivotalService() pivotalService.PivotalService {
+	return dependency.FindRequiredDependency[pivotalService.PivotalServiceObject, pivotalService.PivotalService](t.root.DependenciesFactory)
 }
 
 func AsKey(evt *tcell.EventKey) tcell.Key {

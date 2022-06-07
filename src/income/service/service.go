@@ -10,6 +10,7 @@ import (
 	houseService "github.com/VlasovArtem/hob/src/house/service"
 	"github.com/VlasovArtem/hob/src/income/model"
 	"github.com/VlasovArtem/hob/src/income/repository"
+	"github.com/VlasovArtem/hob/src/pivotal/cache"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -20,17 +21,20 @@ type IncomeServiceObject struct {
 	houseService houseService.HouseService
 	groupService groupService.GroupService
 	repository   repository.IncomeRepository
+	pivotalCache cache.PivotalCache
 }
 
 func NewIncomeService(
 	houseService houseService.HouseService,
 	groupService groupService.GroupService,
 	repository repository.IncomeRepository,
+	pivotalCache cache.PivotalCache,
 ) IncomeService {
 	return &IncomeServiceObject{
 		houseService: houseService,
 		groupService: groupService,
 		repository:   repository,
+		pivotalCache: pivotalCache,
 	}
 }
 
@@ -39,6 +43,7 @@ func (i *IncomeServiceObject) Initialize(factory dependency.DependenciesProvider
 		dependency.FindRequiredDependency[houseService.HouseServiceObject, houseService.HouseService](factory),
 		dependency.FindRequiredDependency[groupService.GroupServiceObject, groupService.GroupService](factory),
 		dependency.FindRequiredDependency[repository.IncomeRepositoryObject, repository.IncomeRepository](factory),
+		dependency.FindRequiredDependency[cache.PivotalCacheObject, cache.PivotalCache](factory),
 	)
 }
 
@@ -51,6 +56,8 @@ type IncomeService interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateIncomeRequest) error
+	CalculateSumByHouseId(houseId uuid.UUID, from *time.Time) float64
+	CalculateSumByGroupId(groupId uuid.UUID, from *time.Time) float64
 }
 
 func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response model.IncomeDto, err error) {
@@ -70,7 +77,9 @@ func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response m
 	if entity, err := i.repository.Create(request.ToEntity()); err != nil {
 		return response, err
 	} else {
-		return entity.ToDto(), nil
+		dto := entity.ToDto()
+		i.invalidateCache(dto)
+		return dto, nil
 	}
 }
 
@@ -137,7 +146,12 @@ func (i *IncomeServiceObject) AddBatch(request model.CreateIncomeBatchRequest) (
 	if repositoryResponse, err := i.repository.CreateBatch(entities); err != nil {
 		return nil, err
 	} else {
-		return common.MapSlice(repositoryResponse, model.IncomeToDto), nil
+		incomes := common.MapSlice(repositoryResponse, model.IncomeToDto)
+		for _, dto := range incomes {
+			i.invalidateCache(dto)
+		}
+
+		return incomes, nil
 	}
 }
 
@@ -180,7 +194,13 @@ func (i *IncomeServiceObject) DeleteById(id uuid.UUID) error {
 	if !i.ExistsById(id) {
 		return int_errors.NewErrNotFound("income with id %s not found", id)
 	}
-	return i.repository.DeleteById(id)
+	income, _ := i.FindById(id)
+	if err := i.repository.DeleteById(id); err != nil {
+		return err
+	}
+
+	i.invalidateCache(income)
+	return nil
 }
 
 func (i *IncomeServiceObject) Update(id uuid.UUID, request model.UpdateIncomeRequest) error {
@@ -194,4 +214,23 @@ func (i *IncomeServiceObject) Update(id uuid.UUID, request model.UpdateIncomeReq
 		return errors.New("date should not be after current date")
 	}
 	return i.repository.Update(id, request)
+}
+
+func (i *IncomeServiceObject) CalculateSumByHouseId(houseId uuid.UUID, from *time.Time) (sum float64) {
+	i.repository.CalculateSumByHouseId(houseId, from, &sum)
+	return
+}
+
+func (i *IncomeServiceObject) CalculateSumByGroupId(groupId uuid.UUID, from *time.Time) (sum float64) {
+	i.repository.CalculateSumByGroupId(groupId, from, &sum)
+	return
+}
+
+func (i *IncomeServiceObject) invalidateCache(income model.IncomeDto) {
+	if income.HouseId != nil {
+		i.pivotalCache.Invalidate(*income.HouseId)
+	}
+	for _, group := range income.Groups {
+		i.pivotalCache.Invalidate(group.Id)
+	}
 }

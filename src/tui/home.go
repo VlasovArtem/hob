@@ -159,6 +159,7 @@ func (h *Home) bindKeys() {
 		tcell.KeyF1:    NewKeyAction("Create Payment", h.createPayment),
 		tcell.KeyF2:    NewKeyAction("Create Income", h.createIncome),
 		tcell.KeyF3:    NewKeyAction("Create House", h.createHouse),
+		tcell.KeyF4:    NewKeyAction("Show Pivotal", h.pivotalPage),
 	}
 }
 
@@ -224,4 +225,9 @@ func (h *Home) fillIncomesTable() {
 	}
 	h.incomes.addResultRow(fmt.Sprintf("%v", sum))
 	return
+}
+
+func (h *Home) pivotalPage(key *tcell.EventKey) *tcell.EventKey {
+	h.NavigateTo(PivotalPageName)
+	return key
 }

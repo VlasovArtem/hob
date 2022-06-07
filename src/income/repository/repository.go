@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/db"
@@ -42,6 +43,8 @@ type IncomeRepository interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateIncomeRequest) error
+	CalculateSumByHouseId(houseId uuid.UUID, from *time.Time, sum *float64)
+	CalculateSumByGroupId(groupId uuid.UUID, from *time.Time, sum *float64)
 }
 
 func (i *IncomeRepositoryObject) Create(entity model.Income) (model.Income, error) {
@@ -74,13 +77,22 @@ func (i *IncomeRepositoryObject) FindByHouseId(id uuid.UUID, limit int, offset i
 		whereArgs = append(whereArgs, from)
 	}
 
-	if err := i.db.D().
+	query := i.db.D().
 		Joins("FULL JOIN income_groups ig ON ig.income_id = incomes.id FULL JOIN house_groups hg ON hg.group_id = ig.group_id").
 		Order("incomes.date desc").
 		Where(whereQuery, whereArgs...).
+		Preload("Groups")
+
+	if limit >= 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+
+	if err := query.
 		Limit(limit).
 		Offset(offset).
-		Preload("Groups").
 		Find(&responseEntities).Error; err != nil {
 		return []model.IncomeDto{}, err
 	}
@@ -108,14 +120,23 @@ func (i *IncomeRepositoryObject) FindByGroupIds(groupIds []uuid.UUID, limit int,
 		whereArgs = append(whereArgs, from)
 	}
 
-	if err = i.db.D().
+	query := i.db.D().
 		Order("incomes.date desc").
 		Where(whereQuery, whereArgs...).
-		Limit(limit).
-		Offset(offset).
-		Joins("JOIN income_groups ON income_groups.income_id = incomes.id AND income_groups.group_id IN ?", groupIds).Preload("Groups").Find(&responseEntity).Error; err != nil {
+		Joins("JOIN income_groups ON income_groups.income_id = incomes.id AND income_groups.group_id IN ?", groupIds).
+		Preload("Groups")
+
+	if limit >= 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+
+	if err = query.Find(&responseEntity).Error; err != nil {
 		return []model.IncomeDto{}, err
 	}
+
 	return common.MapSlice(responseEntity, func(entity model.Income) model.IncomeDto {
 		return entity.ToDto()
 	}), nil
@@ -155,4 +176,32 @@ func (i *IncomeRepositoryObject) Update(id uuid.UUID, request model.UpdateIncome
 	var groups = common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup)
 
 	return i.db.DM(&entity).Association("Groups").Replace(groups)
+}
+
+func (i *IncomeRepositoryObject) CalculateSumByHouseId(houseId uuid.UUID, from *time.Time, sum *float64) {
+	sql := `SELECT SUM(sum) FROM incomes WHERE house_id = ?%s ORDER BY date DESC`
+
+	if from != nil {
+		sql = fmt.Sprintf(sql, " AND date > ?")
+	} else {
+		sql = fmt.Sprintf(sql, "")
+	}
+
+	i.db.D().
+		Exec(sql, houseId, from).
+		Scan(sum)
+}
+
+func (i *IncomeRepositoryObject) CalculateSumByGroupId(groupId uuid.UUID, from *time.Time, sum *float64) {
+	sql := `SELECT SUM(i.sum) FROM incomes i JOIN income_groups ig ON i.id = ig.income_id WHERE ig.group_id = ?%s ORDER BY date DESC`
+
+	if from != nil {
+		sql = fmt.Sprintf(sql, " AND date > ?")
+	} else {
+		sql = fmt.Sprintf(sql, "")
+	}
+
+	i.db.D().
+		Exec(sql, groupId, from).
+		Scan(sum)
 }
