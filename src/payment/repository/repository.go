@@ -1,24 +1,25 @@
 package repository
 
 import (
-	"fmt"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 	"time"
 )
 
 var entity = model.Payment{}
 
 type PaymentRepositoryObject struct {
-	database db.ModeledDatabase
+	db.Provider
+	database db.modeledDatabase
 }
 
 func NewPaymentRepository(service db.DatabaseService) PaymentRepository {
 	return &PaymentRepositoryObject{
-		db.ModeledDatabase{
+		db.modeledDatabase{
 			DatabaseService: service,
 			Model:           entity,
 		},
@@ -26,7 +27,7 @@ func NewPaymentRepository(service db.DatabaseService) PaymentRepository {
 }
 
 func (p *PaymentRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewPaymentRepository(dependency.FindRequiredDependency[db.DatabaseObject, db.DatabaseService](factory))
+	return NewPaymentRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }
 
 func (p *PaymentRepositoryObject) GetEntity() any {
@@ -34,6 +35,7 @@ func (p *PaymentRepositoryObject) GetEntity() any {
 }
 
 type PaymentRepository interface {
+	db.ProviderInterface
 	Create(entity model.Payment) (model.Payment, error)
 	CreateBatch(entities []model.Payment) ([]model.Payment, error)
 	Delete(id uuid.UUID) error
@@ -44,10 +46,14 @@ type PaymentRepository interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(entity model.Payment) error
-	CalculateSum(houseIds []uuid.UUID, from *time.Time, f *float64)
+	CalculateSum(houseIds []uuid.UUID, from *time.Time, f *float64) error
 }
 
 func (p *PaymentRepositoryObject) Create(entity model.Payment) (model.Payment, error) {
+	return entity, p.database.Create(&entity)
+}
+
+func (p *PaymentRepositoryObject) CreateTransactional(entity model.Payment, db *gorm.DB) (model.Payment, error) {
 	return entity, p.database.Create(&entity)
 }
 
@@ -176,20 +182,24 @@ func (p *PaymentRepositoryObject) Update(entity model.Payment) error {
 	return p.database.Update(entity.Id, entity, "HouseId", "House", "UserId", "User")
 }
 
-func (p *PaymentRepositoryObject) CalculateSum(houseIds []uuid.UUID, from *time.Time, sum *float64) {
+func (p *PaymentRepositoryObject) CalculateSum(houseIds []uuid.UUID, from *time.Time, sum *float64) error {
 	if len(houseIds) == 0 {
-		return
+		return nil
 	}
-
-	sql := `SELECT SUM(sum) FROM payments WHERE house_id IN (?)%s ORDER BY date DESC`
 
 	if from != nil {
-		sql = fmt.Sprintf(sql, " AND date > ?")
+		return p.database.DB().
+			Raw(`SELECT SUM(sum) FROM payments WHERE house_id IN (?) AND date > ?`, houseIds, from).
+			Scan(sum).
+			Error
 	} else {
-		sql = fmt.Sprintf(sql, "")
+		return p.database.DB().
+			Raw(`SELECT SUM(sum) FROM payments WHERE house_id IN (?)`, houseIds).
+			Scan(sum).
+			Error
 	}
+}
 
-	p.database.D().
-		Exec(sql, houseIds, from).
-		Scan(sum)
+func (p *PaymentRepositoryObject) Transactional(db *gorm.DB) PaymentRepository {
+	return NewPaymentRepository(p.database.Transactional(db))
 }

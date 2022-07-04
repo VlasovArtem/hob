@@ -14,12 +14,12 @@ var (
 )
 
 type ProviderRepositoryObject struct {
-	database db.ModeledDatabase
+	database db.modeledDatabase
 }
 
 func NewProviderRepository(database db.DatabaseService) ProviderRepository {
 	return &ProviderRepositoryObject{
-		db.ModeledDatabase{
+		db.modeledDatabase{
 			DatabaseService: database,
 			Model:           entity,
 		},
@@ -27,7 +27,7 @@ func NewProviderRepository(database db.DatabaseService) ProviderRepository {
 }
 
 func (p *ProviderRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewProviderRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
+	return NewProviderRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
 func (p *ProviderRepositoryObject) GetEntity() any {
@@ -47,7 +47,7 @@ type ProviderRepository interface {
 
 func (p *ProviderRepositoryObject) Create(provider model.Provider) (model.Provider, error) {
 	if provider.UserId == DefaultUser {
-		return provider, p.database.D().Omit("UserId", "User").Create(provider).Error
+		return provider, p.database.DB().Omit("UserId", "User").Create(provider).Error
 	}
 	return provider, p.database.Create(provider)
 }
@@ -71,7 +71,7 @@ func (p *ProviderRepositoryObject) FindByUserId(id uuid.UUID) (provider []model.
 }
 
 func (p *ProviderRepositoryObject) FindByNameLikeAndUserId(namePattern string, page, limit int, userId uuid.UUID) (response []model.ProviderDto) {
-	p.database.DM(model.Provider{}).
+	p.database.DBModeled(model.Provider{}).
 		Offset(page*limit).
 		Limit(limit).
 		Order("name asc").

@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/db"
@@ -14,11 +13,11 @@ import (
 var entity = model.Income{}
 
 type IncomeRepositoryObject struct {
-	db db.ModeledDatabase
+	db db.modeledDatabase
 }
 
 func (i *IncomeRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewIncomeRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
+	return NewIncomeRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
 func (i *IncomeRepositoryObject) GetEntity() any {
@@ -27,7 +26,7 @@ func (i *IncomeRepositoryObject) GetEntity() any {
 
 func NewIncomeRepository(database db.DatabaseService) IncomeRepository {
 	return &IncomeRepositoryObject{
-		db.ModeledDatabase{
+		db.modeledDatabase{
 			DatabaseService: database,
 			Model:           entity,
 		},
@@ -43,21 +42,21 @@ type IncomeRepository interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateIncomeRequest) error
-	CalculateSumByHouseId(houseId uuid.UUID, from *time.Time, sum *float64)
-	CalculateSumByGroupId(groupId uuid.UUID, from *time.Time, sum *float64)
+	CalculateSumByHouseId(houseId uuid.UUID, from *time.Time, sum *float64) error
+	CalculateSumByGroupId(groupId uuid.UUID, from *time.Time, sum *float64) error
 }
 
 func (i *IncomeRepositoryObject) Create(entity model.Income) (model.Income, error) {
-	return entity, i.db.D().Omit("Groups.*").Create(&entity).Error
+	return entity, i.db.DB().Omit("Groups.*").Create(&entity).Error
 }
 
 func (i *IncomeRepositoryObject) CreateBatch(entities []model.Income) ([]model.Income, error) {
-	return entities, i.db.D().Omit("Groups.*").Create(&entities).Error
+	return entities, i.db.DB().Omit("Groups.*").Create(&entities).Error
 }
 
 func (i *IncomeRepositoryObject) FindById(id uuid.UUID) (response model.Income, err error) {
 	response.Id = id
-	if err = i.db.D().Preload("Groups").First(&response).Error; err != nil {
+	if err = i.db.DB().Preload("Groups").First(&response).Error; err != nil {
 		return model.Income{}, err
 	}
 	return response, err
@@ -77,7 +76,7 @@ func (i *IncomeRepositoryObject) FindByHouseId(id uuid.UUID, limit int, offset i
 		whereArgs = append(whereArgs, from)
 	}
 
-	query := i.db.D().
+	query := i.db.DB().
 		Joins("FULL JOIN income_groups ig ON ig.income_id = incomes.id FULL JOIN house_groups hg ON hg.group_id = ig.group_id").
 		Order("incomes.date desc").
 		Where(whereQuery, whereArgs...).
@@ -120,7 +119,7 @@ func (i *IncomeRepositoryObject) FindByGroupIds(groupIds []uuid.UUID, limit int,
 		whereArgs = append(whereArgs, from)
 	}
 
-	query := i.db.D().
+	query := i.db.DB().
 		Order("incomes.date desc").
 		Where(whereQuery, whereArgs...).
 		Joins("JOIN income_groups ON income_groups.income_id = incomes.id AND income_groups.group_id IN ?", groupIds).
@@ -175,33 +174,33 @@ func (i *IncomeRepositoryObject) Update(id uuid.UUID, request model.UpdateIncome
 
 	var groups = common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup)
 
-	return i.db.DM(&entity).Association("Groups").Replace(groups)
+	return i.db.DBModeled(&entity).Association("Groups").Replace(groups)
 }
 
-func (i *IncomeRepositoryObject) CalculateSumByHouseId(houseId uuid.UUID, from *time.Time, sum *float64) {
-	sql := `SELECT SUM(sum) FROM incomes WHERE house_id = ?%s ORDER BY date DESC`
-
+func (i *IncomeRepositoryObject) CalculateSumByHouseId(houseId uuid.UUID, from *time.Time, sum *float64) error {
 	if from != nil {
-		sql = fmt.Sprintf(sql, " AND date > ?")
+		return i.db.DB().
+			Raw(`SELECT SUM(sum) FROM incomes WHERE house_id = ? AND date > ?`, houseId, from).
+			Scan(sum).
+			Error
 	} else {
-		sql = fmt.Sprintf(sql, "")
+		return i.db.DB().
+			Raw(`SELECT SUM(sum) FROM incomes WHERE house_id = ?`, houseId).
+			Scan(sum).
+			Error
 	}
-
-	i.db.D().
-		Exec(sql, houseId, from).
-		Scan(sum)
 }
 
-func (i *IncomeRepositoryObject) CalculateSumByGroupId(groupId uuid.UUID, from *time.Time, sum *float64) {
-	sql := `SELECT SUM(i.sum) FROM incomes i JOIN income_groups ig ON i.id = ig.income_id WHERE ig.group_id = ?%s ORDER BY date DESC`
-
+func (i *IncomeRepositoryObject) CalculateSumByGroupId(groupId uuid.UUID, from *time.Time, sum *float64) error {
 	if from != nil {
-		sql = fmt.Sprintf(sql, " AND date > ?")
+		return i.db.DB().
+			Raw(`SELECT SUM(i.sum) FROM incomes i JOIN income_groups ig ON i.id = ig.income_id WHERE ig.group_id = ? AND date > ?`, groupId, from).
+			Scan(sum).
+			Error
 	} else {
-		sql = fmt.Sprintf(sql, "")
+		return i.db.DB().
+			Raw(`SELECT SUM(i.sum) FROM incomes i JOIN income_groups ig ON i.id = ig.income_id WHERE ig.group_id = ?`, groupId).
+			Scan(sum).
+			Error
 	}
-
-	i.db.D().
-		Exec(sql, groupId, from).
-		Scan(sum)
 }

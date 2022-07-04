@@ -17,13 +17,13 @@ type Pivotal struct {
 }
 
 type HousePivotal struct {
-	Pivotal
+	Pivotal Pivotal `gorm:"embedded"`
 	HouseId uuid.UUID
 	House   houseModel.House `gorm:"foreignKey:HouseId"`
 }
 
 type GroupPivotal struct {
-	Pivotal
+	Pivotal Pivotal `gorm:"embedded"`
 	GroupId uuid.UUID
 	Group   groupModel.Group `gorm:"foreignKey:GroupId"`
 }

@@ -29,9 +29,25 @@ type ObjectDependencyInitializer interface {
 	Initialize(factory DependenciesProvider) any
 }
 
-type ObjectDatabaseMigrator interface {
+type ObjectDatabaseMigrator[T any] interface {
 	ObjectDependencyInitializer
-	GetEntity() any
+	EntityProvider[T]
+}
+
+func NewEntity[T any](model T) EntityProvider[T] {
+	return &entity[T]{model}
+}
+
+type entity[T any] struct {
+	entity T
+}
+
+type EntityProvider[T any] interface {
+	GetEntity() T
+}
+
+func (e *entity[T]) GetEntity() T {
+	return e.entity
 }
 
 func (d *dependenciesProviderObject) Add(dependency any) any {

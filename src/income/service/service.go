@@ -56,8 +56,8 @@ type IncomeService interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateIncomeRequest) error
-	CalculateSumByHouseId(houseId uuid.UUID, from *time.Time) float64
-	CalculateSumByGroupId(groupId uuid.UUID, from *time.Time) float64
+	CalculateSumByHouseId(houseId uuid.UUID, from *time.Time) (float64, error)
+	CalculateSumByGroupId(groupId uuid.UUID, from *time.Time) (float64, error)
 }
 
 func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response model.IncomeDto, err error) {
@@ -216,14 +216,12 @@ func (i *IncomeServiceObject) Update(id uuid.UUID, request model.UpdateIncomeReq
 	return i.repository.Update(id, request)
 }
 
-func (i *IncomeServiceObject) CalculateSumByHouseId(houseId uuid.UUID, from *time.Time) (sum float64) {
-	i.repository.CalculateSumByHouseId(houseId, from, &sum)
-	return
+func (i *IncomeServiceObject) CalculateSumByHouseId(houseId uuid.UUID, from *time.Time) (sum float64, err error) {
+	return sum, i.repository.CalculateSumByHouseId(houseId, from, &sum)
 }
 
-func (i *IncomeServiceObject) CalculateSumByGroupId(groupId uuid.UUID, from *time.Time) (sum float64) {
-	i.repository.CalculateSumByGroupId(groupId, from, &sum)
-	return
+func (i *IncomeServiceObject) CalculateSumByGroupId(groupId uuid.UUID, from *time.Time) (sum float64, err error) {
+	return sum, i.repository.CalculateSumByGroupId(groupId, from, &sum)
 }
 
 func (i *IncomeServiceObject) invalidateCache(income model.IncomeDto) {

@@ -45,7 +45,7 @@ func (h *HouseServiceObject) Initialize(factory dependency.DependenciesProvider)
 	return NewHouseService(
 		dependency.FindRequiredDependency[countries.CountryServiceObject, countries.CountryService](factory),
 		dependency.FindRequiredDependency[userService.UserServiceObject, userService.UserService](factory),
-		dependency.FindRequiredDependency[repository.HouseRepositoryObject, repository.HouseRepository](factory),
+		dependency.FindRequiredDependency[repository.houseRepositoryStruct, repository.HouseRepository](factory),
 		dependency.FindRequiredDependency[groupService.GroupServiceObject, groupService.GroupService](factory),
 	)
 }
@@ -71,7 +71,7 @@ func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response mod
 	} else {
 		entity := request.ToEntity(&country)
 
-		if entity, err := h.houseRepository.Create(entity); err != nil {
+		if entity, err := h.houseRepository.Create(entity, "Groups.*"); err != nil {
 			return response, err
 		} else {
 			return entity.ToDto(), nil

@@ -51,7 +51,7 @@ func (g *GroupServiceObject) Add(request model.CreateGroupRequest) (response mod
 	} else {
 		entity := request.ToEntity()
 
-		if entity, err := g.repository.Create(entity); err != nil {
+		if err = g.repository.Create(&entity); err != nil {
 			return response, err
 		} else {
 			return entity.ToDto(), nil
@@ -92,7 +92,7 @@ func (g *GroupServiceObject) AddBatch(request model.CreateGroupBatchRequest) (re
 }
 
 func (g *GroupServiceObject) FindById(id uuid.UUID) (response model.GroupDto, err error) {
-	if response, err = g.repository.FindById(id); err != nil {
+	if err = g.repository.FindReceiver(&response, id); err != nil {
 		return response, database.HandlerFindError(err, "group with id %s not found", id)
 	} else {
 		return response, nil
@@ -104,7 +104,7 @@ func (g *GroupServiceObject) FindByUserId(userId uuid.UUID) []model.GroupDto {
 }
 
 func (g *GroupServiceObject) ExistsById(id uuid.UUID) bool {
-	return g.repository.ExistsById(id)
+	return g.repository.Exists(id)
 }
 
 func (g *GroupServiceObject) ExistsByIds(ids []uuid.UUID) bool {
@@ -115,7 +115,7 @@ func (g *GroupServiceObject) DeleteById(id uuid.UUID) error {
 	if !g.ExistsById(id) {
 		return interrors.NewErrNotFound("group with id %s not found", id)
 	}
-	return g.repository.DeleteById(id)
+	return g.repository.Delete(id)
 }
 
 func (g *GroupServiceObject) Update(id uuid.UUID, request model.UpdateGroupRequest) error {

@@ -10,74 +10,51 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var entity = model.House{}
-
-type HouseRepositoryObject struct {
-	db db.ModeledDatabase
+type houseRepositoryStruct struct {
+	db.ModeledDatabase[model.House]
 }
 
 func NewHouseRepository(database db.DatabaseService) HouseRepository {
-	return &HouseRepositoryObject{
-		db.ModeledDatabase{
-			DatabaseService: database,
-			Model:           entity,
-		},
+	return &houseRepositoryStruct{
+		ModeledDatabase: db.NewModeledDatabase(model.House{}, database),
 	}
 }
 
-func (h *HouseRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewHouseRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
-}
-
-func (h *HouseRepositoryObject) GetEntity() any {
-	return entity
+func (h *houseRepositoryStruct) Initialize(factory dependency.DependenciesProvider) any {
+	return NewHouseRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
 type HouseRepository interface {
-	Create(entity model.House) (model.House, error)
+	db.ModeledDatabase[model.House]
 	CreateBatch(entities []model.House) ([]model.House, error)
-	FindById(id uuid.UUID) (model.House, error)
+	FindById(id uuid.UUID) (response model.House, err error)
 	FindByUserId(id uuid.UUID) []model.House
-	ExistsById(id uuid.UUID) bool
-	DeleteById(id uuid.UUID) error
-	Update(id uuid.UUID, request model.UpdateHouseRequest) error
 	FindHousesByGroupId(groupId uuid.UUID) []model.House
+	UpdateByRequest(id uuid.UUID, request model.UpdateHouseRequest) error
 }
 
-func (h *HouseRepositoryObject) Create(entity model.House) (model.House, error) {
-	return entity, h.db.D().Omit("Groups.*").Create(&entity).Error
+func (h *houseRepositoryStruct) CreateBatch(entities []model.House) ([]model.House, error) {
+	return entities, h.DB().Omit("Groups.*").Create(&entities).Error
 }
 
-func (h *HouseRepositoryObject) CreateBatch(entities []model.House) ([]model.House, error) {
-	return entities, h.db.D().Omit("Groups.*").Create(&entities).Error
-}
-
-func (h *HouseRepositoryObject) FindById(id uuid.UUID) (response model.House, err error) {
+func (h *houseRepositoryStruct) FindById(id uuid.UUID) (response model.House, err error) {
 	response.Id = id
-	if err = h.db.D().Preload("Groups").First(&response).Error; err != nil {
+	if err = h.DB().Preload("Groups").First(&response).Error; err != nil {
 		return model.House{}, err
 	}
 	return response, err
 }
 
-func (h *HouseRepositoryObject) FindByUserId(id uuid.UUID) (response []model.House) {
-	if err := h.db.D().Preload("Groups").Where("user_id = ?", id).Find(&response).Error; err != nil {
+func (h *houseRepositoryStruct) FindByUserId(id uuid.UUID) (response []model.House) {
+	if err := h.DB().Preload("Groups").Where("user_id = ?", id).Find(&response).Error; err != nil {
 		log.Error().Err(err)
 	}
 
 	return response
 }
 
-func (h *HouseRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return h.db.Exists(id)
-}
-
-func (h *HouseRepositoryObject) DeleteById(id uuid.UUID) error {
-	return h.db.Delete(id)
-}
-
-func (h *HouseRepositoryObject) Update(id uuid.UUID, request model.UpdateHouseRequest) error {
-	err := h.db.Update(id, struct {
+func (h *houseRepositoryStruct) UpdateByRequest(id uuid.UUID, request model.UpdateHouseRequest) error {
+	err := h.Update(id, struct {
 		Name        string
 		CountryCode string
 		City        string
@@ -95,19 +72,21 @@ func (h *HouseRepositoryObject) Update(id uuid.UUID, request model.UpdateHouseRe
 		return err
 	}
 
-	entity, err := h.FindById(id)
+	_, err = h.FindById(id)
 
 	if err != nil {
 		return err
 	}
 
-	var groups = common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup)
+	if groups := common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup); len(groups) > 0 {
+		return h.Modeled().Association("Groups").Replace(groups)
+	}
 
-	return h.db.DM(&entity).Association("Groups").Replace(groups)
+	return nil
 }
 
-func (h *HouseRepositoryObject) FindHousesByGroupId(groupId uuid.UUID) (response []model.House) {
-	if err := h.db.D().
+func (h *houseRepositoryStruct) FindHousesByGroupId(groupId uuid.UUID) (response []model.House) {
+	if err := h.DB().
 		Preload("Groups").
 		Joins("FULL JOIN house_groups hg ON hg.house_id = houses.id").
 		Where("hg.group_id = ?", groupId).

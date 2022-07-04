@@ -24,7 +24,7 @@ import (
 
 func Test_Initialize(t *testing.T) {
 	provider := new(dependencyMocks.DependenciesProvider)
-	object := db.DatabaseObject{}
+	object := db.Database{}
 
 	provider.On("FindByType", mock.Anything, mock.Anything).Return(&object)
 
@@ -32,7 +32,7 @@ func Test_Initialize(t *testing.T) {
 
 	newObject := repository.Initialize(provider)
 
-	assert.Equal(t, db.ModeledDatabase{DatabaseService: &object, Model: model.Payment{}}, newObject.(*PaymentRepositoryObject).database)
+	assert.Equal(t, db.modeledDatabase{DatabaseService: &object, Model: model.Payment{}}, newObject.(*PaymentRepositoryObject).database)
 }
 
 func Test_GetEntity(t *testing.T) {

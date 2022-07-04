@@ -43,7 +43,8 @@ func (h *Home) enrichNavigation(app *TerminalApp) {
 		AddCustomPage(&Providers{}).
 		AddCustomPage(&CreateIncome{}).
 		AddCustomPage(&CreatePayment{}).
-		AddCustomPage(&CreateHouse{})
+		AddCustomPage(&CreateHouse{}).
+		AddCustomPage(&Pivotal{})
 }
 
 func NewHome(app *TerminalApp) *Home {

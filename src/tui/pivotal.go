@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	"github.com/gdamore/tcell/v2"
@@ -53,20 +54,48 @@ func (p *Pivotal) bindKeys() {
 func (p *Pivotal) initDetails() {
 	var details string
 
-	pivotalByHouse, err := p.pivotalService.FindByHouseId(p.App.House.Id)
+	if p.App.House == nil {
+		p.ShowErrorTo(errors.New("house is not set"))
+	} else {
 
-	if err != nil {
-		p.ShowErrorTo(err)
-	}
+		var incomesSum, paymentsSum, total float64
+		var err error
 
-	details += fmt.Sprintf("Income: %.2f\n", pivotalByHouse.Income)
-	details += fmt.Sprintf("Payments: %.2f\n", pivotalByHouse.Payments)
-	details += "\n"
-	details += fmt.Sprintf("Total: %.2f\n", pivotalByHouse.Total)
+		if len(p.App.House.Groups) != 0 {
+			for _, group := range p.App.House.Groups {
+				pivotalDto, nestedError := p.pivotalService.FindByGroupId(group.Id)
+				if nestedError != nil {
+					err = nestedError
+					break
+				}
+				incomesSum += pivotalDto.Income
+				paymentsSum += pivotalDto.Payments
+				total += pivotalDto.Total
+			}
+		} else {
+			if pivotalByHouse, nestedError := p.pivotalService.FindByHouseId(p.App.House.Id); nestedError != nil {
+				err = nestedError
+			} else {
+				incomesSum = pivotalByHouse.Income
+				paymentsSum = pivotalByHouse.Payments
+				total = pivotalByHouse.Total
+			}
+		}
 
-	_, err = p.details.Write([]byte(details))
+		if err != nil {
+			p.ShowErrorTo(err)
+		} else {
 
-	if err != nil {
-		p.ShowErrorTo(err)
+			details += fmt.Sprintf("Income: %.2f\n", incomesSum)
+			details += fmt.Sprintf("Payments: %.2f\n", paymentsSum)
+			details += "\n"
+			details += fmt.Sprintf("Total: %.2f\n", total)
+
+			_, err = p.details.Write([]byte(details))
+
+			if err != nil {
+				p.ShowErrorTo(err)
+			}
+		}
 	}
 }

@@ -96,6 +96,8 @@ func (c *Config) GetLogLevel() zerolog.Level {
 		return zerolog.ErrorLevel
 	case "fatal":
 		return zerolog.FatalLevel
+	case "trace":
+		return zerolog.TraceLevel
 	default:
 		return zerolog.InfoLevel
 	}

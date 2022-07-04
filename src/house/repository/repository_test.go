@@ -17,7 +17,7 @@ import (
 )
 
 type HouseRepositoryTestSuite struct {
-	database.DBTestSuite
+	database.DBTestSuite[model.House]
 	createdUser userModel.User
 	repository  HouseRepository
 }
@@ -26,18 +26,20 @@ func (h *HouseRepositoryTestSuite) SetupSuite() {
 	h.InitDBTestSuite()
 
 	h.CreateRepository(
-		func(service db.DatabaseService) {
+		func(service db.ModeledDatabase[model.House]) {
 			h.repository = NewHouseRepository(service)
 		},
 	).
 		AddAfterSuite(
-			func(service db.DatabaseService) {
+			func(service db.ModeledDatabase[model.House]) {
 				database.TruncateTable(service, userModel.User{})
 			},
 		).
 		AddAfterTest(
-			func(service db.DatabaseService) {
-				truncateDynamic(service)
+			func(service db.ModeledDatabase[model.House]) {
+				service.DB().Exec("DELETE FROM house_groups")
+				database.TruncateTable(service, groupModel.Group{})
+				database.TruncateTable(service, model.House{})
 			},
 		).
 		ExecuteMigration(userModel.User{}, model.House{}, groupModel.Group{})
@@ -48,45 +50,6 @@ func (h *HouseRepositoryTestSuite) SetupSuite() {
 
 func TestHouseRepositoryTestSuite(t *testing.T) {
 	suite.Run(t, new(HouseRepositoryTestSuite))
-}
-
-func (h *HouseRepositoryTestSuite) Test_Create() {
-	house := mocks.GenerateHouse(h.createdUser.Id)
-
-	actual, err := h.repository.Create(house)
-
-	assert.Nil(h.T(), err)
-	assert.Equal(h.T(), house, actual)
-
-	h.Delete(house)
-}
-
-func (h *HouseRepositoryTestSuite) Test_Creat_WithMissingUser() {
-	house := mocks.GenerateHouse(uuid.New())
-
-	actual, err := h.repository.Create(house)
-
-	assert.NotNil(h.T(), err)
-	assert.Equal(h.T(), house, actual)
-
-	h.Delete(house)
-}
-
-func (h *HouseRepositoryTestSuite) Test_Create_WithGroupId() {
-	group := groupModel.Group{
-		Id:      uuid.New(),
-		Name:    "Test Group",
-		OwnerId: h.createdUser.Id,
-	}
-	h.CreateEntity(group)
-
-	house := mocks.GenerateHouse(h.createdUser.Id)
-	house.Groups = []groupModel.Group{group}
-
-	actual, err := h.repository.Create(house)
-
-	assert.Nil(h.T(), err)
-	assert.Equal(h.T(), house, actual)
 }
 
 func (h *HouseRepositoryTestSuite) Test_CreateBatch() {
@@ -156,30 +119,6 @@ func (h *HouseRepositoryTestSuite) Test_FindByUserId_WithMissingId() {
 	assert.Equal(h.T(), []model.House{}, actual)
 }
 
-func (h *HouseRepositoryTestSuite) Test_ExistsById() {
-	house := h.createHouse()
-
-	actual := h.repository.ExistsById(house.Id)
-
-	assert.True(h.T(), actual)
-}
-
-func (h *HouseRepositoryTestSuite) Test_ExistsById_WithMissingId() {
-	actual := h.repository.ExistsById(uuid.New())
-
-	assert.False(h.T(), actual)
-}
-
-func (h *HouseRepositoryTestSuite) Test_DeleteById() {
-	house := h.createHouse()
-
-	assert.Nil(h.T(), h.repository.DeleteById(house.Id))
-}
-
-func (h *HouseRepositoryTestSuite) Test_DeleteById_WithMissingId() {
-	assert.Nil(h.T(), h.repository.DeleteById(uuid.New()))
-}
-
 func (h *HouseRepositoryTestSuite) Test_Update() {
 	house := h.createHouse()
 
@@ -191,7 +130,7 @@ func (h *HouseRepositoryTestSuite) Test_Update() {
 		StreetLine2: fmt.Sprintf("%s-new", house.StreetLine2),
 	}
 
-	err := h.repository.Update(house.Id, updatedHouse)
+	err := h.repository.UpdateByRequest(house.Id, updatedHouse)
 
 	assert.Nil(h.T(), err)
 
@@ -223,7 +162,7 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithAddingGroups() {
 		GroupIds: []uuid.UUID{group.Id},
 	}
 
-	err := h.repository.Update(house.Id, updatedHouse)
+	err := h.repository.UpdateByRequest(house.Id, updatedHouse)
 
 	assert.Nil(h.T(), err)
 
@@ -253,7 +192,7 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithUpdatingGroups() {
 		GroupIds: []uuid.UUID{newGroup.Id},
 	}
 
-	err := h.repository.Update(house.Id, updatedHouse)
+	err := h.repository.UpdateByRequest(house.Id, updatedHouse)
 
 	assert.Nil(h.T(), err)
 
@@ -283,7 +222,7 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithExtendingGroups() {
 		GroupIds: []uuid.UUID{group.Id, newGroup.Id},
 	}
 
-	err := h.repository.Update(house.Id, updatedHouse)
+	err := h.repository.UpdateByRequest(house.Id, updatedHouse)
 
 	assert.Nil(h.T(), err)
 
@@ -305,7 +244,7 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithDeletingGroups() {
 		GroupIds: []uuid.UUID{},
 	}
 
-	err := h.repository.Update(house.Id, updatedHouse)
+	err := h.repository.UpdateByRequest(house.Id, updatedHouse)
 
 	assert.Nil(h.T(), err)
 
@@ -315,7 +254,7 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithDeletingGroups() {
 }
 
 func (h *HouseRepositoryTestSuite) Test_Update_WithMissingId() {
-	assert.Nil(h.T(), h.repository.DeleteById(uuid.New()))
+	assert.Nil(h.T(), h.repository.UpdateByRequest(uuid.New(), model.UpdateHouseRequest{}))
 }
 
 func (h *HouseRepositoryTestSuite) createHouse() (house model.House) {
@@ -337,10 +276,5 @@ func (h *HouseRepositoryTestSuite) createHouseWithGroups(groups []groupModel.Gro
 	h.CreateEntity(&house)
 
 	return house
-}
 
-func truncateDynamic(service db.DatabaseService) {
-	service.D().Exec("DELETE FROM house_groups")
-	database.TruncateTable(service, groupModel.Group{})
-	database.TruncateTable(service, model.House{})
 }

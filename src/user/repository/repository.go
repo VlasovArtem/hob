@@ -10,12 +10,12 @@ import (
 var entity = model.User{}
 
 type UserRepositoryObject struct {
-	database db.ModeledDatabase
+	database db.modeledDatabase
 }
 
 func NewUserRepository(service db.DatabaseService) UserRepository {
 	return &UserRepositoryObject{
-		db.ModeledDatabase{
+		db.modeledDatabase{
 			DatabaseService: service,
 			Model:           entity,
 		},
@@ -23,7 +23,7 @@ func NewUserRepository(service db.DatabaseService) UserRepository {
 }
 
 func (u *UserRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewUserRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
+	return NewUserRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
 func (u *UserRepositoryObject) GetEntity() any {

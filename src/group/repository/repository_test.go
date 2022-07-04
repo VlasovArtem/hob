@@ -1,23 +1,20 @@
 package repository
 
 import (
-	"fmt"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/group/mocks"
 	"github.com/VlasovArtem/hob/src/group/model"
-	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 	"testing"
 )
 
 type GroupRepositoryTestSuite struct {
-	database.DBTestSuite
+	database.DBTestSuite[model.Group]
 	repository  GroupRepository
 	createdUser userModel.User
 }
@@ -26,14 +23,14 @@ func (g *GroupRepositoryTestSuite) SetupSuite() {
 	g.InitDBTestSuite()
 
 	g.CreateRepository(
-		func(service db.DatabaseService) {
+		func(service db.ModeledDatabase[model.Group]) {
 			g.repository = NewGroupRepository(service)
 		},
 	).
-		AddAfterTest(func(service db.DatabaseService) {
+		AddAfterTest(func(service db.ModeledDatabase[model.Group]) {
 			database.TruncateTable(service, model.Group{})
 		}).
-		AddAfterSuite(func(service db.DatabaseService) {
+		AddAfterSuite(func(service db.ModeledDatabase[model.Group]) {
 			database.TruncateTable(service, userModel.User{})
 		}).
 		ExecuteMigration(userModel.User{}, model.Group{})
@@ -49,7 +46,11 @@ func TestGroupRepositoryTestSuite(t *testing.T) {
 func (g *GroupRepositoryTestSuite) Test_Create() {
 	firstGroup := mocks.GenerateGroup(g.createdUser.Id)
 
-	actual, err := g.repository.Create(firstGroup)
+	err := g.repository.Create(&firstGroup)
+
+	assert.Nil(g.T(), err)
+
+	actual, err := g.repository.Find(firstGroup.Id)
 
 	assert.Nil(g.T(), err)
 	assert.Equal(g.T(), firstGroup, actual)
@@ -67,38 +68,12 @@ func (g *GroupRepositoryTestSuite) Test_CreateBatch() {
 	assert.Equal(g.T(), []model.Group{firstGroup, secondGroup}, actual)
 }
 
-func (g *GroupRepositoryTestSuite) Test_FindById() {
-	expected := g.createGroup()
-
-	actual, err := g.repository.FindById(expected.Id)
-
-	assert.Nil(g.T(), err)
-	assert.Equal(g.T(), expected.ToDto(), actual)
-}
-
-func (g *GroupRepositoryTestSuite) Test_FindById_WithMissingId() {
-	actual, err := g.repository.FindById(uuid.New())
-
-	assert.ErrorIs(g.T(), err, gorm.ErrRecordNotFound)
-	assert.Equal(g.T(), model.GroupDto{}, actual)
-}
-
 func (g *GroupRepositoryTestSuite) Test_FindByOwnerId() {
 	expected := g.createGroup()
 
 	actual := g.repository.FindByOwnerId(expected.OwnerId)
 
 	assert.Equal(g.T(), []model.GroupDto{expected.ToDto()}, actual)
-}
-
-func (g *GroupRepositoryTestSuite) Test_ExistsById() {
-	entity := g.createGroup()
-
-	assert.True(g.T(), g.repository.ExistsById(entity.Id))
-}
-
-func (g *GroupRepositoryTestSuite) Test_ExistsById_WithMissingId() {
-	assert.False(g.T(), g.repository.ExistsById(uuid.New()))
 }
 
 func (g *GroupRepositoryTestSuite) Test_ExistsByIds() {
@@ -111,38 +86,6 @@ func (g *GroupRepositoryTestSuite) Test_ExistsByIds_WithMissingId() {
 	entity := g.createGroup()
 
 	assert.False(g.T(), g.repository.ExistsByIds([]uuid.UUID{entity.Id, uuid.New()}))
-}
-
-func (g *GroupRepositoryTestSuite) Test_DeleteById() {
-	group := g.createGroup()
-
-	assert.Nil(g.T(), g.repository.DeleteById(group.Id))
-}
-
-func (g *GroupRepositoryTestSuite) Test_DeleteById_WithMissingId() {
-	assert.Nil(g.T(), g.repository.DeleteById(uuid.New()))
-}
-
-func (g *GroupRepositoryTestSuite) Test_Update() {
-	entity := g.createGroup()
-	newHouse := houseMocks.GenerateHouse(g.createdUser.Id)
-	g.CreateEntity(newHouse)
-
-	updatedIncome := model.UpdateGroupRequest{
-		Name: fmt.Sprintf("%s-new", entity.Name),
-	}
-
-	err := g.repository.Update(entity.Id, updatedIncome)
-
-	assert.Nil(g.T(), err)
-
-	response, err := g.repository.FindById(entity.Id)
-	assert.Nil(g.T(), err)
-	assert.Equal(g.T(), model.GroupDto{
-		Id:      entity.Id,
-		Name:    "Name-new",
-		OwnerId: g.createdUser.Id,
-	}, response)
 }
 
 func (g *GroupRepositoryTestSuite) createGroup() model.Group {

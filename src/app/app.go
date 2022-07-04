@@ -23,6 +23,10 @@ import (
 	paymentSchedulerRepository "github.com/VlasovArtem/hob/src/payment/scheduler/repository"
 	paymentSchedulerService "github.com/VlasovArtem/hob/src/payment/scheduler/service"
 	paymentService "github.com/VlasovArtem/hob/src/payment/service"
+	"github.com/VlasovArtem/hob/src/pivotal/cache"
+	pivotalModel "github.com/VlasovArtem/hob/src/pivotal/model"
+	pivotalRepository "github.com/VlasovArtem/hob/src/pivotal/repository"
+	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	providerRepository "github.com/VlasovArtem/hob/src/provider/repository"
 	providerService "github.com/VlasovArtem/hob/src/provider/service"
 	"github.com/VlasovArtem/hob/src/scheduler"
@@ -61,9 +65,9 @@ func NewRootApplication(config *config.Config) *RootApplication {
 
 	applicationService.createDatabaseConfiguration()
 
-	applicationService.DependenciesFactory.AddAutoDependency(new(db.DatabaseObject))
+	applicationService.DependenciesFactory.AddAutoDependency(new(db.Database))
 
-	applicationService.databaseService = applicationService.DependenciesFactory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService)
+	applicationService.databaseService = applicationService.DependenciesFactory.FindRequiredByObject(db.Database{}).(db.DatabaseService)
 
 	applicationService.createCountriesService()
 
@@ -73,25 +77,25 @@ func NewRootApplication(config *config.Config) *RootApplication {
 }
 
 func (a *RootApplication) createDatabaseConfiguration() {
-	configuration := db.DatabaseConfiguration{
-		Host:     environment.GetEnvironmentVariable(hostEnvironmentName, "localhost"),
-		Port:     environment.GetEnvironmentIntVariable(portEnvironmentName, 5432),
-		User:     environment.GetEnvironmentVariable(userEnvironmentName, "hob"),
-		Password: environment.GetEnvironmentVariable(passwordEnvironmentName, "magical_password"),
-		DBName:   environment.GetEnvironmentVariable(dbnameEnvironmentName, "hob"),
-	}
+	configuration := db.NewDefaultDatabaseConfiguration()
+	configuration.Host = environment.GetEnvironmentVariable(hostEnvironmentName, "localhost")
+	configuration.Port = environment.GetEnvironmentIntVariable(portEnvironmentName, 5432)
+	configuration.User = environment.GetEnvironmentVariable(userEnvironmentName, "hob")
+	configuration.Password = environment.GetEnvironmentVariable(passwordEnvironmentName, "magical_password")
+	configuration.DBName = environment.GetEnvironmentVariable(dbnameEnvironmentName, "hob")
 
 	a.DependenciesFactory.Add(configuration)
 }
 
 func (a *RootApplication) addAutoInitializingDependencies() {
 	initializers := []dependency.ObjectDependencyInitializer{
+		new(cache.PivotalCacheObject),
 		new(userRequestValidator.UserRequestValidatorObject),
 		new(userRepository.UserRepositoryObject),
 		new(userService.UserServiceObject),
 		new(repository.GroupRepositoryObject),
 		new(groupService.GroupServiceObject),
-		new(houseRepository.HouseRepositoryObject),
+		new(houseRepository.houseRepositoryStruct),
 		new(houseService.HouseServiceObject),
 		new(scheduler.SchedulerServiceObject),
 		new(providerRepository.ProviderRepositoryObject),
@@ -106,6 +110,9 @@ func (a *RootApplication) addAutoInitializingDependencies() {
 		new(incomeService.IncomeServiceObject),
 		new(incomeSchedulerRepository.IncomeSchedulerRepositoryObject),
 		new(incomeSchedulerService.IncomeSchedulerServiceObject),
+		new(pivotalRepository.HousePivotalRepository[pivotalModel.HousePivotal]),
+		new(pivotalRepository.GroupPivotalRepository[pivotalModel.GroupPivotal]),
+		new(pivotalService.PivotalServiceObject),
 	}
 
 	for _, initializer := range initializers {
@@ -121,7 +128,7 @@ func (a *RootApplication) migrate(object dependency.ObjectDatabaseMigrator) {
 	if a.databaseService == nil {
 		log.Fatal().Msg("DatabaseService is not initialized")
 	}
-	if err := a.databaseService.D().AutoMigrate(object.GetEntity()); err != nil {
+	if err := a.databaseService.DB().AutoMigrate(object.GetEntity()); err != nil {
 		log.Fatal().Err(err)
 	}
 }

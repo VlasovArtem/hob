@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common"
@@ -10,10 +11,12 @@ import (
 	houses "github.com/VlasovArtem/hob/src/house/service"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/repository"
-	"github.com/VlasovArtem/hob/src/pivotal/cache"
+	pivotalModel "github.com/VlasovArtem/hob/src/pivotal/model"
+	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	providers "github.com/VlasovArtem/hob/src/provider/service"
 	users "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -22,7 +25,7 @@ type PaymentServiceObject struct {
 	houseService      houses.HouseService
 	providerService   providers.ProviderService
 	paymentRepository repository.PaymentRepository
-	pivotalCache      cache.PivotalCache
+	pivotalService    pivotalService.PivotalService
 }
 
 func NewPaymentService(
@@ -30,14 +33,14 @@ func NewPaymentService(
 	houseService houses.HouseService,
 	providerService providers.ProviderService,
 	paymentRepository repository.PaymentRepository,
-	pivotalCache cache.PivotalCache,
+	pivotalService pivotalService.PivotalService,
 ) PaymentService {
 	return &PaymentServiceObject{
 		userService:       userService,
 		houseService:      houseService,
 		providerService:   providerService,
 		paymentRepository: paymentRepository,
-		pivotalCache:      pivotalCache,
+		pivotalService:    pivotalService,
 	}
 }
 
@@ -47,7 +50,7 @@ func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesProvide
 		dependency.FindRequiredDependency[houses.HouseServiceObject, houses.HouseService](factory),
 		dependency.FindRequiredDependency[providers.ProviderServiceObject, providers.ProviderService](factory),
 		dependency.FindRequiredDependency[repository.PaymentRepositoryObject, repository.PaymentRepository](factory),
-		dependency.FindRequiredDependency[cache.PivotalCacheObject, cache.PivotalCache](factory),
+		dependency.FindRequiredDependency[pivotalService.PivotalServiceObject, pivotalService.PivotalService](factory),
 	)
 }
 
@@ -61,7 +64,7 @@ type PaymentService interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdatePaymentRequest) error
-	CalculateSum(houseIds []uuid.UUID, from *time.Time) float64
+	CalculateSum(houseIds []uuid.UUID, from *time.Time) (float64, error)
 }
 
 func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentDto, err error) {
@@ -78,13 +81,48 @@ func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response
 		}
 	}
 
-	payment, err := p.paymentRepository.Create(request.ToEntity())
+	houseDto, err := p.houseService.FindById(request.HouseId)
 
-	dto := payment.ToDto()
+	if err != nil {
+		return response, err
+	}
 
-	p.invalidateCache(dto)
+	var groupPivotals []pivotalModel.GroupPivotalDto
+	var housePivotal pivotalModel.HousePivotalDto
 
-	return dto, err
+	if len(houseDto.Groups) != 0 {
+		for _, group := range houseDto.Groups {
+			groupPivotalDto, err := p.pivotalService.FindByGroupId(group.Id)
+			if err != nil && !errors.Is(err, interrors.ErrNotFound{}) {
+				return response, err
+			} else if err == nil {
+				groupPivotals = append(groupPivotals, groupPivotalDto)
+			}
+		}
+	} else {
+		if housePivotal, err = p.pivotalService.FindByHouseId(request.HouseId); err != nil && !errors.Is(err, interrors.ErrNotFound{}) {
+			return response, err
+		}
+	}
+
+	var payment model.Payment
+
+	if len(groupPivotals) != 0 || housePivotal.Id != uuid.Nil {
+		db := p.paymentRepository.GetDb()
+		err = db.Transaction(func(tx *gorm.DB) error {
+			if payment, err = p.paymentRepository.CreateTransactional(request.ToEntity(), tx); err != nil {
+				return err
+			}
+
+			return nil
+		}, &sql.TxOptions{Isolation: sql.LevelDefault})
+
+		return
+	} else {
+		payment, err = p.paymentRepository.Create(request.ToEntity())
+	}
+
+	return payment.ToDto(), err
 }
 
 func (p *PaymentServiceObject) AddBatch(request model.CreatePaymentBatchRequest) (response []model.PaymentDto, err error) {
@@ -187,11 +225,6 @@ func (p *PaymentServiceObject) Update(id uuid.UUID, request model.UpdatePaymentR
 	return p.paymentRepository.Update(request.UpdateToEntity(id))
 }
 
-func (p *PaymentServiceObject) CalculateSum(houseIds []uuid.UUID, from *time.Time) (sum float64) {
-	p.paymentRepository.CalculateSum(houseIds, from, &sum)
-	return
-}
-
-func (p *PaymentServiceObject) invalidateCache(payment model.PaymentDto) {
-	p.pivotalCache.Invalidate(payment.HouseId)
+func (p *PaymentServiceObject) CalculateSum(houseIds []uuid.UUID, from *time.Time) (sum float64, err error) {
+	return sum, p.paymentRepository.CalculateSum(houseIds, from, &sum)
 }

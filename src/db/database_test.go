@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -37,10 +36,11 @@ type DatabaseTestSuite struct {
 
 func (i *DatabaseTestSuite) SetupSuite() {
 	config := NewDefaultDatabaseConfiguration()
+	config.Port = 5444
 	config.DBName = "hob_test"
 	i.database = NewDatabaseService(config)
 
-	err := i.database.D().AutoMigrate(testEntity{})
+	err := i.database.DB().AutoMigrate(testEntity{})
 
 	if err != nil {
 		log.Fatal().Err(err).Msg("Cannot create new entity")
@@ -48,10 +48,18 @@ func (i *DatabaseTestSuite) SetupSuite() {
 }
 
 func (i *DatabaseTestSuite) TearDownSuite() {
-	err := i.database.D().Migrator().DropTable(testEntity{})
+	err := i.database.DB().Migrator().DropTable(testEntity{})
 
 	if err != nil {
 		log.Fatal().Err(err).Msg("Cannot drop table")
+	}
+}
+
+func (i *DatabaseTestSuite) TearDownTest() {
+	err := i.database.DB().Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(testEntity{}).Error
+
+	if err != nil {
+		log.Err(err).Msg("Cannot truncate table")
 	}
 }
 
@@ -65,8 +73,6 @@ func (i *DatabaseTestSuite) Test_Create() {
 	err := i.database.Create(&entity)
 
 	assert.Nil(i.T(), err)
-
-	i.database.ExistsById(testEntity{}, entity.Id)
 }
 
 func (i *DatabaseTestSuite) Test_Create_WithExistingId() {
@@ -76,159 +82,9 @@ func (i *DatabaseTestSuite) Test_Create_WithExistingId() {
 
 	assert.Nil(i.T(), err)
 
-	i.database.ExistsById(testEntity{}, entity.Id)
-
 	err = i.database.Create(&entity)
 
 	assert.NotNil(i.T(), err)
-}
-
-func (i *DatabaseTestSuite) Test_FindById() {
-	entity := i.createTestEntity()
-
-	receiver := testEntity{}
-	err := i.database.FindById(&receiver, entity.Id)
-
-	assert.Nil(i.T(), err)
-
-	assert.Equal(i.T(), entity, receiver)
-}
-
-func (i *DatabaseTestSuite) Test_FindById_WithNotExistsId() {
-	receiver := testEntity{}
-	err := i.database.FindById(&receiver, uuid.New())
-
-	assert.Equal(i.T(), gorm.ErrRecordNotFound, err)
-
-	assert.Equal(i.T(), testEntity{}, receiver)
-}
-
-func (i *DatabaseTestSuite) Test_FindByIdModeled() {
-	entity := i.createTestEntity()
-
-	receiver := testEntityDto{}
-	err := i.database.FindByIdModeled(testEntity{}, &receiver, entity.Id)
-
-	assert.Nil(i.T(), err)
-
-	assert.Equal(i.T(), testEntityDto{
-		Id:          entity.Id,
-		Name:        entity.Name,
-		Description: entity.Description,
-	}, receiver)
-}
-
-func (i *DatabaseTestSuite) Test_FindByIdModeled_WithNotExistsId() {
-	receiver := testEntityDto{}
-	err := i.database.FindByIdModeled(testEntity{}, &receiver, uuid.New())
-
-	assert.Equal(i.T(), gorm.ErrRecordNotFound, err)
-
-	assert.Equal(i.T(), testEntityDto{}, receiver)
-}
-
-func (i *DatabaseTestSuite) Test_ExistsById() {
-	entity := i.createTestEntity()
-
-	exists := i.database.ExistsById(testEntity{}, entity.Id)
-
-	assert.True(i.T(), exists)
-}
-
-func (i *DatabaseTestSuite) Test_ExistsById_WithNotExistsId() {
-	exists := i.database.ExistsById(testEntity{}, uuid.New())
-
-	assert.False(i.T(), exists)
-}
-
-func (i *DatabaseTestSuite) Test_ExistsByQuery() {
-	entity := i.createTestEntity()
-
-	exists := i.database.ExistsByQuery(testEntity{}, "name = ?", entity.Name)
-
-	assert.True(i.T(), exists)
-}
-
-func (i *DatabaseTestSuite) Test_ExistsByQuery_WithNotExists() {
-	exists := i.database.ExistsByQuery(testEntity{}, "name = ?", "name match")
-
-	assert.False(i.T(), exists)
-}
-
-func (i *DatabaseTestSuite) Test_DeleteById() {
-	entity := i.createTestEntity()
-
-	err := i.database.DeleteById(entity, entity.Id)
-
-	assert.Nil(i.T(), err)
-	assert.False(i.T(), i.database.ExistsById(testEntity{}, entity.Id))
-}
-
-func (i *DatabaseTestSuite) Test_DeleteById_WithNotExists() {
-	err := i.database.DeleteById(testEntity{}, uuid.New())
-
-	assert.Nil(i.T(), err)
-}
-
-func (i *DatabaseTestSuite) Test_UpdateById() {
-	entity := i.createTestEntity()
-
-	err := i.database.UpdateById(testEntity{}, entity.Id, testEntityUpdateDto{
-		Id:          entity.Id,
-		Name:        fmt.Sprintf("%s-new", entity.Name),
-		Description: fmt.Sprintf("%s-new", entity.Description),
-		Value:       entity.Value + 100,
-	})
-
-	assert.Nil(i.T(), err)
-
-	newEntity := testEntity{}
-
-	err = i.database.FindById(&newEntity, entity.Id)
-
-	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), testEntity{
-		Id:          entity.Id,
-		Name:        "Name-new",
-		Description: "Description-new",
-		Value:       200,
-	}, newEntity)
-}
-
-func (i *DatabaseTestSuite) Test_UpdateById_WithOmitColumns() {
-	entity := i.createTestEntity()
-
-	err := i.database.UpdateById(testEntity{}, entity.Id, testEntityUpdateDto{
-		Id:          entity.Id,
-		Name:        fmt.Sprintf("%s-new", entity.Name),
-		Description: fmt.Sprintf("%s-new", entity.Description),
-		Value:       entity.Value + 100,
-	}, "Value")
-
-	assert.Nil(i.T(), err)
-
-	newEntity := testEntity{}
-
-	err = i.database.FindById(&newEntity, entity.Id)
-
-	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), testEntity{
-		Id:          entity.Id,
-		Name:        "Name-new",
-		Description: "Description-new",
-		Value:       100,
-	}, newEntity)
-}
-
-func (i *DatabaseTestSuite) Test_UpdateById_WithNotExists() {
-	err := i.database.UpdateById(testEntity{}, uuid.New(), testEntityUpdateDto{
-		Id:          uuid.New(),
-		Name:        "new name",
-		Description: "new description",
-		Value:       100,
-	})
-
-	assert.Nil(i.T(), err)
 }
 
 func (i *DatabaseTestSuite) Test_DM() {
@@ -240,7 +96,7 @@ func (i *DatabaseTestSuite) Test_DM() {
 	assert.Nil(i.T(), err)
 
 	receiver := testEntityDto{}
-	i.database.DM(testEntity{}).
+	i.database.DBModeled(testEntity{}).
 		Where("name = ?", entity.Name).
 		Find(&receiver)
 
@@ -253,7 +109,7 @@ func (i *DatabaseTestSuite) Test_DM() {
 
 func (i *DatabaseTestSuite) Test_DM_WithNotMatchedRecord() {
 	receiver := testEntityDto{}
-	i.database.DM(testEntity{}).
+	i.database.DBModeled(testEntity{}).
 		Where("name = ?", "not match").
 		Find(&receiver)
 

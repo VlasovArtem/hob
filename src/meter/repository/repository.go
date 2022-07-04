@@ -10,12 +10,12 @@ import (
 var entity = model.Meter{}
 
 type MeterRepositoryObject struct {
-	database db.ModeledDatabase
+	database db.modeledDatabase
 }
 
 func NewMeterRepository(database db.DatabaseService) MeterRepository {
 	return &MeterRepositoryObject{
-		database: db.ModeledDatabase{
+		database: db.modeledDatabase{
 			DatabaseService: database,
 			Model:           entity,
 		},
@@ -23,7 +23,7 @@ func NewMeterRepository(database db.DatabaseService) MeterRepository {
 }
 
 func (m *MeterRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewMeterRepository(factory.FindRequiredByObject(db.DatabaseObject{}).(db.DatabaseService))
+	return NewMeterRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
 func (m *MeterRepositoryObject) GetEntity() any {

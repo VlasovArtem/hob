@@ -10,12 +10,12 @@ import (
 var entity = model.IncomeScheduler{}
 
 type IncomeSchedulerRepositoryObject struct {
-	database db.ModeledDatabase
+	database db.modeledDatabase
 }
 
 func NewIncomeSchedulerRepository(database db.DatabaseService) IncomeSchedulerRepository {
 	return &IncomeSchedulerRepositoryObject{
-		db.ModeledDatabase{
+		db.modeledDatabase{
 			DatabaseService: database,
 			Model:           entity,
 		},
@@ -23,7 +23,7 @@ func NewIncomeSchedulerRepository(database db.DatabaseService) IncomeSchedulerRe
 }
 
 func (i *IncomeSchedulerRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewIncomeSchedulerRepository(dependency.FindRequiredDependency[db.DatabaseObject, db.DatabaseService](factory))
+	return NewIncomeSchedulerRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }
 
 func (i *IncomeSchedulerRepositoryObject) GetEntity() any {

@@ -36,7 +36,7 @@ func (i *IncomeRepositoryTestSuite) SetupSuite() {
 	).
 		AddAfterTest(truncateDynamic).
 		AddAfterSuite(func(service db.DatabaseService) {
-			service.D().Exec("DELETE FROM income_groups")
+			service.DB().Exec("DELETE FROM income_groups")
 			database.TruncateTable(service, groupModel.Group{})
 			database.TruncateTable(service, model.Income{})
 			database.TruncateTable(service, houseModel.House{})
@@ -338,7 +338,7 @@ func (i *IncomeRepositoryTestSuite) createIncomeWithGroups(groups []groupModel.G
 }
 
 func truncateDynamic(service db.DatabaseService) {
-	service.D().Exec("DELETE FROM income_groups")
+	service.DB().Exec("DELETE FROM income_groups")
 	database.TruncateTable(service, groupModel.Group{})
 	database.TruncateTable(service, model.Income{})
 }
