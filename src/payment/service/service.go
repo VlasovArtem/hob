@@ -1,7 +1,6 @@
 package service
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common"
@@ -11,7 +10,6 @@ import (
 	houses "github.com/VlasovArtem/hob/src/house/service"
 	"github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/repository"
-	pivotalModel "github.com/VlasovArtem/hob/src/pivotal/model"
 	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	providers "github.com/VlasovArtem/hob/src/provider/service"
 	users "github.com/VlasovArtem/hob/src/user/service"
@@ -20,7 +18,7 @@ import (
 	"time"
 )
 
-type PaymentServiceObject struct {
+type PaymentServiceStr struct {
 	userService       users.UserService
 	houseService      houses.HouseService
 	providerService   providers.ProviderService
@@ -35,7 +33,7 @@ func NewPaymentService(
 	paymentRepository repository.PaymentRepository,
 	pivotalService pivotalService.PivotalService,
 ) PaymentService {
-	return &PaymentServiceObject{
+	return &PaymentServiceStr{
 		userService:       userService,
 		houseService:      houseService,
 		providerService:   providerService,
@@ -44,13 +42,13 @@ func NewPaymentService(
 	}
 }
 
-func (p *PaymentServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (p *PaymentServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentService(
 		dependency.FindRequiredDependency[users.UserServiceObject, users.UserService](factory),
-		dependency.FindRequiredDependency[houses.HouseServiceObject, houses.HouseService](factory),
-		dependency.FindRequiredDependency[providers.ProviderServiceObject, providers.ProviderService](factory),
-		dependency.FindRequiredDependency[repository.PaymentRepositoryObject, repository.PaymentRepository](factory),
-		dependency.FindRequiredDependency[pivotalService.PivotalServiceObject, pivotalService.PivotalService](factory),
+		dependency.FindRequiredDependency[houses.HouseServiceStr, houses.HouseService](factory),
+		dependency.FindRequiredDependency[providers.ProviderServiceStr, providers.ProviderService](factory),
+		dependency.FindRequiredDependency[repository.PaymentRepositoryStr, repository.PaymentRepository](factory),
+		dependency.FindRequiredDependency[pivotalService.PivotalServiceStr, pivotalService.PivotalService](factory),
 	)
 }
 
@@ -59,15 +57,16 @@ type PaymentService interface {
 	AddBatch(request model.CreatePaymentBatchRequest) ([]model.PaymentDto, error)
 	FindById(id uuid.UUID) (model.PaymentDto, error)
 	FindByHouseId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto
+	FindByGroupId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto
 	FindByUserId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto
 	FindByProviderId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdatePaymentRequest) error
-	CalculateSum(houseIds []uuid.UUID, from *time.Time) (float64, error)
+	Transactional(db *gorm.DB) PaymentService
 }
 
-func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response model.PaymentDto, err error) {
+func (p *PaymentServiceStr) Add(request model.CreatePaymentRequest) (response model.PaymentDto, err error) {
 	if !p.userService.ExistsById(request.UserId) {
 		return response, fmt.Errorf("user with id %s not found", request.UserId)
 	}
@@ -81,51 +80,27 @@ func (p *PaymentServiceObject) Add(request model.CreatePaymentRequest) (response
 		}
 	}
 
-	houseDto, err := p.houseService.FindById(request.HouseId)
-
-	if err != nil {
-		return response, err
-	}
-
-	var groupPivotals []pivotalModel.GroupPivotalDto
-	var housePivotal pivotalModel.HousePivotalDto
-
-	if len(houseDto.Groups) != 0 {
-		for _, group := range houseDto.Groups {
-			groupPivotalDto, err := p.pivotalService.FindByGroupId(group.Id)
-			if err != nil && !errors.Is(err, interrors.ErrNotFound{}) {
-				return response, err
-			} else if err == nil {
-				groupPivotals = append(groupPivotals, groupPivotalDto)
-			}
-		}
-	} else {
-		if housePivotal, err = p.pivotalService.FindByHouseId(request.HouseId); err != nil && !errors.Is(err, interrors.ErrNotFound{}) {
-			return response, err
-		}
-	}
-
 	var payment model.Payment
 
-	if len(groupPivotals) != 0 || housePivotal.Id != uuid.Nil {
-		db := p.paymentRepository.GetDb()
-		err = db.Transaction(func(tx *gorm.DB) error {
-			if payment, err = p.paymentRepository.CreateTransactional(request.ToEntity(), tx); err != nil {
-				return err
-			}
+	err = p.paymentRepository.DB().Transaction(func(tx *gorm.DB) error {
+		trx := p.Transactional(tx).(*PaymentServiceStr)
 
-			return nil
-		}, &sql.TxOptions{Isolation: sql.LevelDefault})
+		payment = request.ToEntity()
 
-		return
-	} else {
-		payment, err = p.paymentRepository.Create(request.ToEntity())
-	}
+		if err = trx.paymentRepository.Create(&payment); err != nil {
+			return err
+		}
+
+		if trx.pivotalService.ExistsByHouseId(request.HouseId) {
+			return trx.pivotalService.AddPayment(float64(request.Sum), request.Date.Add(1*time.Microsecond), request.HouseId)
+		}
+		return nil
+	})
 
 	return payment.ToDto(), err
 }
 
-func (p *PaymentServiceObject) AddBatch(request model.CreatePaymentBatchRequest) (response []model.PaymentDto, err error) {
+func (p *PaymentServiceStr) AddBatch(request model.CreatePaymentBatchRequest) (response []model.PaymentDto, err error) {
 	if len(request.Payments) == 0 {
 		return make([]model.PaymentDto, 0), nil
 	}
@@ -168,51 +143,61 @@ func (p *PaymentServiceObject) AddBatch(request model.CreatePaymentBatchRequest)
 		return nil, interrors.NewErrResponse(builder.WithMessage("Create payment batch failed"))
 	}
 
-	if batch, err := p.paymentRepository.CreateBatch(entities); err != nil {
-		return response, err
-	} else {
-		dtos := common.MapSlice(batch, model.EntityToDto)
+	err = p.paymentRepository.DB().Transaction(func(tx *gorm.DB) error {
+		trx := p.Transactional(tx).(*PaymentServiceStr)
 
-		for _, dto := range dtos {
-			p.invalidateCache(dto)
+		if err = p.paymentRepository.Create(&entities); err != nil {
+			return err
 		}
 
-		return dtos, nil
-	}
+		for _, payment := range entities {
+			if trx.pivotalService.ExistsByHouseId(payment.HouseId) {
+				return trx.pivotalService.AddPayment(float64(payment.Sum), payment.Date.Add(1*time.Microsecond), payment.HouseId)
+			}
+		}
+
+		return nil
+	})
+
+	return common.MapSlice(entities, model.EntityToDto), nil
 }
 
-func (p *PaymentServiceObject) FindById(id uuid.UUID) (model.PaymentDto, error) {
-	if payment, err := p.paymentRepository.FindById(id); err != nil {
+func (p *PaymentServiceStr) FindById(id uuid.UUID) (model.PaymentDto, error) {
+	if payment, err := p.paymentRepository.Find(id); err != nil {
 		return model.PaymentDto{}, database.HandlerFindError(err, fmt.Sprintf("payment with id %s not found", id))
 	} else {
 		return payment.ToDto(), nil
 	}
 }
 
-func (p *PaymentServiceObject) FindByHouseId(houseId uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
+func (p *PaymentServiceStr) FindByHouseId(houseId uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
 	return p.paymentRepository.FindByHouseId(houseId, limit, offset, from, to)
 }
 
-func (p *PaymentServiceObject) FindByUserId(userId uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
+func (p *PaymentServiceStr) FindByUserId(userId uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
 	return p.paymentRepository.FindByUserId(userId, limit, offset, from, to)
 }
 
-func (p *PaymentServiceObject) FindByProviderId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
+func (p *PaymentServiceStr) FindByGroupId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
+	return p.paymentRepository.FindByGroupId(id, limit, offset, from, to)
+}
+
+func (p *PaymentServiceStr) FindByProviderId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.PaymentDto {
 	return p.paymentRepository.FindByProviderId(id, limit, offset, from, to)
 }
 
-func (p *PaymentServiceObject) ExistsById(id uuid.UUID) bool {
-	return p.paymentRepository.ExistsById(id)
+func (p *PaymentServiceStr) ExistsById(id uuid.UUID) bool {
+	return p.paymentRepository.Exists(id)
 }
 
-func (p *PaymentServiceObject) DeleteById(id uuid.UUID) error {
+func (p *PaymentServiceStr) DeleteById(id uuid.UUID) error {
 	if !p.ExistsById(id) {
 		return fmt.Errorf("payment with id %s not found", id)
 	}
-	return p.paymentRepository.DeleteById(id)
+	return p.paymentRepository.Delete(id)
 }
 
-func (p *PaymentServiceObject) Update(id uuid.UUID, request model.UpdatePaymentRequest) error {
+func (p *PaymentServiceStr) Update(id uuid.UUID, request model.UpdatePaymentRequest) error {
 	if !p.ExistsById(id) {
 		return fmt.Errorf("payment with id %s not found", id)
 	}
@@ -222,9 +207,15 @@ func (p *PaymentServiceObject) Update(id uuid.UUID, request model.UpdatePaymentR
 	if request.Date.After(time.Now()) {
 		return errors.New("date should not be after current date")
 	}
-	return p.paymentRepository.Update(request.UpdateToEntity(id))
+	return p.paymentRepository.Update(id, request.UpdateToEntity(id), "HouseId", "House", "UserId", "User")
 }
 
-func (p *PaymentServiceObject) CalculateSum(houseIds []uuid.UUID, from *time.Time) (sum float64, err error) {
-	return sum, p.paymentRepository.CalculateSum(houseIds, from, &sum)
+func (p *PaymentServiceStr) Transactional(db *gorm.DB) PaymentService {
+	return &PaymentServiceStr{
+		userService:       p.userService.Transactional(db),
+		houseService:      p.houseService.Transactional(db),
+		providerService:   p.providerService.Transactional(db),
+		paymentRepository: p.paymentRepository.Transactional(db),
+		pivotalService:    p.pivotalService.Transactional(db),
+	}
 }

@@ -3,41 +3,45 @@ package repository
 import (
 	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	"github.com/VlasovArtem/hob/src/db"
 	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/house/model"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
-type houseRepositoryStruct struct {
+type HouseRepositoryStruct struct {
 	db.ModeledDatabase[model.House]
 }
 
 func NewHouseRepository(database db.DatabaseService) HouseRepository {
-	return &houseRepositoryStruct{
+	return &HouseRepositoryStruct{
 		ModeledDatabase: db.NewModeledDatabase(model.House{}, database),
 	}
 }
 
-func (h *houseRepositoryStruct) Initialize(factory dependency.DependenciesProvider) any {
+func (h *HouseRepositoryStruct) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHouseRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
 type HouseRepository interface {
 	db.ModeledDatabase[model.House]
+	transactional.Transactional[HouseRepository]
 	CreateBatch(entities []model.House) ([]model.House, error)
 	FindById(id uuid.UUID) (response model.House, err error)
 	FindByUserId(id uuid.UUID) []model.House
 	FindHousesByGroupId(groupId uuid.UUID) []model.House
+	FindHousesByGroupIds(groupIds []uuid.UUID) []model.House
 	UpdateByRequest(id uuid.UUID, request model.UpdateHouseRequest) error
 }
 
-func (h *houseRepositoryStruct) CreateBatch(entities []model.House) ([]model.House, error) {
+func (h *HouseRepositoryStruct) CreateBatch(entities []model.House) ([]model.House, error) {
 	return entities, h.DB().Omit("Groups.*").Create(&entities).Error
 }
 
-func (h *houseRepositoryStruct) FindById(id uuid.UUID) (response model.House, err error) {
+func (h *HouseRepositoryStruct) FindById(id uuid.UUID) (response model.House, err error) {
 	response.Id = id
 	if err = h.DB().Preload("Groups").First(&response).Error; err != nil {
 		return model.House{}, err
@@ -45,7 +49,7 @@ func (h *houseRepositoryStruct) FindById(id uuid.UUID) (response model.House, er
 	return response, err
 }
 
-func (h *houseRepositoryStruct) FindByUserId(id uuid.UUID) (response []model.House) {
+func (h *HouseRepositoryStruct) FindByUserId(id uuid.UUID) (response []model.House) {
 	if err := h.DB().Preload("Groups").Where("user_id = ?", id).Find(&response).Error; err != nil {
 		log.Error().Err(err)
 	}
@@ -53,7 +57,7 @@ func (h *houseRepositoryStruct) FindByUserId(id uuid.UUID) (response []model.Hou
 	return response
 }
 
-func (h *houseRepositoryStruct) UpdateByRequest(id uuid.UUID, request model.UpdateHouseRequest) error {
+func (h *HouseRepositoryStruct) UpdateByRequest(id uuid.UUID, request model.UpdateHouseRequest) error {
 	err := h.Update(id, struct {
 		Name        string
 		CountryCode string
@@ -72,20 +76,18 @@ func (h *houseRepositoryStruct) UpdateByRequest(id uuid.UUID, request model.Upda
 		return err
 	}
 
-	_, err = h.FindById(id)
+	entity, err := h.FindById(id)
 
 	if err != nil {
 		return err
 	}
 
-	if groups := common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup); len(groups) > 0 {
-		return h.Modeled().Association("Groups").Replace(groups)
-	}
+	groups := common.MapSlice(request.GroupIds, groupModel.GroupIdToGroup)
 
-	return nil
+	return h.DBModeled(&entity).Association("Groups").Replace(groups)
 }
 
-func (h *houseRepositoryStruct) FindHousesByGroupId(groupId uuid.UUID) (response []model.House) {
+func (h *HouseRepositoryStruct) FindHousesByGroupId(groupId uuid.UUID) (response []model.House) {
 	if err := h.DB().
 		Preload("Groups").
 		Joins("FULL JOIN house_groups hg ON hg.house_id = houses.id").
@@ -95,4 +97,22 @@ func (h *houseRepositoryStruct) FindHousesByGroupId(groupId uuid.UUID) (response
 	}
 
 	return response
+}
+
+func (h *HouseRepositoryStruct) FindHousesByGroupIds(groupIds []uuid.UUID) (response []model.House) {
+	if err := h.DB().
+		Preload("Groups").
+		Joins("FULL JOIN house_groups hg ON hg.house_id = houses.id").
+		Where("hg.group_id IN (?)", groupIds).
+		Find(&response).Error; err != nil {
+		log.Error().Err(err)
+	}
+
+	return response
+}
+
+func (h *HouseRepositoryStruct) Transactional(tx *gorm.DB) HouseRepository {
+	return &HouseRepositoryStruct{
+		ModeledDatabase: db.NewTransactionalModeledDatabase(h.GetEntity(), tx),
+	}
 }

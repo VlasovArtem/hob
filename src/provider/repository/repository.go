@@ -3,75 +3,51 @@ package repository
 import (
 	"fmt"
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-var (
-	entity      = model.Provider{}
-	DefaultUser = uuid.UUID{}
-)
-
-type ProviderRepositoryObject struct {
-	database db.modeledDatabase
+type ProviderRepositoryStr struct {
+	db.ModeledDatabase[model.Provider]
 }
 
 func NewProviderRepository(database db.DatabaseService) ProviderRepository {
-	return &ProviderRepositoryObject{
-		db.modeledDatabase{
-			DatabaseService: database,
-			Model:           entity,
-		},
+	return &ProviderRepositoryStr{
+		ModeledDatabase: db.NewModeledDatabase(model.Provider{}, database),
 	}
 }
 
-func (p *ProviderRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewProviderRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
-}
-
-func (p *ProviderRepositoryObject) GetEntity() any {
-	return entity
+func (p *ProviderRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
+	return NewProviderRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }
 
 type ProviderRepository interface {
-	Create(provider model.Provider) (model.Provider, error)
-	FindById(id uuid.UUID) (model.Provider, error)
-	Delete(id uuid.UUID) error
-	Update(entity model.Provider) error
+	db.ModeledDatabase[model.Provider]
+	transactional.Transactional[ProviderRepository]
+	CreateEntity(provider model.Provider) (model.Provider, error)
 	FindByUserId(id uuid.UUID) []model.ProviderDto
 	FindByNameLikeAndUserId(namePattern string, page, limit int, userId uuid.UUID) []model.ProviderDto
-	ExistsById(id uuid.UUID) bool
 	ExistsByNameAndUserId(name string, userId uuid.UUID) bool
 }
 
-func (p *ProviderRepositoryObject) Create(provider model.Provider) (model.Provider, error) {
-	if provider.UserId == DefaultUser {
-		return provider, p.database.DB().Omit("UserId", "User").Create(provider).Error
+func (p *ProviderRepositoryStr) CreateEntity(provider model.Provider) (model.Provider, error) {
+	if provider.UserId == uuid.Nil {
+		return provider, p.Create(&provider, "UserId", "User")
 	}
-	return provider, p.database.Create(provider)
+	return provider, p.Create(provider)
 }
 
-func (p *ProviderRepositoryObject) FindById(id uuid.UUID) (provider model.Provider, err error) {
-	return provider, p.database.FindById(&provider, id)
+func (p *ProviderRepositoryStr) FindByUserId(id uuid.UUID) (providers []model.ProviderDto) {
+	_ = p.FindReceiverBy(&providers, "user_id = ? OR user_id IS NULL", id)
+
+	return providers
 }
 
-func (p *ProviderRepositoryObject) Delete(id uuid.UUID) (err error) {
-	return p.database.Delete(id)
-}
-
-func (p *ProviderRepositoryObject) Update(entity model.Provider) error {
-	return p.database.Update(entity.Id, entity)
-}
-
-func (p *ProviderRepositoryObject) FindByUserId(id uuid.UUID) (provider []model.ProviderDto) {
-	_ = p.database.FindBy(&provider, "user_id = ? OR user_id IS NULL", id)
-
-	return provider
-}
-
-func (p *ProviderRepositoryObject) FindByNameLikeAndUserId(namePattern string, page, limit int, userId uuid.UUID) (response []model.ProviderDto) {
-	p.database.DBModeled(model.Provider{}).
+func (p *ProviderRepositoryStr) FindByNameLikeAndUserId(namePattern string, page, limit int, userId uuid.UUID) (response []model.ProviderDto) {
+	p.Modeled().
 		Offset(page*limit).
 		Limit(limit).
 		Order("name asc").
@@ -80,10 +56,12 @@ func (p *ProviderRepositoryObject) FindByNameLikeAndUserId(namePattern string, p
 	return response
 }
 
-func (p *ProviderRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return p.database.Exists(id)
+func (p *ProviderRepositoryStr) ExistsByNameAndUserId(name string, userId uuid.UUID) bool {
+	return p.ExistsBy("name = ? and user_id = ?", name, userId)
 }
 
-func (p *ProviderRepositoryObject) ExistsByNameAndUserId(name string, userId uuid.UUID) bool {
-	return p.database.ExistsBy("name = ? and user_id = ?", name, userId)
+func (p *ProviderRepositoryStr) Transactional(tx *gorm.DB) ProviderRepository {
+	return &ProviderRepositoryStr{
+		ModeledDatabase: db.NewTransactionalModeledDatabase(p.GetEntity(), tx),
+	}
 }

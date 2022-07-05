@@ -2,82 +2,57 @@ package repository
 
 import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
-var entity = model.PaymentScheduler{}
-
-type PaymentSchedulerRepositoryObject struct {
-	database db.modeledDatabase
+type PaymentSchedulerRepositoryStr struct {
+	db.ModeledDatabase[model.PaymentScheduler]
 }
 
 func NewPaymentSchedulerRepository(database db.DatabaseService) PaymentSchedulerRepository {
-	return &PaymentSchedulerRepositoryObject{
-		db.modeledDatabase{
-			DatabaseService: database,
-			Model:           entity,
-		},
-	}
+	return &PaymentSchedulerRepositoryStr{db.NewModeledDatabase(model.PaymentScheduler{}, database)}
 }
 
-func (p *PaymentSchedulerRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
+func (p *PaymentSchedulerRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }
 
-func (p *PaymentSchedulerRepositoryObject) GetEntity() any {
-	return entity
-}
-
 type PaymentSchedulerRepository interface {
-	Create(scheduler model.PaymentScheduler) (model.PaymentScheduler, error)
-	ExistsById(id uuid.UUID) bool
-	DeleteById(id uuid.UUID)
-	FindById(id uuid.UUID) (model.PaymentScheduler, error)
+	transactional.Transactional[PaymentSchedulerRepository]
+	db.ModeledDatabase[model.PaymentScheduler]
 	FindByHouseId(houseId uuid.UUID) []model.PaymentSchedulerDto
 	FindByUserId(userId uuid.UUID) []model.PaymentSchedulerDto
 	FindByProviderId(providerId uuid.UUID) []model.PaymentSchedulerDto
-	Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) (model.PaymentScheduler, error)
 }
 
-func (p *PaymentSchedulerRepositoryObject) Create(scheduler model.PaymentScheduler) (model.PaymentScheduler, error) {
-	return scheduler, p.database.Create(&scheduler)
-}
-
-func (p *PaymentSchedulerRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return p.database.Exists(id)
-}
-
-func (p *PaymentSchedulerRepositoryObject) DeleteById(id uuid.UUID) {
-	_ = p.database.Delete(id)
-}
-
-func (p *PaymentSchedulerRepositoryObject) FindById(id uuid.UUID) (response model.PaymentScheduler, err error) {
-	return response, p.database.FindById(&response, id)
-}
-
-func (p *PaymentSchedulerRepositoryObject) FindByHouseId(houseId uuid.UUID) (response []model.PaymentSchedulerDto) {
-	return p.findBy("house_id = ?", houseId)
-}
-
-func (p *PaymentSchedulerRepositoryObject) FindByUserId(userId uuid.UUID) (response []model.PaymentSchedulerDto) {
-	return p.findBy("user_id = ?", userId)
-}
-
-func (p *PaymentSchedulerRepositoryObject) FindByProviderId(providerId uuid.UUID) (response []model.PaymentSchedulerDto) {
-	return p.findBy("provider_id = ?", providerId)
-}
-
-func (p *PaymentSchedulerRepositoryObject) findBy(query any, conditions ...any) (response []model.PaymentSchedulerDto) {
-	_ = p.database.FindBy(&response, query, conditions...)
-	return response
-}
-
-func (p *PaymentSchedulerRepositoryObject) Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) (response model.PaymentScheduler, error error) {
-	if err := p.database.Update(id, request); err != nil {
-		return response, err
+func (p *PaymentSchedulerRepositoryStr) FindByHouseId(houseId uuid.UUID) (response []model.PaymentSchedulerDto) {
+	if err := p.FindReceiverBy(&response, "house_id = ?", houseId); err != nil {
+		log.Error().Err(err).Msg("Failed to find payment scheduler by house id")
 	}
+	return
+}
 
-	return p.FindById(id)
+func (p *PaymentSchedulerRepositoryStr) FindByUserId(userId uuid.UUID) (response []model.PaymentSchedulerDto) {
+	if err := p.FindReceiverBy(&response, "user_id = ?", userId); err != nil {
+		log.Error().Err(err).Msg("Failed to find payment scheduler by house id")
+	}
+	return
+}
+
+func (p *PaymentSchedulerRepositoryStr) FindByProviderId(providerId uuid.UUID) (response []model.PaymentSchedulerDto) {
+	if err := p.FindReceiverBy(&response, "provider_id = ?", providerId); err != nil {
+		log.Error().Err(err).Msg("Failed to find payment scheduler by house id")
+	}
+	return
+}
+
+func (p *PaymentSchedulerRepositoryStr) Transactional(tx *gorm.DB) PaymentSchedulerRepository {
+	return &PaymentSchedulerRepositoryStr{
+		ModeledDatabase: db.NewTransactionalModeledDatabase(p.GetEntity(), tx),
+	}
 }

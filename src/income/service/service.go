@@ -6,48 +6,60 @@ import (
 	"github.com/VlasovArtem/hob/src/common"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/transactional"
+	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	groupService "github.com/VlasovArtem/hob/src/group/service"
 	houseService "github.com/VlasovArtem/hob/src/house/service"
 	"github.com/VlasovArtem/hob/src/income/model"
 	"github.com/VlasovArtem/hob/src/income/repository"
-	"github.com/VlasovArtem/hob/src/pivotal/cache"
+	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 	"time"
 )
 
-type IncomeServiceObject struct {
-	houseService houseService.HouseService
-	groupService groupService.GroupService
-	repository   repository.IncomeRepository
-	pivotalCache cache.PivotalCache
+type IncomeServiceStr struct {
+	houseService   houseService.HouseService
+	groupService   groupService.GroupService
+	repository     repository.IncomeRepository
+	pivotalService pivotalService.PivotalService
+}
+
+func (i *IncomeServiceStr) Transactional(tx *gorm.DB) IncomeService {
+	return &IncomeServiceStr{
+		houseService:   i.houseService.Transactional(tx),
+		groupService:   i.groupService.Transactional(tx),
+		repository:     i.repository.Transactional(tx),
+		pivotalService: i.pivotalService.Transactional(tx),
+	}
 }
 
 func NewIncomeService(
 	houseService houseService.HouseService,
 	groupService groupService.GroupService,
 	repository repository.IncomeRepository,
-	pivotalCache cache.PivotalCache,
+	pivotalService pivotalService.PivotalService,
 ) IncomeService {
-	return &IncomeServiceObject{
-		houseService: houseService,
-		groupService: groupService,
-		repository:   repository,
-		pivotalCache: pivotalCache,
+	return &IncomeServiceStr{
+		houseService:   houseService,
+		groupService:   groupService,
+		repository:     repository,
+		pivotalService: pivotalService,
 	}
 }
 
-func (i *IncomeServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (i *IncomeServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeService(
-		dependency.FindRequiredDependency[houseService.HouseServiceObject, houseService.HouseService](factory),
-		dependency.FindRequiredDependency[groupService.GroupServiceObject, groupService.GroupService](factory),
-		dependency.FindRequiredDependency[repository.IncomeRepositoryObject, repository.IncomeRepository](factory),
-		dependency.FindRequiredDependency[cache.PivotalCacheObject, cache.PivotalCache](factory),
+		dependency.FindRequiredDependency[houseService.HouseServiceStr, houseService.HouseService](factory),
+		dependency.FindRequiredDependency[groupService.GroupServiceStr, groupService.GroupService](factory),
+		dependency.FindRequiredDependency[repository.IncomeRepositoryStr, repository.IncomeRepository](factory),
+		dependency.FindRequiredDependency[pivotalService.PivotalServiceStr, pivotalService.PivotalService](factory),
 	)
 }
 
 type IncomeService interface {
+	transactional.Transactional[IncomeService]
 	Add(request model.CreateIncomeRequest) (model.IncomeDto, error)
 	AddBatch(request model.CreateIncomeBatchRequest) ([]model.IncomeDto, error)
 	FindById(id uuid.UUID) (model.IncomeDto, error)
@@ -56,11 +68,9 @@ type IncomeService interface {
 	ExistsById(id uuid.UUID) bool
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateIncomeRequest) error
-	CalculateSumByHouseId(houseId uuid.UUID, from *time.Time) (float64, error)
-	CalculateSumByGroupId(groupId uuid.UUID, from *time.Time) (float64, error)
 }
 
-func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response model.IncomeDto, err error) {
+func (i *IncomeServiceStr) Add(request model.CreateIncomeRequest) (response model.IncomeDto, err error) {
 	if request.HouseId == nil && len(request.GroupIds) == 0 {
 		return response, errors.New("houseId or groupId must be set")
 	}
@@ -74,16 +84,28 @@ func (i *IncomeServiceObject) Add(request model.CreateIncomeRequest) (response m
 		return response, errors.New("date should not be after current date")
 	}
 
-	if entity, err := i.repository.Create(request.ToEntity()); err != nil {
-		return response, err
-	} else {
-		dto := entity.ToDto()
-		i.invalidateCache(dto)
-		return dto, nil
-	}
+	var income model.Income
+
+	err = i.repository.DB().Transaction(func(tx *gorm.DB) error {
+		trx := i.Transactional(tx).(*IncomeServiceStr)
+
+		income = request.ToEntity()
+
+		if err = trx.repository.Create(&income, "Groups.*"); err != nil {
+			return err
+		}
+
+		if trx.pivotalService.ExistsByHouseId(*request.HouseId) {
+			return trx.pivotalService.AddIncome(float64(request.Sum), request.Date.Add(1*time.Microsecond), request.HouseId, request.GroupIds)
+		}
+
+		return nil
+	})
+
+	return income.ToDto(), err
 }
 
-func (i *IncomeServiceObject) AddBatch(request model.CreateIncomeBatchRequest) (response []model.IncomeDto, err error) {
+func (i *IncomeServiceStr) AddBatch(request model.CreateIncomeBatchRequest) (response []model.IncomeDto, err error) {
 	if len(request.Incomes) == 0 {
 		return make([]model.IncomeDto, 0), nil
 	}
@@ -143,19 +165,24 @@ func (i *IncomeServiceObject) AddBatch(request model.CreateIncomeBatchRequest) (
 		return income.ToEntity()
 	})
 
-	if repositoryResponse, err := i.repository.CreateBatch(entities); err != nil {
-		return nil, err
-	} else {
-		incomes := common.MapSlice(repositoryResponse, model.IncomeToDto)
-		for _, dto := range incomes {
-			i.invalidateCache(dto)
+	return common.MapSlice(entities, model.IncomeToDto), i.repository.DB().Transaction(func(tx *gorm.DB) error {
+		trx := i.Transactional(tx).(*IncomeServiceStr)
+
+		if err = i.repository.Create(&entities, "Groups.*"); err != nil {
+			return err
 		}
 
-		return incomes, nil
-	}
+		for _, payment := range entities {
+			if trx.pivotalService.ExistsByHouseId(*payment.HouseId) {
+				return trx.pivotalService.AddIncome(float64(payment.Sum), payment.Date.Add(1*time.Microsecond), payment.HouseId, common.MapSlice[groupModel.Group, uuid.UUID](payment.Groups, func(g groupModel.Group) uuid.UUID { return g.Id }))
+			}
+		}
+
+		return nil
+	})
 }
 
-func (i *IncomeServiceObject) FindById(id uuid.UUID) (response model.IncomeDto, err error) {
+func (i *IncomeServiceStr) FindById(id uuid.UUID) (response model.IncomeDto, err error) {
 	if entity, err := i.repository.FindById(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return response, int_errors.NewErrNotFound("income with id %s not found", id)
@@ -166,7 +193,7 @@ func (i *IncomeServiceObject) FindById(id uuid.UUID) (response model.IncomeDto, 
 	}
 }
 
-func (i *IncomeServiceObject) FindByHouseId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.IncomeDto {
+func (i *IncomeServiceStr) FindByHouseId(id uuid.UUID, limit int, offset int, from, to *time.Time) []model.IncomeDto {
 	response, err := i.repository.FindByHouseId(id, limit, offset, from, to)
 
 	if err != nil {
@@ -176,7 +203,7 @@ func (i *IncomeServiceObject) FindByHouseId(id uuid.UUID, limit int, offset int,
 	return response
 }
 
-func (i *IncomeServiceObject) FindByGroupIds(ids []uuid.UUID, limit int, offset int, from, to *time.Time) []model.IncomeDto {
+func (i *IncomeServiceStr) FindByGroupIds(ids []uuid.UUID, limit int, offset int, from, to *time.Time) []model.IncomeDto {
 	response, err := i.repository.FindByGroupIds(ids, limit, offset, from, to)
 
 	if err != nil {
@@ -186,24 +213,22 @@ func (i *IncomeServiceObject) FindByGroupIds(ids []uuid.UUID, limit int, offset 
 	return response
 }
 
-func (i *IncomeServiceObject) ExistsById(id uuid.UUID) bool {
-	return i.repository.ExistsById(id)
+func (i *IncomeServiceStr) ExistsById(id uuid.UUID) bool {
+	return i.repository.Exists(id)
 }
 
-func (i *IncomeServiceObject) DeleteById(id uuid.UUID) error {
+func (i *IncomeServiceStr) DeleteById(id uuid.UUID) error {
 	if !i.ExistsById(id) {
 		return int_errors.NewErrNotFound("income with id %s not found", id)
 	}
-	income, _ := i.FindById(id)
-	if err := i.repository.DeleteById(id); err != nil {
+	if err := i.repository.Delete(id); err != nil {
 		return err
 	}
 
-	i.invalidateCache(income)
 	return nil
 }
 
-func (i *IncomeServiceObject) Update(id uuid.UUID, request model.UpdateIncomeRequest) error {
+func (i *IncomeServiceStr) Update(id uuid.UUID, request model.UpdateIncomeRequest) error {
 	if !i.ExistsById(id) {
 		return int_errors.NewErrNotFound("income with id %s not found", id)
 	}
@@ -214,21 +239,4 @@ func (i *IncomeServiceObject) Update(id uuid.UUID, request model.UpdateIncomeReq
 		return errors.New("date should not be after current date")
 	}
 	return i.repository.Update(id, request)
-}
-
-func (i *IncomeServiceObject) CalculateSumByHouseId(houseId uuid.UUID, from *time.Time) (sum float64, err error) {
-	return sum, i.repository.CalculateSumByHouseId(houseId, from, &sum)
-}
-
-func (i *IncomeServiceObject) CalculateSumByGroupId(groupId uuid.UUID, from *time.Time) (sum float64, err error) {
-	return sum, i.repository.CalculateSumByGroupId(groupId, from, &sum)
-}
-
-func (i *IncomeServiceObject) invalidateCache(income model.IncomeDto) {
-	if income.HouseId != nil {
-		i.pivotalCache.Invalidate(*income.HouseId)
-	}
-	for _, group := range income.Groups {
-		i.pivotalCache.Invalidate(group.Id)
-	}
 }

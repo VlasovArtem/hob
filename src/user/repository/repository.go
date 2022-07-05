@@ -2,23 +2,20 @@ package repository
 
 import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-var entity = model.User{}
-
 type UserRepositoryObject struct {
-	database db.modeledDatabase
+	db.ModeledDatabase[model.User]
 }
 
 func NewUserRepository(service db.DatabaseService) UserRepository {
 	return &UserRepositoryObject{
-		db.modeledDatabase{
-			DatabaseService: service,
-			Model:           entity,
-		},
+		ModeledDatabase: db.NewModeledDatabase(model.User{}, service),
 	}
 }
 
@@ -26,51 +23,29 @@ func (u *UserRepositoryObject) Initialize(factory dependency.DependenciesProvide
 	return NewUserRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
-func (u *UserRepositoryObject) GetEntity() any {
-	return entity
-}
-
 type UserRepository interface {
-	Create(user model.User) (model.User, error)
-	FindById(id uuid.UUID) (model.User, error)
+	db.ModeledDatabase[model.User]
+	transactional.Transactional[UserRepository]
 	FindByEmail(email string) (model.User, error)
-	ExistsById(id uuid.UUID) bool
 	ExistsByEmail(email string) bool
 	Verify(email string, password []byte) bool
-	Update(id uuid.UUID, user model.UpdateUserRequest) error
-	Delete(id uuid.UUID) error
-}
-
-func (u *UserRepositoryObject) Create(user model.User) (model.User, error) {
-	return user, u.database.Create(&user)
-}
-
-func (u *UserRepositoryObject) FindById(id uuid.UUID) (user model.User, err error) {
-	return user, u.database.Find(&user, id)
+	UpdateByRequest(id uuid.UUID, user model.UpdateUserRequest) error
 }
 
 func (u *UserRepositoryObject) FindByEmail(email string) (user model.User, error error) {
-	return user, u.database.FirstBy(&user, "email = ?", email)
-}
-
-func (u *UserRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return u.database.Exists(id)
+	return u.FirstBy("email = ?", email)
 }
 
 func (u *UserRepositoryObject) ExistsByEmail(email string) bool {
-	return u.database.ExistsBy("email = ?", email)
+	return u.ExistsBy("email = ?", email)
 }
 
 func (u *UserRepositoryObject) Verify(email string, password []byte) bool {
-	return u.database.ExistsByQuery(u.database.Model, "email = ? AND password = ?", email, password)
+	return u.ExistsBy("email = ? AND password = ?", email, password)
 }
 
-func (u *UserRepositoryObject) Delete(id uuid.UUID) error {
-	return u.database.Delete(id)
-}
-
-func (u *UserRepositoryObject) Update(id uuid.UUID, user model.UpdateUserRequest) error {
-	return u.database.Update(id, struct {
+func (u *UserRepositoryObject) UpdateByRequest(id uuid.UUID, user model.UpdateUserRequest) error {
+	return u.Update(id, struct {
 		FirstName string
 		LastName  string
 		Password  []byte
@@ -79,4 +54,10 @@ func (u *UserRepositoryObject) Update(id uuid.UUID, user model.UpdateUserRequest
 		LastName:  user.LastName,
 		Password:  []byte(user.Password),
 	})
+}
+
+func (u *UserRepositoryObject) Transactional(tx *gorm.DB) UserRepository {
+	return &UserRepositoryObject{
+		ModeledDatabase: db.NewTransactionalModeledDatabase(model.User{}, tx),
+	}
 }

@@ -11,6 +11,7 @@ import (
 	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/provider/mocks"
 	providerModel "github.com/VlasovArtem/hob/src/provider/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -22,7 +23,7 @@ import (
 )
 
 type MeterRepositoryTestSuite struct {
-	database.DBTestSuite
+	database.DBTestSuite[model.Meter]
 	repository      MeterRepository
 	createdProvider providerModel.Provider
 	createdPayment  paymentModel.Payment
@@ -34,18 +35,18 @@ func (m *MeterRepositoryTestSuite) SetupSuite() {
 	m.InitDBTestSuite()
 
 	m.CreateRepository(
-		func(service db.DatabaseService) {
+		func(service db.ModeledDatabase[model.Meter]) {
 			m.repository = NewMeterRepository(service)
 		},
 	).
-		AddAfterTest(func(service db.DatabaseService) {
-			database.TruncateTable(service, model.Meter{})
-			database.TruncateTable(service, paymentModel.Payment{})
+		AddAfterTest(func(service db.ModeledDatabase[model.Meter]) {
+			testhelper.TruncateTable(service, model.Meter{})
+			testhelper.TruncateTable(service, paymentModel.Payment{})
 		}).
-		AddAfterSuite(func(service db.DatabaseService) {
-			database.TruncateTable(service, providerModel.Provider{})
-			database.TruncateTable(service, houseModel.House{})
-			database.TruncateTable(service, userModel.User{})
+		AddAfterSuite(func(service db.ModeledDatabase[model.Meter]) {
+			testhelper.TruncateTable(service, providerModel.Provider{})
+			testhelper.TruncateTable(service, houseModel.House{})
+			testhelper.TruncateTable(service, userModel.User{})
 		}).
 		ExecuteMigration(userModel.User{}, houseModel.House{}, providerModel.Provider{}, paymentModel.Payment{}, model.Meter{})
 
@@ -59,7 +60,7 @@ func (m *MeterRepositoryTestSuite) SetupSuite() {
 	m.CreateEntity(&m.createdHouse)
 
 	m.AddBeforeTest(
-		func(service db.DatabaseService) {
+		func(service db.ModeledDatabase[model.Meter]) {
 			m.createdPayment = paymentMocks.GeneratePayment(m.createdHouse.Id, m.createdUser.Id, m.createdProvider.Id)
 			m.CreateEntity(&m.createdPayment)
 		})
@@ -67,42 +68,6 @@ func (m *MeterRepositoryTestSuite) SetupSuite() {
 
 func TestPaymentRepositorySchedulerTestSuite(t *testing.T) {
 	suite.Run(t, new(MeterRepositoryTestSuite))
-}
-
-func (m *MeterRepositoryTestSuite) Test_Create() {
-	meter := meterMocks.GenerateMeter(m.createdPayment.Id)
-
-	actual, err := m.repository.Create(meter)
-
-	assert.Nil(m.T(), err)
-	assert.Equal(m.T(), meter, actual)
-
-	m.Delete(meter)
-}
-
-func (m *MeterRepositoryTestSuite) Test_Creat_WithMissingPayment() {
-	meter := meterMocks.GenerateMeter(uuid.New())
-
-	actual, err := m.repository.Create(meter)
-
-	assert.NotNil(m.T(), err)
-	assert.Equal(m.T(), meter, actual)
-}
-
-func (m *MeterRepositoryTestSuite) Test_FindById() {
-	meter := m.createMeter()
-
-	actual, err := m.repository.FindById(meter.Id)
-
-	assert.Nil(m.T(), err)
-	assert.Equal(m.T(), meter, actual)
-}
-
-func (m *MeterRepositoryTestSuite) Test_FindById_WithMissingId() {
-	actual, err := m.repository.FindById(uuid.New())
-
-	assert.ErrorIs(m.T(), err, gorm.ErrRecordNotFound)
-	assert.Equal(m.T(), model.Meter{}, actual)
 }
 
 func (m *MeterRepositoryTestSuite) Test_FindByPaymentId() {
@@ -119,26 +84,6 @@ func (m *MeterRepositoryTestSuite) Test_FindByPaymentId_WithMissingId() {
 
 	assert.Equal(m.T(), gorm.ErrRecordNotFound, err)
 	assert.Equal(m.T(), model.Meter{}, meterResponse)
-}
-
-func (m *MeterRepositoryTestSuite) Test_ExistsById() {
-	payment := m.createMeter()
-
-	assert.True(m.T(), m.repository.ExistsById(payment.Id))
-}
-
-func (m *MeterRepositoryTestSuite) Test_ExistsById_WithMissingId() {
-	assert.False(m.T(), m.repository.ExistsById(uuid.New()))
-}
-
-func (m *MeterRepositoryTestSuite) Test_DeleteById() {
-	meter := m.createMeter()
-
-	assert.Nil(m.T(), m.repository.DeleteById(meter.Id))
-}
-
-func (m *MeterRepositoryTestSuite) Test_DeleteById_WithMissingId() {
-	assert.Nil(m.T(), m.repository.DeleteById(uuid.New()))
 }
 
 func (m *MeterRepositoryTestSuite) Test_Update() {
@@ -160,7 +105,7 @@ func (m *MeterRepositoryTestSuite) Test_Update() {
 
 	assert.Nil(m.T(), err)
 
-	updatedMeter, err := m.repository.FindById(meter.Id)
+	updatedMeter, err := m.repository.Find(meter.Id)
 
 	assert.Nil(m.T(), err)
 

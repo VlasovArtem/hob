@@ -7,10 +7,12 @@ import (
 	helperModel "github.com/VlasovArtem/hob/src/common/int-errors"
 	"github.com/VlasovArtem/hob/src/country/model"
 	countries "github.com/VlasovArtem/hob/src/country/service"
+	"github.com/VlasovArtem/hob/src/db"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -161,4 +163,20 @@ func ParseUUID(id string) uuid.UUID {
 		log.Fatal().Err(err).Msg("")
 	}
 	return parse
+}
+
+func TruncateTable(service db.DatabaseService, model any) {
+	err := service.DB().Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(model).Error
+
+	if err != nil {
+		log.Err(err).Msg("Cannot truncate table")
+	}
+}
+
+func TruncateTableCascade(service db.DatabaseService, tableName string) {
+	err := service.DB().Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", tableName)).Error
+
+	if err != nil {
+		log.Err(err).Msg("Cannot truncate table")
+	}
 }

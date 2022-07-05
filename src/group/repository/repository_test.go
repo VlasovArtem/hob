@@ -4,6 +4,7 @@ import (
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/group/mocks"
 	"github.com/VlasovArtem/hob/src/group/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -28,10 +29,10 @@ func (g *GroupRepositoryTestSuite) SetupSuite() {
 		},
 	).
 		AddAfterTest(func(service db.ModeledDatabase[model.Group]) {
-			database.TruncateTable(service, model.Group{})
+			testhelper.TruncateTable(service, model.Group{})
 		}).
 		AddAfterSuite(func(service db.ModeledDatabase[model.Group]) {
-			database.TruncateTable(service, userModel.User{})
+			testhelper.TruncateTable(service, userModel.User{})
 		}).
 		ExecuteMigration(userModel.User{}, model.Group{})
 

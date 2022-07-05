@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/VlasovArtem/hob/src/db"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	"github.com/VlasovArtem/hob/src/user/mocks"
 	"github.com/VlasovArtem/hob/src/user/model"
@@ -26,7 +27,7 @@ func (p *UserRepositoryTestSuite) SetupSuite() {
 		},
 	).
 		AddAfterTest(func(service db.DatabaseService) {
-			database.TruncateTableCascade(service, "users")
+			testhelper.TruncateTableCascade(service, "users")
 		}).
 		ExecuteMigration(model.User{})
 }

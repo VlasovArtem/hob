@@ -12,6 +12,15 @@ type modeledDatabaseStruct[T any] struct {
 	DatabaseService
 }
 
+func NewTransactionalModeledDatabase[T any](model T, tx *gorm.DB) ModeledDatabase[T] {
+	return &modeledDatabaseStruct[T]{
+		EntityProvider: dependency.NewEntity[T](model),
+		DatabaseService: &Database{&Provider{
+			db: tx,
+		}},
+	}
+}
+
 func NewModeledDatabase[T any](model T, service DatabaseService) ModeledDatabase[T] {
 	return &modeledDatabaseStruct[T]{
 		EntityProvider:  dependency.NewEntity[T](model),
@@ -33,6 +42,7 @@ type ModeledDatabase[T any] interface {
 	Exists(id uuid.UUID) bool
 	ExistsBy(query any, args ...any) (exists bool)
 	Delete(id uuid.UUID) error
+	DeleteBy(query any, args ...any) error
 	Update(id uuid.UUID, entity any, omit ...string) error
 	Modeled() *gorm.DB
 }
@@ -87,6 +97,12 @@ func (m *modeledDatabaseStruct[T]) ExistsBy(query any, args ...any) (exists bool
 
 func (m *modeledDatabaseStruct[T]) Delete(id uuid.UUID) error {
 	return m.DB().Delete(m.GetEntity(), id).Error
+}
+
+func (m *modeledDatabaseStruct[T]) DeleteBy(query any, args ...any) error {
+	conditions := []any{query}
+	conditions = append(conditions, args...)
+	return m.DB().Delete(m.GetEntity(), conditions...).Error
 }
 
 func (m *modeledDatabaseStruct[T]) Update(id uuid.UUID, entity any, omit ...string) error {

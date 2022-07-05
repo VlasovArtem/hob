@@ -2,10 +2,12 @@ package repository
 
 import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/group/model"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 type GroupRepositoryObject struct {
@@ -24,6 +26,7 @@ func NewGroupRepository(database db.DatabaseService) GroupRepository {
 
 type GroupRepository interface {
 	db.ModeledDatabase[model.Group]
+	transactional.Transactional[GroupRepository]
 	CreateBatch(entities []model.Group) ([]model.Group, error)
 	FindByOwnerId(ownerId uuid.UUID) (response []model.GroupDto)
 	ExistsByIds(ids []uuid.UUID) bool
@@ -48,4 +51,10 @@ func (g *GroupRepositoryObject) ExistsByIds(ids []uuid.UUID) bool {
 	}
 
 	return int64(len(ids)) == count
+}
+
+func (g *GroupRepositoryObject) Transactional(tx *gorm.DB) GroupRepository {
+	return &GroupRepositoryObject{
+		ModeledDatabase: db.NewTransactionalModeledDatabase(model.Group{}, tx),
+	}
 }

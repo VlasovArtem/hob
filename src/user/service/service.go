@@ -6,9 +6,11 @@ import (
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	"github.com/VlasovArtem/hob/src/user/model"
 	"github.com/VlasovArtem/hob/src/user/repository"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type UserServiceObject struct {
@@ -24,12 +26,14 @@ func NewUserService(repository repository.UserRepository) UserService {
 }
 
 type UserService interface {
+	transactional.Transactional[UserService]
 	Add(request model.CreateUserRequest) (model.UserDto, error)
 	Update(id uuid.UUID, request model.UpdateUserRequest) error
 	Delete(id uuid.UUID) error
 	FindById(id uuid.UUID) (model.UserDto, error)
 	ExistsById(id uuid.UUID) bool
 	VerifyUser(email string, password string) (model.UserDto, error)
+	Transactional(db *gorm.DB) UserService
 }
 
 func (u *UserServiceObject) Add(request model.CreateUserRequest) (response model.UserDto, err error) {
@@ -43,10 +47,11 @@ func (u *UserServiceObject) Add(request model.CreateUserRequest) (response model
 		return response, errors.New(fmt.Sprintf("password is missing"))
 	}
 
-	if user, err := u.repository.Create(request.ToEntity()); err != nil {
+	entity := request.ToEntity()
+	if err := u.repository.Create(&entity); err != nil {
 		return response, err
 	} else {
-		return user.ToDto(), err
+		return entity.ToDto(), err
 	}
 }
 
@@ -62,7 +67,7 @@ func (u *UserServiceObject) Delete(id uuid.UUID) error {
 }
 
 func (u *UserServiceObject) FindById(id uuid.UUID) (response model.UserDto, err error) {
-	if user, err := u.repository.FindById(id); err != nil {
+	if user, err := u.repository.First(id); err != nil {
 		return response, database.HandlerFindError(err, "user with id %s not found", id)
 	} else {
 		return user.ToDto(), err
@@ -70,7 +75,7 @@ func (u *UserServiceObject) FindById(id uuid.UUID) (response model.UserDto, err 
 }
 
 func (u *UserServiceObject) ExistsById(id uuid.UUID) bool {
-	return u.repository.ExistsById(id)
+	return u.repository.Exists(id)
 }
 
 func (u *UserServiceObject) VerifyUser(email string, password string) (response model.UserDto, err error) {
@@ -82,5 +87,13 @@ func (u *UserServiceObject) VerifyUser(email string, password string) (response 
 		return response, err
 	} else {
 		return user.ToDto(), err
+	}
+}
+
+func (u *UserServiceObject) Transactional(db *gorm.DB) UserService {
+	return &UserServiceObject{
+		&repository.UserRepositoryObject{
+			ModeledDatabase: u.repository.Transactional(db),
+		},
 	}
 }

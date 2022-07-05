@@ -5,6 +5,9 @@ package mocks
 import (
 	model "github.com/VlasovArtem/hob/src/group/model"
 	mock "github.com/stretchr/testify/mock"
+	gorm "gorm.io/gorm"
+
+	service "github.com/VlasovArtem/hob/src/group/service"
 
 	uuid "github.com/google/uuid"
 )
@@ -131,6 +134,22 @@ func (_m *GroupService) FindByUserId(userId uuid.UUID) []model.GroupDto {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.GroupDto)
+		}
+	}
+
+	return r0
+}
+
+// Transactional provides a mock function with given fields: tx
+func (_m *GroupService) Transactional(tx *gorm.DB) service.GroupService {
+	ret := _m.Called(tx)
+
+	var r0 service.GroupService
+	if rf, ok := ret.Get(0).(func(*gorm.DB) service.GroupService); ok {
+		r0 = rf(tx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(service.GroupService)
 		}
 	}
 

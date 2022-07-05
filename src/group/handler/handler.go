@@ -18,7 +18,7 @@ func NewGroupHandler(groupService service.GroupService) GroupHandler {
 }
 
 func (g *GroupHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewGroupHandler(dependency.FindRequiredDependency[service.GroupServiceObject, service.GroupService](factory))
+	return NewGroupHandler(dependency.FindRequiredDependency[service.GroupServiceStr, service.GroupService](factory))
 }
 
 func (g *GroupHandlerObject) Init(router *mux.Router) {

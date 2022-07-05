@@ -6,6 +6,7 @@ import (
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	intErrors "github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	houses "github.com/VlasovArtem/hob/src/house/service"
 	paymentModel "github.com/VlasovArtem/hob/src/payment/model"
 	"github.com/VlasovArtem/hob/src/payment/scheduler/model"
@@ -16,19 +17,28 @@ import (
 	users "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"reflect"
+	"gorm.io/gorm"
 	"time"
 )
 
-var PaymentSchedulerServiceType = reflect.TypeOf(PaymentSchedulerServiceObject{})
-
-type PaymentSchedulerServiceObject struct {
+type PaymentSchedulerServiceStr struct {
 	userService      users.UserService
 	houseService     houses.HouseService
 	paymentService   payments.PaymentService
 	providerService  providers.ProviderService
 	serviceScheduler scheduler.ServiceScheduler
 	repository       repository.PaymentSchedulerRepository
+}
+
+func (p *PaymentSchedulerServiceStr) Transactional(tx *gorm.DB) PaymentSchedulerService {
+	return &PaymentSchedulerServiceStr{
+		userService:      p.userService.Transactional(tx),
+		houseService:     p.houseService.Transactional(tx),
+		paymentService:   p.paymentService.Transactional(tx),
+		providerService:  p.providerService.Transactional(tx),
+		serviceScheduler: p.serviceScheduler,
+		repository:       p.repository.Transactional(tx),
+	}
 }
 
 func NewPaymentSchedulerService(
@@ -39,7 +49,7 @@ func NewPaymentSchedulerService(
 	serviceScheduler scheduler.ServiceScheduler,
 	repository repository.PaymentSchedulerRepository,
 ) PaymentSchedulerService {
-	return &PaymentSchedulerServiceObject{
+	return &PaymentSchedulerServiceStr{
 		userService:      userService,
 		houseService:     houseService,
 		paymentService:   paymentService,
@@ -49,18 +59,19 @@ func NewPaymentSchedulerService(
 	}
 }
 
-func (p *PaymentSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (p *PaymentSchedulerServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerService(
 		dependency.FindRequiredDependency[users.UserServiceObject, users.UserService](factory),
-		dependency.FindRequiredDependency[houses.HouseServiceObject, houses.HouseService](factory),
-		dependency.FindRequiredDependency[payments.PaymentServiceObject, payments.PaymentService](factory),
-		dependency.FindRequiredDependency[providers.ProviderServiceObject, providers.ProviderService](factory),
+		dependency.FindRequiredDependency[houses.HouseServiceStr, houses.HouseService](factory),
+		dependency.FindRequiredDependency[payments.PaymentServiceStr, payments.PaymentService](factory),
+		dependency.FindRequiredDependency[providers.ProviderServiceStr, providers.ProviderService](factory),
 		dependency.FindRequiredDependency[scheduler.SchedulerServiceObject, scheduler.ServiceScheduler](factory),
-		dependency.FindRequiredDependency[repository.PaymentSchedulerRepositoryObject, repository.PaymentSchedulerRepository](factory),
+		dependency.FindRequiredDependency[repository.PaymentSchedulerRepositoryStr, repository.PaymentSchedulerRepository](factory),
 	)
 }
 
 type PaymentSchedulerService interface {
+	transactional.Transactional[PaymentSchedulerService]
 	Add(request model.CreatePaymentSchedulerRequest) (model.PaymentSchedulerDto, error)
 	Remove(id uuid.UUID) error
 	FindById(id uuid.UUID) (model.PaymentSchedulerDto, error)
@@ -70,25 +81,23 @@ type PaymentSchedulerService interface {
 	Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) error
 }
 
-func (p *PaymentSchedulerServiceObject) Add(request model.CreatePaymentSchedulerRequest) (response model.PaymentSchedulerDto, err error) {
+func (p *PaymentSchedulerServiceStr) Add(request model.CreatePaymentSchedulerRequest) (response model.PaymentSchedulerDto, err error) {
 	if err = p.validateCreateRequest(request); err != nil {
-		return response, err
+		return
 	}
 
 	entity := request.ToEntity()
 
-	if entity, err = p.repository.Create(entity); err != nil {
-		return response, err
+	if err = p.repository.Create(&entity); err != nil {
+		return
 	} else if _, err = p.serviceScheduler.Add(entity.Id, string(entity.Spec), p.schedulerFunc(entity)); err != nil {
-		p.repository.DeleteById(entity.Id)
-
-		return response, err
+		return response, p.repository.Delete(entity.Id)
 	} else {
 		return entity.ToDto(), err
 	}
 }
 
-func (p *PaymentSchedulerServiceObject) validateCreateRequest(request model.CreatePaymentSchedulerRequest) error {
+func (p *PaymentSchedulerServiceStr) validateCreateRequest(request model.CreatePaymentSchedulerRequest) error {
 	if request.Sum <= 0 {
 		return errors.New("sum should not be zero of negative")
 	}
@@ -107,63 +116,67 @@ func (p *PaymentSchedulerServiceObject) validateCreateRequest(request model.Crea
 	return nil
 }
 
-func (p *PaymentSchedulerServiceObject) Remove(id uuid.UUID) error {
-	if !p.repository.ExistsById(id) {
+func (p *PaymentSchedulerServiceStr) Remove(id uuid.UUID) error {
+	if !p.repository.Exists(id) {
 		return intErrors.NewErrNotFound("payment scheduler with id %s not found", id)
 	} else {
 		if err := p.serviceScheduler.Remove(id); err != nil {
 			log.Error().Err(err).Msg("")
 		} else {
-			p.repository.DeleteById(id)
+			return p.repository.Delete(id)
 		}
 	}
 	return nil
 }
 
-func (p *PaymentSchedulerServiceObject) FindById(id uuid.UUID) (response model.PaymentSchedulerDto, err error) {
-	if paymentScheduler, err := p.repository.FindById(id); err != nil {
+func (p *PaymentSchedulerServiceStr) FindById(id uuid.UUID) (response model.PaymentSchedulerDto, err error) {
+	if paymentScheduler, err := p.repository.Find(id); err != nil {
 		return response, database.HandlerFindError(err, fmt.Sprintf("payment scheduler with id %s not found", id))
 	} else {
 		return paymentScheduler.ToDto(), err
 	}
 }
 
-func (p *PaymentSchedulerServiceObject) FindByHouseId(houseId uuid.UUID) []model.PaymentSchedulerDto {
+func (p *PaymentSchedulerServiceStr) FindByHouseId(houseId uuid.UUID) []model.PaymentSchedulerDto {
 	return p.repository.FindByHouseId(houseId)
 }
 
-func (p *PaymentSchedulerServiceObject) FindByUserId(userId uuid.UUID) []model.PaymentSchedulerDto {
+func (p *PaymentSchedulerServiceStr) FindByUserId(userId uuid.UUID) []model.PaymentSchedulerDto {
 	return p.repository.FindByUserId(userId)
 }
 
-func (p *PaymentSchedulerServiceObject) FindByProviderId(providerId uuid.UUID) []model.PaymentSchedulerDto {
+func (p *PaymentSchedulerServiceStr) FindByProviderId(providerId uuid.UUID) []model.PaymentSchedulerDto {
 	return p.repository.FindByProviderId(providerId)
 }
 
-func (p *PaymentSchedulerServiceObject) Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) error {
+func (p *PaymentSchedulerServiceStr) Update(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) error {
 	if err, _ := p.validateUpdateRequest(id, request); err != nil {
 		return err
 	}
 
-	updatedEntity, err := p.repository.Update(id, request)
+	err := p.repository.Update(id, request)
 
 	if err != nil {
 		return err
 	}
 
-	if _, err := p.serviceScheduler.Update(id, string(updatedEntity.Spec), p.schedulerFunc(updatedEntity)); err != nil {
-		p.repository.DeleteById(id)
+	paymentScheduler, err := p.repository.Find(id)
 
+	if err != nil {
 		return err
+	}
+
+	if _, err := p.serviceScheduler.Update(id, string(paymentScheduler.Spec), p.schedulerFunc(paymentScheduler)); err != nil {
+		return p.repository.Delete(id)
 	}
 	return nil
 }
 
-func (p *PaymentSchedulerServiceObject) validateUpdateRequest(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) (error, bool) {
+func (p *PaymentSchedulerServiceStr) validateUpdateRequest(id uuid.UUID, request model.UpdatePaymentSchedulerRequest) (error, bool) {
 	if request.Sum <= 0 {
 		return errors.New("sum should not be zero of negative"), true
 	}
-	if !p.repository.ExistsById(id) {
+	if err := p.repository.Delete(id); err != nil {
 		return intErrors.NewErrNotFound("payment schedule with id %s not found", id), true
 	}
 	if !p.providerService.ExistsById(request.ProviderId) {
@@ -175,7 +188,7 @@ func (p *PaymentSchedulerServiceObject) validateUpdateRequest(id uuid.UUID, requ
 	return nil, false
 }
 
-func (p *PaymentSchedulerServiceObject) schedulerFunc(payment model.PaymentScheduler) func() {
+func (p *PaymentSchedulerServiceStr) schedulerFunc(payment model.PaymentScheduler) func() {
 	return func() {
 		if _, err := p.paymentService.Add(
 			paymentModel.CreatePaymentRequest{

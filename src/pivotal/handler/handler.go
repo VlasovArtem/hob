@@ -2,7 +2,6 @@ package handler
 
 import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
-	"github.com/VlasovArtem/hob/src/common/rest"
 	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -19,7 +18,7 @@ func NewPivotalHandler(pivotalService pivotalService.PivotalService) PivotalHand
 }
 
 func (p *PivotalHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewPivotalHandler(dependency.FindRequiredDependency[pivotalService.PivotalServiceObject, pivotalService.PivotalService](factory))
+	return NewPivotalHandler(dependency.FindRequiredDependency[pivotalService.PivotalServiceStr, pivotalService.PivotalService](factory))
 }
 
 func (p *PivotalHandlerObject) Init(router *mux.Router) {
@@ -36,24 +35,24 @@ type PivotalHandler interface {
 
 func (p *PivotalHandlerObject) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleWithError(writer, err)
-		} else {
-			rest.NewAPIResponse(writer).
-				Ok(p.pivotalService.FindByHouseId(id)).
-				Perform()
-		}
+		//if id, err := rest.GetIdRequestParameter(request); err != nil {
+		//	rest.HandleWithError(writer, err)
+		//} else {
+		//	rest.NewAPIResponse(writer).
+		//		Ok(p.pivotalService.FindByHouseId(id)).
+		//		Perform()
+		//}
 	}
 }
 
 func (p *PivotalHandlerObject) FindByGroupId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		if id, err := rest.GetIdRequestParameter(request); err != nil {
-			rest.HandleWithError(writer, err)
-		} else {
-			rest.NewAPIResponse(writer).
-				Ok(p.pivotalService.FindByGroupId(id)).
-				Perform()
-		}
+		//if id, err := rest.GetIdRequestParameter(request); err != nil {
+		//	rest.HandleWithError(writer, err)
+		//} else {
+		//	rest.NewAPIResponse(writer).
+		//		Ok(p.pivotalService.FindByGroupId(id)).
+		//		Perform()
+		//}
 	}
 }

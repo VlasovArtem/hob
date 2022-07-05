@@ -10,12 +10,13 @@ import (
 var Date = time.Date(2021, time.January, 1, 0, 0, 0, 0, time.Local)
 
 func GenerateIncome(houseId *uuid.UUID) model.Income {
+	date := time.Now().Truncate(time.Microsecond)
 	return model.Income{
 		Id:          uuid.New(),
 		Name:        "Name",
-		Date:        time.Now().Truncate(time.Microsecond),
+		Date:        date,
 		Description: "Description",
-		Sum:         100.1,
+		Sum:         float32(100 + (date.Unix() % 10)),
 		HouseId:     houseId,
 	}
 }
@@ -26,7 +27,7 @@ func GenerateCreateIncomeRequest() model.CreateIncomeRequest {
 		Name:        "Name",
 		Date:        Date,
 		Description: "Description",
-		Sum:         100.1,
+		Sum:         float32(100 + (time.Now().Unix() % 10)),
 		HouseId:     &houseId,
 	}
 }
@@ -57,7 +58,7 @@ func GenerateIncomeDto() model.IncomeDto {
 		Name:        "Name",
 		Date:        Date,
 		Description: "Description",
-		Sum:         100.1,
+		Sum:         float32(100 + (time.Now().Unix() % 10)),
 		HouseId:     &houseId,
 	}
 }

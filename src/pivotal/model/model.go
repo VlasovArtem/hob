@@ -51,3 +51,15 @@ func (g GroupPivotal) ToDto() GroupPivotalDto {
 		GroupId: g.GroupId,
 	}
 }
+
+type TotalPivotalDto struct {
+	Income   float64
+	Payments float64
+	Total    float64
+}
+
+type PivotalResponseDto struct {
+	House  HousePivotalDto
+	Groups []GroupPivotalDto
+	Total  TotalPivotalDto
+}

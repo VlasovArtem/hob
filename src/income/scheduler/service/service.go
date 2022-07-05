@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	houseService "github.com/VlasovArtem/hob/src/house/service"
 	incomeModel "github.com/VlasovArtem/hob/src/income/model"
 	"github.com/VlasovArtem/hob/src/income/scheduler/model"
@@ -12,10 +13,11 @@ import (
 	"github.com/VlasovArtem/hob/src/scheduler"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 	"time"
 )
 
-type IncomeSchedulerServiceObject struct {
+type IncomeSchedulerServiceStr struct {
 	houseService     houseService.HouseService
 	incomeService    incomeService.IncomeService
 	serviceScheduler scheduler.ServiceScheduler
@@ -28,7 +30,7 @@ func NewIncomeSchedulerService(
 	serviceScheduler scheduler.ServiceScheduler,
 	repository repository.IncomeSchedulerRepository,
 ) IncomeSchedulerService {
-	return &IncomeSchedulerServiceObject{
+	return &IncomeSchedulerServiceStr{
 		houseService:     houseService,
 		incomeService:    incomeService,
 		serviceScheduler: serviceScheduler,
@@ -36,16 +38,17 @@ func NewIncomeSchedulerService(
 	}
 }
 
-func (i *IncomeSchedulerServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (i *IncomeSchedulerServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeSchedulerService(
-		dependency.FindRequiredDependency[houseService.HouseServiceObject, houseService.HouseService](factory),
-		dependency.FindRequiredDependency[incomeService.IncomeServiceObject, incomeService.IncomeService](factory),
+		dependency.FindRequiredDependency[houseService.HouseServiceStr, houseService.HouseService](factory),
+		dependency.FindRequiredDependency[incomeService.IncomeServiceStr, incomeService.IncomeService](factory),
 		dependency.FindRequiredDependency[scheduler.SchedulerServiceObject, scheduler.ServiceScheduler](factory),
-		dependency.FindRequiredDependency[repository.IncomeSchedulerRepositoryObject, repository.IncomeSchedulerRepository](factory),
+		dependency.FindRequiredDependency[repository.IncomeRepositorySchedulerStr, repository.IncomeSchedulerRepository](factory),
 	)
 }
 
 type IncomeSchedulerService interface {
+	transactional.Transactional[IncomeSchedulerService]
 	Add(request model.CreateIncomeSchedulerRequest) (model.IncomeSchedulerDto, error)
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error
@@ -53,7 +56,7 @@ type IncomeSchedulerService interface {
 	FindByHouseId(id uuid.UUID) []model.IncomeSchedulerDto
 }
 
-func (i *IncomeSchedulerServiceObject) Add(request model.CreateIncomeSchedulerRequest) (response model.IncomeSchedulerDto, err error) {
+func (i *IncomeSchedulerServiceStr) Add(request model.CreateIncomeSchedulerRequest) (response model.IncomeSchedulerDto, err error) {
 	if err := i.validateCreateRequest(request); err != nil {
 		return response, err
 	}
@@ -64,26 +67,31 @@ func (i *IncomeSchedulerServiceObject) Add(request model.CreateIncomeSchedulerRe
 		return response, err
 	}
 
-	if entity, err = i.repository.Create(entity); err != nil {
+	if err = i.repository.Create(&entity); err != nil {
 		return response, err
 	} else {
 		return entity.ToDto(), nil
 	}
 }
 
-func (i *IncomeSchedulerServiceObject) Update(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error {
+func (i *IncomeSchedulerServiceStr) Update(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error {
 	if err := i.validateUpdateRequest(id, request); err != nil {
 		return err
 	}
 
-	updatedEntity, err := i.repository.Update(id, request)
+	err := i.repository.Update(id, request)
 	if err != nil {
 		return err
 	}
 
-	if _, err := i.serviceScheduler.Update(id, string(updatedEntity.Spec), i.schedulerFunc(updatedEntity.Income)); err != nil {
-		if err := i.repository.DeleteById(id); err != nil {
-			log.Err(err)
+	entity, err := i.repository.Find(id)
+	if err != nil {
+		return err
+	}
+
+	if _, err := i.serviceScheduler.Update(id, string(entity.Spec), i.schedulerFunc(entity.Income)); err != nil {
+		if err := i.repository.Delete(id); err != nil {
+			log.Error().Err(err).Msg("failed to delete scheduler")
 		}
 		return err
 	}
@@ -91,22 +99,22 @@ func (i *IncomeSchedulerServiceObject) Update(id uuid.UUID, request model.Update
 	return nil
 }
 
-func (i *IncomeSchedulerServiceObject) DeleteById(id uuid.UUID) error {
-	if !i.repository.ExistsById(id) {
+func (i *IncomeSchedulerServiceStr) DeleteById(id uuid.UUID) error {
+	if !i.repository.Exists(id) {
 		return int_errors.NewErrNotFound("income scheduler with id %s not found", id)
 	} else {
 		if err := i.serviceScheduler.Remove(id); err != nil {
 			log.Error().Err(err)
 		}
-		return i.repository.DeleteById(id)
+		return i.repository.Delete(id)
 	}
 }
 
-func (i *IncomeSchedulerServiceObject) FindById(id uuid.UUID) (response model.IncomeSchedulerDto, err error) {
-	if !i.repository.ExistsById(id) {
+func (i *IncomeSchedulerServiceStr) FindById(id uuid.UUID) (response model.IncomeSchedulerDto, err error) {
+	if !i.repository.Exists(id) {
 		return response, int_errors.NewErrNotFound("income scheduler with id %s not found", id)
 	} else {
-		if paymentScheduler, err := i.repository.FindById(id); err != nil {
+		if paymentScheduler, err := i.repository.Find(id); err != nil {
 			return response, err
 		} else {
 			return paymentScheduler.ToDto(), err
@@ -114,7 +122,7 @@ func (i *IncomeSchedulerServiceObject) FindById(id uuid.UUID) (response model.In
 	}
 }
 
-func (i *IncomeSchedulerServiceObject) FindByHouseId(id uuid.UUID) []model.IncomeSchedulerDto {
+func (i *IncomeSchedulerServiceStr) FindByHouseId(id uuid.UUID) []model.IncomeSchedulerDto {
 	responses, err := i.repository.FindByHouseId(id)
 	if err != nil {
 		log.Err(err)
@@ -122,7 +130,7 @@ func (i *IncomeSchedulerServiceObject) FindByHouseId(id uuid.UUID) []model.Incom
 	return responses
 }
 
-func (i *IncomeSchedulerServiceObject) schedulerFunc(income incomeModel.Income) func() {
+func (i *IncomeSchedulerServiceStr) schedulerFunc(income incomeModel.Income) func() {
 	return func() {
 		if _, err := i.incomeService.Add(
 			incomeModel.CreateIncomeRequest{
@@ -140,7 +148,7 @@ func (i *IncomeSchedulerServiceObject) schedulerFunc(income incomeModel.Income) 
 	}
 }
 
-func (i *IncomeSchedulerServiceObject) validateCreateRequest(request model.CreateIncomeSchedulerRequest) error {
+func (i *IncomeSchedulerServiceStr) validateCreateRequest(request model.CreateIncomeSchedulerRequest) error {
 	if request.Sum <= 0 {
 		return errors.New("sum should not be zero of negative")
 	}
@@ -155,11 +163,11 @@ func (i *IncomeSchedulerServiceObject) validateCreateRequest(request model.Creat
 	return nil
 }
 
-func (i *IncomeSchedulerServiceObject) validateUpdateRequest(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error {
+func (i *IncomeSchedulerServiceStr) validateUpdateRequest(id uuid.UUID, request model.UpdateIncomeSchedulerRequest) error {
 	if request.Sum <= 0 {
 		return errors.New("sum should not be zero of negative")
 	}
-	if !i.repository.ExistsById(id) {
+	if !i.repository.Exists(id) {
 		return int_errors.NewErrNotFound("income scheduler with id %s not found", id)
 	}
 
@@ -168,4 +176,13 @@ func (i *IncomeSchedulerServiceObject) validateUpdateRequest(id uuid.UUID, reque
 	}
 
 	return nil
+}
+
+func (i *IncomeSchedulerServiceStr) Transactional(tx *gorm.DB) IncomeSchedulerService {
+	return &IncomeSchedulerServiceStr{
+		houseService:     i.houseService.Transactional(tx),
+		incomeService:    i.incomeService.Transactional(tx),
+		serviceScheduler: i.serviceScheduler,
+		repository:       i.repository.Transactional(tx),
+	}
 }

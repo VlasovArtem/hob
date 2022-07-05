@@ -23,7 +23,7 @@ func GenerateCreatePaymentRequest() model.CreatePaymentRequest {
 		UserId:      UserId,
 		ProviderId:  &ProviderId,
 		Date:        Date,
-		Sum:         1000,
+		Sum:         float32(200 + (time.Now().Unix() % 10)),
 	}
 }
 
@@ -42,7 +42,7 @@ func GenerateUpdatePaymentRequest() model.UpdatePaymentRequest {
 		Name:        "Test Payment",
 		Description: "Test Payment Description",
 		Date:        Date,
-		Sum:         1000,
+		Sum:         float32(200 + (time.Now().Unix() % 10)),
 		ProviderId:  &ProviderId,
 	}
 }
@@ -55,8 +55,21 @@ func GeneratePayment(houseId uuid.UUID, userId uuid.UUID, providerId uuid.UUID) 
 		HouseId:     houseId,
 		UserId:      userId,
 		Date:        Date,
-		Sum:         1000,
+		Sum:         float32(200 + (time.Now().Unix() % 10)),
 		ProviderId:  &providerId,
+	}
+}
+
+func GeneratePaymentWithoutProvider(houseId uuid.UUID, userId uuid.UUID) model.Payment {
+	return model.Payment{
+		Id:          uuid.New(),
+		Name:        "Test Payment",
+		Description: "Test Payment Description",
+		HouseId:     houseId,
+		UserId:      userId,
+		Date:        Date,
+		Sum:         float32(200 + (time.Now().Unix() % 10)),
+		ProviderId:  nil,
 	}
 }
 
@@ -69,6 +82,6 @@ func GeneratePaymentResponse() model.PaymentDto {
 		UserId:      UserId,
 		ProviderId:  &ProviderId,
 		Date:        Date,
-		Sum:         1000,
+		Sum:         float32(200 + (time.Now().Unix() % 10)),
 	}
 }

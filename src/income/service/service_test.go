@@ -9,6 +9,7 @@ import (
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/income/mocks"
 	"github.com/VlasovArtem/hob/src/income/model"
+	pivotalMocks "github.com/VlasovArtem/hob/src/pivotal/mocks"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,7 @@ type IncomeServiceTestSuite struct {
 	houses           *houseMocks.HouseService
 	groups           *groupMocks.GroupService
 	incomeRepository *mocks.IncomeRepository
+	pivotals         *pivotalMocks.PivotalService
 }
 
 func TestIncomeServiceTestSuite(t *testing.T) {
@@ -34,7 +36,8 @@ func TestIncomeServiceTestSuite(t *testing.T) {
 		ts.houses = new(houseMocks.HouseService)
 		ts.incomeRepository = new(mocks.IncomeRepository)
 		ts.groups = new(groupMocks.GroupService)
-		return NewIncomeService(ts.houses, ts.groups, ts.incomeRepository)
+		ts.pivotals = new(pivotalMocks.PivotalService)
+		return NewIncomeService(ts.houses, ts.groups, ts.incomeRepository, ts.pivotals)
 	}
 
 	suite.Run(t, ts)

@@ -84,7 +84,7 @@ func (t *TerminalApp) Init() {
 }
 
 func (t *TerminalApp) GetHouseService() houses.HouseService {
-	return dependency.FindRequiredDependency[houses.HouseServiceObject, houses.HouseService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[houses.HouseServiceStr, houses.HouseService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetUserService() users.UserService {
@@ -96,15 +96,15 @@ func (t *TerminalApp) getCountryService() countries.CountryService {
 }
 
 func (t *TerminalApp) GetIncomeService() incomes.IncomeService {
-	return dependency.FindRequiredDependency[incomes.IncomeServiceObject, incomes.IncomeService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[incomes.IncomeServiceStr, incomes.IncomeService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetPaymentService() payments.PaymentService {
-	return dependency.FindRequiredDependency[payments.PaymentServiceObject, payments.PaymentService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[payments.PaymentServiceStr, payments.PaymentService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetProviderService() providers.ProviderService {
-	return dependency.FindRequiredDependency[providers.ProviderServiceObject, providers.ProviderService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[providers.ProviderServiceStr, providers.ProviderService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetMeterService() meters.MeterService {
@@ -112,15 +112,15 @@ func (t *TerminalApp) GetMeterService() meters.MeterService {
 }
 
 func (t *TerminalApp) GetPaymentSchedulerService() paymentSchedulers.PaymentSchedulerService {
-	return dependency.FindRequiredDependency[paymentSchedulers.PaymentSchedulerServiceObject, paymentSchedulers.PaymentSchedulerService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[paymentSchedulers.PaymentSchedulerServiceStr, paymentSchedulers.PaymentSchedulerService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetIncomeSchedulerService() incomeSchedulers.IncomeSchedulerService {
-	return dependency.FindRequiredDependency[incomeSchedulers.IncomeSchedulerServiceObject, incomeSchedulers.IncomeSchedulerService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[incomeSchedulers.IncomeSchedulerServiceStr, incomeSchedulers.IncomeSchedulerService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetPivotalService() pivotalService.PivotalService {
-	return dependency.FindRequiredDependency[pivotalService.PivotalServiceObject, pivotalService.PivotalService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[pivotalService.PivotalServiceStr, pivotalService.PivotalService](t.root.DependenciesFactory)
 }
 
 func AsKey(evt *tcell.EventKey) tcell.Key {

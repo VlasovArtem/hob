@@ -44,8 +44,8 @@ func (db *DBTestSuite[T]) ExecuteMigration(migrators ...any) {
 	}
 }
 
-func (db *DBTestSuite[T]) CreateEntity(entity any) {
-	if err := db.Database.Create(entity); err != nil {
+func (db *DBTestSuite[T]) CreateEntity(entity any, omit ...string) {
+	if err := db.Database.Create(entity, omit...); err != nil {
 		log.Fatal().Err(err).Msg("Cannot create entity")
 	}
 }
@@ -96,21 +96,5 @@ func (db *DBTestSuite[T]) Delete(entity any) {
 		if err = db.Database.Delete(parse); err != nil {
 			log.Fatal().Err(err)
 		}
-	}
-}
-
-func TruncateTable[T any](service database.ModeledDatabase[T], model any) {
-	err := service.DB().Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(model).Error
-
-	if err != nil {
-		log.Err(err).Msg("Cannot truncate table")
-	}
-}
-
-func TruncateTableCascade[T any](service database.ModeledDatabase[T], tableName string) {
-	err := service.DB().Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", tableName)).Error
-
-	if err != nil {
-		log.Err(err).Msg("Cannot truncate table")
 	}
 }

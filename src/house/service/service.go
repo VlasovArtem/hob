@@ -6,6 +6,7 @@ import (
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	"github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	countryModel "github.com/VlasovArtem/hob/src/country/model"
 	countries "github.com/VlasovArtem/hob/src/country/service"
 	groupService "github.com/VlasovArtem/hob/src/group/service"
@@ -14,9 +15,10 @@ import (
 	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
-type HouseServiceObject struct {
+type HouseServiceStr struct {
 	countriesService countries.CountryService
 	userService      userService.UserService
 	houseRepository  repository.HouseRepository
@@ -33,7 +35,7 @@ func NewHouseService(
 		log.Fatal().Msg("CountryCode service is required")
 	}
 
-	return &HouseServiceObject{
+	return &HouseServiceStr{
 		countriesService: countriesService,
 		userService:      userService,
 		houseRepository:  repository,
@@ -41,16 +43,17 @@ func NewHouseService(
 	}
 }
 
-func (h *HouseServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (h *HouseServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHouseService(
 		dependency.FindRequiredDependency[countries.CountryServiceObject, countries.CountryService](factory),
 		dependency.FindRequiredDependency[userService.UserServiceObject, userService.UserService](factory),
-		dependency.FindRequiredDependency[repository.houseRepositoryStruct, repository.HouseRepository](factory),
-		dependency.FindRequiredDependency[groupService.GroupServiceObject, groupService.GroupService](factory),
+		dependency.FindRequiredDependency[repository.HouseRepositoryStruct, repository.HouseRepository](factory),
+		dependency.FindRequiredDependency[groupService.GroupServiceStr, groupService.GroupService](factory),
 	)
 }
 
 type HouseService interface {
+	transactional.Transactional[HouseService]
 	Add(house model.CreateHouseRequest) (model.HouseDto, error)
 	AddBatch(house model.CreateHouseBatchRequest) ([]model.HouseDto, error)
 	FindById(id uuid.UUID) (model.HouseDto, error)
@@ -59,9 +62,11 @@ type HouseService interface {
 	DeleteById(id uuid.UUID) error
 	Update(id uuid.UUID, request model.UpdateHouseRequest) error
 	FindHousesByGroupId(groupId uuid.UUID) []model.HouseDto
+	FindHousesByGroupIds(groupIds []uuid.UUID) []model.HouseDto
+	Transactional(db *gorm.DB) HouseService
 }
 
-func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response model.HouseDto, err error) {
+func (h *HouseServiceStr) Add(request model.CreateHouseRequest) (response model.HouseDto, err error) {
 	if country, err := h.countriesService.FindCountryByCode(request.CountryCode); err != nil {
 		return response, err
 	} else if !h.userService.ExistsById(request.UserId) {
@@ -71,7 +76,7 @@ func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response mod
 	} else {
 		entity := request.ToEntity(&country)
 
-		if entity, err := h.houseRepository.Create(entity, "Groups.*"); err != nil {
+		if err := h.houseRepository.Create(&entity, "Groups.*"); err != nil {
 			return response, err
 		} else {
 			return entity.ToDto(), nil
@@ -79,7 +84,7 @@ func (h *HouseServiceObject) Add(request model.CreateHouseRequest) (response mod
 	}
 }
 
-func (h *HouseServiceObject) AddBatch(request model.CreateHouseBatchRequest) ([]model.HouseDto, error) {
+func (h *HouseServiceStr) AddBatch(request model.CreateHouseBatchRequest) ([]model.HouseDto, error) {
 	if len(request.Houses) == 0 {
 		return make([]model.HouseDto, 0), nil
 	}
@@ -102,7 +107,7 @@ func (h *HouseServiceObject) AddBatch(request model.CreateHouseBatchRequest) ([]
 
 	countryResult := make(map[string]countryModel.Country)
 
-	for code, _ := range countryShortName {
+	for code := range countryShortName {
 		if countryByCode, err := h.countriesService.FindCountryByCode(code); err != nil {
 			builder.WithDetail(err.Error())
 		} else {
@@ -110,7 +115,7 @@ func (h *HouseServiceObject) AddBatch(request model.CreateHouseBatchRequest) ([]
 		}
 	}
 
-	for userId, _ := range userIds {
+	for userId := range userIds {
 		if !h.userService.ExistsById(userId) {
 			builder.WithDetail(fmt.Sprintf("user with id %s not found", userId))
 		}
@@ -148,15 +153,19 @@ func (h *HouseServiceObject) AddBatch(request model.CreateHouseBatchRequest) ([]
 	}
 }
 
-func (h *HouseServiceObject) FindById(id uuid.UUID) (response model.HouseDto, err error) {
-	if entity, err := h.houseRepository.FindById(id); err != nil {
+func (h *HouseServiceStr) FindById(id uuid.UUID) (response model.HouseDto, err error) {
+	var entity model.House
+
+	err = h.houseRepository.Modeled().Preload("Groups").First(&entity).Error
+
+	if err != nil {
 		return response, database.HandlerFindError(err, "house with id %s not found", id)
 	} else {
 		return entity.ToDto(), nil
 	}
 }
 
-func (h *HouseServiceObject) FindByUserId(userId uuid.UUID) []model.HouseDto {
+func (h *HouseServiceStr) FindByUserId(userId uuid.UUID) []model.HouseDto {
 	houseEntities := h.houseRepository.FindByUserId(userId)
 
 	return common.MapSlice(houseEntities, func(entity model.House) model.HouseDto {
@@ -164,18 +173,18 @@ func (h *HouseServiceObject) FindByUserId(userId uuid.UUID) []model.HouseDto {
 	})
 }
 
-func (h *HouseServiceObject) ExistsById(id uuid.UUID) bool {
-	return h.houseRepository.ExistsById(id)
+func (h *HouseServiceStr) ExistsById(id uuid.UUID) bool {
+	return h.houseRepository.Exists(id)
 }
 
-func (h *HouseServiceObject) DeleteById(id uuid.UUID) error {
+func (h *HouseServiceStr) DeleteById(id uuid.UUID) error {
 	if !h.ExistsById(id) {
 		return int_errors.NewErrNotFound("house with id %s not found", id)
 	}
-	return h.houseRepository.DeleteById(id)
+	return h.houseRepository.Delete(id)
 }
 
-func (h *HouseServiceObject) Update(id uuid.UUID, request model.UpdateHouseRequest) error {
+func (h *HouseServiceStr) Update(id uuid.UUID, request model.UpdateHouseRequest) error {
 	if !h.ExistsById(id) {
 		return int_errors.NewErrNotFound("house with id %s not found", id)
 	}
@@ -189,8 +198,23 @@ func (h *HouseServiceObject) Update(id uuid.UUID, request model.UpdateHouseReque
 	}
 }
 
-func (h *HouseServiceObject) FindHousesByGroupId(groupId uuid.UUID) []model.HouseDto {
+func (h *HouseServiceStr) FindHousesByGroupId(groupId uuid.UUID) []model.HouseDto {
 	return common.MapSlice(h.houseRepository.FindHousesByGroupId(groupId), func(entity model.House) model.HouseDto {
 		return entity.ToDto()
 	})
+}
+
+func (h *HouseServiceStr) FindHousesByGroupIds(groupIds []uuid.UUID) []model.HouseDto {
+	return common.MapSlice(h.houseRepository.FindHousesByGroupIds(groupIds), func(entity model.House) model.HouseDto {
+		return entity.ToDto()
+	})
+}
+
+func (h *HouseServiceStr) Transactional(tx *gorm.DB) HouseService {
+	return &HouseServiceStr{
+		houseRepository:  h.houseRepository.Transactional(tx),
+		countriesService: h.countriesService,
+		userService:      h.userService.Transactional(tx),
+		groupService:     h.groupService.Transactional(tx),
+	}
 }

@@ -6,13 +6,15 @@ import (
 	"github.com/VlasovArtem/hob/src/common/database"
 	"github.com/VlasovArtem/hob/src/common/dependency"
 	interrors "github.com/VlasovArtem/hob/src/common/int-errors"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	"github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/group/repository"
 	userService "github.com/VlasovArtem/hob/src/user/service"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-type GroupServiceObject struct {
+type GroupServiceStr struct {
 	userService userService.UserService
 	repository  repository.GroupRepository
 }
@@ -21,13 +23,13 @@ func NewGroupService(
 	userService userService.UserService,
 	repository repository.GroupRepository,
 ) GroupService {
-	return &GroupServiceObject{
+	return &GroupServiceStr{
 		userService: userService,
 		repository:  repository,
 	}
 }
 
-func (g *GroupServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (g *GroupServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewGroupService(
 		dependency.FindRequiredDependency[userService.UserServiceObject, userService.UserService](factory),
 		dependency.FindRequiredDependency[repository.GroupRepositoryObject, repository.GroupRepository](factory),
@@ -35,6 +37,7 @@ func (g *GroupServiceObject) Initialize(factory dependency.DependenciesProvider)
 }
 
 type GroupService interface {
+	transactional.Transactional[GroupService]
 	Add(request model.CreateGroupRequest) (model.GroupDto, error)
 	AddBatch(request model.CreateGroupBatchRequest) ([]model.GroupDto, error)
 	FindById(id uuid.UUID) (model.GroupDto, error)
@@ -45,7 +48,7 @@ type GroupService interface {
 	Update(id uuid.UUID, request model.UpdateGroupRequest) error
 }
 
-func (g *GroupServiceObject) Add(request model.CreateGroupRequest) (response model.GroupDto, err error) {
+func (g *GroupServiceStr) Add(request model.CreateGroupRequest) (response model.GroupDto, err error) {
 	if !g.userService.ExistsById(request.OwnerId) {
 		return response, interrors.NewErrNotFound("user with id %s not found", request.OwnerId)
 	} else {
@@ -59,7 +62,7 @@ func (g *GroupServiceObject) Add(request model.CreateGroupRequest) (response mod
 	}
 }
 
-func (g *GroupServiceObject) AddBatch(request model.CreateGroupBatchRequest) (response []model.GroupDto, err error) {
+func (g *GroupServiceStr) AddBatch(request model.CreateGroupBatchRequest) (response []model.GroupDto, err error) {
 	if len(request.Groups) == 0 {
 		return make([]model.GroupDto, 0), nil
 	}
@@ -91,7 +94,7 @@ func (g *GroupServiceObject) AddBatch(request model.CreateGroupBatchRequest) (re
 	}
 }
 
-func (g *GroupServiceObject) FindById(id uuid.UUID) (response model.GroupDto, err error) {
+func (g *GroupServiceStr) FindById(id uuid.UUID) (response model.GroupDto, err error) {
 	if err = g.repository.FindReceiver(&response, id); err != nil {
 		return response, database.HandlerFindError(err, "group with id %s not found", id)
 	} else {
@@ -99,28 +102,35 @@ func (g *GroupServiceObject) FindById(id uuid.UUID) (response model.GroupDto, er
 	}
 }
 
-func (g *GroupServiceObject) FindByUserId(userId uuid.UUID) []model.GroupDto {
+func (g *GroupServiceStr) FindByUserId(userId uuid.UUID) []model.GroupDto {
 	return g.repository.FindByOwnerId(userId)
 }
 
-func (g *GroupServiceObject) ExistsById(id uuid.UUID) bool {
+func (g *GroupServiceStr) ExistsById(id uuid.UUID) bool {
 	return g.repository.Exists(id)
 }
 
-func (g *GroupServiceObject) ExistsByIds(ids []uuid.UUID) bool {
+func (g *GroupServiceStr) ExistsByIds(ids []uuid.UUID) bool {
 	return g.repository.ExistsByIds(ids)
 }
 
-func (g *GroupServiceObject) DeleteById(id uuid.UUID) error {
+func (g *GroupServiceStr) DeleteById(id uuid.UUID) error {
 	if !g.ExistsById(id) {
 		return interrors.NewErrNotFound("group with id %s not found", id)
 	}
 	return g.repository.Delete(id)
 }
 
-func (g *GroupServiceObject) Update(id uuid.UUID, request model.UpdateGroupRequest) error {
+func (g *GroupServiceStr) Update(id uuid.UUID, request model.UpdateGroupRequest) error {
 	if !g.ExistsById(id) {
 		return interrors.NewErrNotFound("group with id %s not found", id)
 	}
 	return g.repository.Update(id, request)
+}
+
+func (g *GroupServiceStr) Transactional(tx *gorm.DB) GroupService {
+	return &GroupServiceStr{
+		userService: g.userService.Transactional(tx),
+		repository:  g.repository.Transactional(tx),
+	}
 }

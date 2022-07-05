@@ -18,7 +18,7 @@ func NewHouseHandler(houseService service.HouseService) HouseHandler {
 }
 
 func (h *HouseHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewHouseHandler(dependency.FindRequiredDependency[service.HouseServiceObject, service.HouseService](factory))
+	return NewHouseHandler(dependency.FindRequiredDependency[service.HouseServiceStr, service.HouseService](factory))
 }
 
 func (h *HouseHandlerObject) Init(router *mux.Router) {

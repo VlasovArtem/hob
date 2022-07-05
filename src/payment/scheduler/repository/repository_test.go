@@ -10,6 +10,7 @@ import (
 	providerMocks "github.com/VlasovArtem/hob/src/provider/mocks"
 	providerModel "github.com/VlasovArtem/hob/src/provider/model"
 	"github.com/VlasovArtem/hob/src/scheduler"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -37,12 +38,12 @@ func (p *PaymentRepositorySchedulerTestSuite) SetupSuite() {
 		},
 	).
 		AddAfterTest(func(service db.DatabaseService) {
-			database.TruncateTable(service, model.PaymentScheduler{})
+			testhelper.TruncateTable(service, model.PaymentScheduler{})
 		}).
 		AddAfterSuite(func(service db.DatabaseService) {
-			database.TruncateTable(service, providerModel.Provider{})
-			database.TruncateTable(service, houseModel.House{})
-			database.TruncateTable(service, userModel.User{})
+			testhelper.TruncateTable(service, providerModel.Provider{})
+			testhelper.TruncateTable(service, houseModel.House{})
+			testhelper.TruncateTable(service, userModel.User{})
 		}).
 		ExecuteMigration(userModel.User{}, houseModel.House{}, providerModel.Provider{}, model.PaymentScheduler{})
 

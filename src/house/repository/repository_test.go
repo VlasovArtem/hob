@@ -6,6 +6,7 @@ import (
 	groupModel "github.com/VlasovArtem/hob/src/group/model"
 	"github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/house/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -32,14 +33,14 @@ func (h *HouseRepositoryTestSuite) SetupSuite() {
 	).
 		AddAfterSuite(
 			func(service db.ModeledDatabase[model.House]) {
-				database.TruncateTable(service, userModel.User{})
+				testhelper.TruncateTable(service, userModel.User{})
 			},
 		).
 		AddAfterTest(
 			func(service db.ModeledDatabase[model.House]) {
 				service.DB().Exec("DELETE FROM house_groups")
-				database.TruncateTable(service, groupModel.Group{})
-				database.TruncateTable(service, model.House{})
+				testhelper.TruncateTable(service, groupModel.Group{})
+				testhelper.TruncateTable(service, model.House{})
 			},
 		).
 		ExecuteMigration(userModel.User{}, model.House{}, groupModel.Group{})
@@ -148,7 +149,7 @@ func (h *HouseRepositoryTestSuite) Test_Update() {
 	}, response)
 }
 
-func (h *HouseRepositoryTestSuite) Test_Update_WithAddingGroups() {
+func (h *HouseRepositoryTestSuite) Test_UpdateByRequest_WithAddingGroups() {
 	group := groupModel.Group{
 		Id:      uuid.New(),
 		Name:    "Test Group",
@@ -171,7 +172,7 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithAddingGroups() {
 	assert.Equal(h.T(), []groupModel.Group{group}, response.Groups)
 }
 
-func (h *HouseRepositoryTestSuite) Test_Update_WithUpdatingGroups() {
+func (h *HouseRepositoryTestSuite) Test_UpdateByRequest_WithUpdatingGroups() {
 	group := groupModel.Group{
 		Id:      uuid.New(),
 		Name:    "Test Group",
@@ -201,7 +202,7 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithUpdatingGroups() {
 	assert.Equal(h.T(), []groupModel.Group{newGroup}, response.Groups)
 }
 
-func (h *HouseRepositoryTestSuite) Test_Update_WithExtendingGroups() {
+func (h *HouseRepositoryTestSuite) Test_UpdateByRequest_WithExtendingGroups() {
 	group := groupModel.Group{
 		Id:      uuid.New(),
 		Name:    "Test Group",
@@ -231,7 +232,7 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithExtendingGroups() {
 	assert.Equal(h.T(), []groupModel.Group{group, newGroup}, response.Groups)
 }
 
-func (h *HouseRepositoryTestSuite) Test_Update_WithDeletingGroups() {
+func (h *HouseRepositoryTestSuite) Test_UpdateByRequest_WithDeletingGroups() {
 	group := groupModel.Group{
 		Id:      uuid.New(),
 		Name:    "Test Group",
@@ -253,8 +254,8 @@ func (h *HouseRepositoryTestSuite) Test_Update_WithDeletingGroups() {
 	assert.Equal(h.T(), []groupModel.Group{}, response.Groups)
 }
 
-func (h *HouseRepositoryTestSuite) Test_Update_WithMissingId() {
-	assert.Nil(h.T(), h.repository.UpdateByRequest(uuid.New(), model.UpdateHouseRequest{}))
+func (h *HouseRepositoryTestSuite) Test_UpdateByRequest_WithMissingId() {
+	assert.NotNil(h.T(), h.repository.UpdateByRequest(uuid.New(), model.UpdateHouseRequest{}))
 }
 
 func (h *HouseRepositoryTestSuite) createHouse() (house model.House) {

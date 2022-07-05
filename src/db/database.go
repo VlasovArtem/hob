@@ -20,14 +20,9 @@ func (p *Provider) DBModeled(model any) *gorm.DB {
 	return p.db.Model(model)
 }
 
-func (p *Provider) Transactional(db *gorm.DB) Provider {
-	return Provider{db}
-}
-
 type ProviderInterface interface {
 	DB() *gorm.DB
 	DBModeled(model any) *gorm.DB
-	Transactional(db *gorm.DB) Provider
 }
 
 type Database struct {

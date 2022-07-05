@@ -8,6 +8,7 @@ import (
 	houseMocks "github.com/VlasovArtem/hob/src/house/mocks"
 	"github.com/VlasovArtem/hob/src/payment/mocks"
 	"github.com/VlasovArtem/hob/src/payment/model"
+	pivotalMocks "github.com/VlasovArtem/hob/src/pivotal/mocks"
 	providerMocks "github.com/VlasovArtem/hob/src/provider/mocks"
 	"github.com/VlasovArtem/hob/src/test/testhelper"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
@@ -28,6 +29,7 @@ type PaymentServiceTestSuite struct {
 	houseService      *houseMocks.HouseService
 	providerService   *providerMocks.ProviderService
 	paymentRepository *mocks.PaymentRepository
+	pivotals          *pivotalMocks.PivotalService
 }
 
 func TestIncomeServiceTestSuite(t *testing.T) {
@@ -37,8 +39,9 @@ func TestIncomeServiceTestSuite(t *testing.T) {
 		ts.houseService = new(houseMocks.HouseService)
 		ts.providerService = new(providerMocks.ProviderService)
 		ts.paymentRepository = new(mocks.PaymentRepository)
+		ts.pivotals = new(pivotalMocks.PivotalService)
 
-		return NewPaymentService(ts.userService, ts.houseService, ts.providerService, ts.paymentRepository)
+		return NewPaymentService(ts.userService, ts.houseService, ts.providerService, ts.paymentRepository, ts.pivotals)
 	}
 
 	suite.Run(t, ts)

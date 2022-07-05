@@ -8,19 +8,19 @@ import (
 	houseModel "github.com/VlasovArtem/hob/src/house/model"
 	"github.com/VlasovArtem/hob/src/income/mocks"
 	"github.com/VlasovArtem/hob/src/income/model"
+	"github.com/VlasovArtem/hob/src/test/testhelper"
 	"github.com/VlasovArtem/hob/src/test/testhelper/database"
 	userMocks "github.com/VlasovArtem/hob/src/user/mocks"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 	"testing"
 	"time"
 )
 
 type IncomeRepositoryTestSuite struct {
-	database.DBTestSuite
+	database.DBTestSuite[model.Income]
 	repository   IncomeRepository
 	createdUser  userModel.User
 	createdHouse houseModel.House
@@ -30,17 +30,23 @@ func (i *IncomeRepositoryTestSuite) SetupSuite() {
 	i.InitDBTestSuite()
 
 	i.CreateRepository(
-		func(service db.DatabaseService) {
+		func(service db.ModeledDatabase[model.Income]) {
 			i.repository = NewIncomeRepository(service)
 		},
 	).
-		AddAfterTest(truncateDynamic).
-		AddAfterSuite(func(service db.DatabaseService) {
+		AddAfterTest(func(service db.ModeledDatabase[model.Income]) {
 			service.DB().Exec("DELETE FROM income_groups")
-			database.TruncateTable(service, groupModel.Group{})
-			database.TruncateTable(service, model.Income{})
-			database.TruncateTable(service, houseModel.House{})
-			database.TruncateTable(service, userModel.User{})
+			service.DB().Exec("DELETE FROM house_groups")
+			testhelper.TruncateTable(service, groupModel.Group{})
+			testhelper.TruncateTable(service, model.Income{})
+		}).
+		AddAfterSuite(func(service db.ModeledDatabase[model.Income]) {
+			service.DB().Exec("DELETE FROM income_groups")
+			service.DB().Exec("DELETE FROM house_groups")
+			testhelper.TruncateTable(service, groupModel.Group{})
+			testhelper.TruncateTable(service, model.Income{})
+			testhelper.TruncateTable(service, houseModel.House{})
+			testhelper.TruncateTable(service, userModel.User{})
 		}).
 		ExecuteMigration(userModel.User{}, groupModel.Group{}, houseModel.House{}, model.Income{})
 
@@ -55,64 +61,17 @@ func TestIncomeRepositoryTestSuite(t *testing.T) {
 	suite.Run(t, new(IncomeRepositoryTestSuite))
 }
 
-func (i *IncomeRepositoryTestSuite) Test_Create() {
-	income := mocks.GenerateIncome(&i.createdHouse.Id)
-
-	actual, err := i.repository.Create(income)
-
-	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), income, actual)
-}
-
-func (i *IncomeRepositoryTestSuite) Test_Create_WithMissingHouse() {
-	houseId := uuid.New()
-	income := mocks.GenerateIncome(&houseId)
-
-	actual, err := i.repository.Create(income)
-
-	assert.NotNil(i.T(), err)
-	assert.Equal(i.T(), income, actual)
-}
-
-func (i *IncomeRepositoryTestSuite) Test_Create_WithGroupId() {
-	group := i.createGroup()
-
-	income := mocks.GenerateIncome(nil)
-	income.Groups = []groupModel.Group{group}
-
-	actual, err := i.repository.Create(income)
-
-	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), income, actual)
-}
-
 func (i *IncomeRepositoryTestSuite) Test_CreateBatch() {
 	first := mocks.GenerateIncome(&i.createdHouse.Id)
 	first.Name = "First Income"
 	second := mocks.GenerateIncome(&i.createdHouse.Id)
 	second.Name = "Second Income"
 
-	actual, err := i.repository.CreateBatch([]model.Income{first, second})
+	incomes := []model.Income{first, second}
+	err := i.repository.Create(&incomes)
 
 	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), []model.Income{first, second}, actual)
-}
-
-func (i *IncomeRepositoryTestSuite) Test_FindById() {
-	income := i.createIncome()
-
-	actual, err := i.repository.FindById(income.Id)
-
-	income.Groups = []groupModel.Group{}
-	assert.Nil(i.T(), err)
-	assert.Equal(i.T(), income, actual)
-}
-
-func (i *IncomeRepositoryTestSuite) Test_FindById_WithMissingId() {
-	actual, err := i.repository.FindById(uuid.New())
-
-	assert.ErrorIs(i.T(), err, gorm.ErrRecordNotFound)
-	assert.Equal(i.T(), model.Income{}, actual)
+	assert.Equal(i.T(), []model.Income{first, second}, incomes)
 }
 
 func (i *IncomeRepositoryTestSuite) Test_FindByHouseId() {
@@ -260,26 +219,6 @@ func (i *IncomeRepositoryTestSuite) Test_FindByGroupIds_WithNotMatchingIds() {
 	assert.Equal(i.T(), []model.IncomeDto{}, actual)
 }
 
-func (i *IncomeRepositoryTestSuite) Test_ExistsById() {
-	income := i.createIncome()
-
-	assert.True(i.T(), i.repository.ExistsById(income.Id))
-}
-
-func (i *IncomeRepositoryTestSuite) Test_ExistsById_WithMissingId() {
-	assert.False(i.T(), i.repository.ExistsById(uuid.New()))
-}
-
-func (i *IncomeRepositoryTestSuite) Test_DeleteById() {
-	income := i.createIncome()
-
-	assert.Nil(i.T(), i.repository.DeleteById(income.Id))
-}
-
-func (i *IncomeRepositoryTestSuite) Test_DeleteById_WithMissingId() {
-	assert.Nil(i.T(), i.repository.DeleteById(uuid.New()))
-}
-
 func (i *IncomeRepositoryTestSuite) Test_Update() {
 	income := i.createIncome()
 
@@ -290,7 +229,7 @@ func (i *IncomeRepositoryTestSuite) Test_Update() {
 		Sum:         income.Sum + 100.0,
 	}
 
-	err := i.repository.Update(income.Id, updatedIncome)
+	err := i.repository.UpdateByRequest(income.Id, updatedIncome)
 
 	assert.Nil(i.T(), err)
 
@@ -306,6 +245,115 @@ func (i *IncomeRepositoryTestSuite) Test_Update() {
 		House:       income.House,
 		Groups:      []groupModel.Group{},
 	}, response)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_UpdateByRequest_WithAddingGroups() {
+	group := groupModel.Group{
+		Id:      uuid.New(),
+		Name:    "Test Group",
+		OwnerId: i.createdUser.Id,
+	}
+	i.CreateEntity(group)
+
+	income := i.createIncome()
+
+	updatedHouse := model.UpdateIncomeRequest{
+		GroupIds: []uuid.UUID{group.Id},
+	}
+
+	err := i.repository.UpdateByRequest(income.Id, updatedHouse)
+
+	assert.Nil(i.T(), err)
+
+	response, err := i.repository.FindById(income.Id)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []groupModel.Group{group}, response.Groups)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_UpdateByRequest_WithUpdatingGroups() {
+	group := groupModel.Group{
+		Id:      uuid.New(),
+		Name:    "Test Group",
+		OwnerId: i.createdUser.Id,
+	}
+
+	income := i.createIncomeWithGroups([]groupModel.Group{group})
+
+	newGroup := groupModel.Group{
+		Id:      uuid.New(),
+		Name:    "New Test Group",
+		OwnerId: i.createdUser.Id,
+	}
+
+	i.CreateEntity(newGroup)
+
+	updatedHouse := model.UpdateIncomeRequest{
+		GroupIds: []uuid.UUID{newGroup.Id},
+	}
+
+	err := i.repository.UpdateByRequest(income.Id, updatedHouse)
+
+	assert.Nil(i.T(), err)
+
+	response, err := i.repository.FindById(income.Id)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []groupModel.Group{newGroup}, response.Groups)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_UpdateByRequest_WithExtendingGroups() {
+	group := groupModel.Group{
+		Id:      uuid.New(),
+		Name:    "Test Group",
+		OwnerId: i.createdUser.Id,
+	}
+
+	groups := i.createIncomeWithGroups([]groupModel.Group{group})
+
+	newGroup := groupModel.Group{
+		Id:      uuid.New(),
+		Name:    "New Test Group",
+		OwnerId: i.createdUser.Id,
+	}
+
+	i.CreateEntity(newGroup)
+
+	updatedHouse := model.UpdateIncomeRequest{
+		GroupIds: []uuid.UUID{group.Id, newGroup.Id},
+	}
+
+	err := i.repository.UpdateByRequest(groups.Id, updatedHouse)
+
+	assert.Nil(i.T(), err)
+
+	response, err := i.repository.FindById(groups.Id)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []groupModel.Group{group, newGroup}, response.Groups)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_UpdateByRequest_WithDeletingGroups() {
+	group := groupModel.Group{
+		Id:      uuid.New(),
+		Name:    "Test Group",
+		OwnerId: i.createdUser.Id,
+	}
+
+	house := i.createIncomeWithGroups([]groupModel.Group{group})
+
+	updatedHouse := model.UpdateIncomeRequest{
+		GroupIds: []uuid.UUID{},
+	}
+
+	err := i.repository.UpdateByRequest(house.Id, updatedHouse)
+
+	assert.Nil(i.T(), err)
+
+	response, err := i.repository.FindById(house.Id)
+	assert.Nil(i.T(), err)
+	assert.Equal(i.T(), []groupModel.Group{}, response.Groups)
+}
+
+func (i *IncomeRepositoryTestSuite) Test_UpdateByRequest_WithMissingId() {
+	assert.NotNil(i.T(), i.repository.UpdateByRequest(uuid.New(), model.UpdateIncomeRequest{}))
 }
 
 func (i *IncomeRepositoryTestSuite) createIncomeWithHouse() model.Income {
@@ -330,17 +378,11 @@ func (i *IncomeRepositoryTestSuite) createIncomeWithGroups(groups []groupModel.G
 	income = mocks.GenerateIncome(&i.createdHouse.Id)
 	income.Groups = groups
 
-	create, err := i.repository.Create(income)
+	err := i.repository.Create(&income)
 
 	assert.Nil(i.T(), err)
 
-	return create
-}
-
-func truncateDynamic(service db.DatabaseService) {
-	service.DB().Exec("DELETE FROM income_groups")
-	database.TruncateTable(service, groupModel.Group{})
-	database.TruncateTable(service, model.Income{})
+	return
 }
 
 func (i *IncomeRepositoryTestSuite) createGroup() groupModel.Group {

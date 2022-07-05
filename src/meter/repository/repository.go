@@ -2,66 +2,37 @@ package repository
 
 import (
 	"github.com/VlasovArtem/hob/src/common/dependency"
+	"github.com/VlasovArtem/hob/src/common/transactional"
 	"github.com/VlasovArtem/hob/src/db"
 	"github.com/VlasovArtem/hob/src/meter/model"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-var entity = model.Meter{}
-
-type MeterRepositoryObject struct {
-	database db.modeledDatabase
+type MeterRepositoryStr struct {
+	db.ModeledDatabase[model.Meter]
 }
 
 func NewMeterRepository(database db.DatabaseService) MeterRepository {
-	return &MeterRepositoryObject{
-		database: db.modeledDatabase{
-			DatabaseService: database,
-			Model:           entity,
-		},
-	}
+	return &MeterRepositoryStr{db.NewModeledDatabase(model.Meter{}, database)}
 }
 
-func (m *MeterRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
+func (m *MeterRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewMeterRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
-func (m *MeterRepositoryObject) GetEntity() any {
-	return entity
-}
-
 type MeterRepository interface {
-	Create(entity model.Meter) (model.Meter, error)
-	ExistsById(id uuid.UUID) bool
-	FindById(id uuid.UUID) (model.Meter, error)
+	transactional.Transactional[MeterRepository]
+	db.ModeledDatabase[model.Meter]
 	FindByPaymentId(paymentId uuid.UUID) (model.Meter, error)
-	DeleteById(id uuid.UUID) error
-	Update(id uuid.UUID, meter model.Meter) error
 }
 
-func (m *MeterRepositoryObject) Create(entity model.Meter) (model.Meter, error) {
-	if err := m.database.Create(&entity); err != nil {
-		return entity, err
+func (m *MeterRepositoryStr) FindByPaymentId(id uuid.UUID) (response model.Meter, err error) {
+	return m.FirstBy("payment_id = ?", id)
+}
+
+func (m *MeterRepositoryStr) Transactional(tx *gorm.DB) MeterRepository {
+	return &MeterRepositoryStr{
+		ModeledDatabase: db.NewTransactionalModeledDatabase(m.GetEntity(), tx),
 	}
-	return entity, nil
-}
-
-func (m *MeterRepositoryObject) ExistsById(id uuid.UUID) bool {
-	return m.database.Exists(id)
-}
-
-func (m *MeterRepositoryObject) FindById(id uuid.UUID) (response model.Meter, err error) {
-	return response, m.database.Find(&response, id)
-}
-
-func (m *MeterRepositoryObject) FindByPaymentId(id uuid.UUID) (response model.Meter, err error) {
-	return response, m.database.FirstBy(&response, "payment_id = ?", id)
-}
-
-func (m *MeterRepositoryObject) DeleteById(id uuid.UUID) error {
-	return m.database.Delete(id)
-}
-
-func (m *MeterRepositoryObject) Update(id uuid.UUID, entity model.Meter) error {
-	return m.database.Update(id, entity, "PaymentId", "Payment")
 }

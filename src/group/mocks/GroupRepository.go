@@ -10,6 +10,8 @@ import (
 
 	model "github.com/VlasovArtem/hob/src/group/model"
 
+	repository "github.com/VlasovArtem/hob/src/group/repository"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -367,15 +369,17 @@ func (_m *GroupRepository) Modeled() *gorm.DB {
 	return r0
 }
 
-// Transactional provides a mock function with given fields: _a0
-func (_m *GroupRepository) Transactional(_a0 *gorm.DB) db.Provider {
-	ret := _m.Called(_a0)
+// Transactional provides a mock function with given fields: tx
+func (_m *GroupRepository) Transactional(tx *gorm.DB) repository.GroupRepository {
+	ret := _m.Called(tx)
 
-	var r0 db.Provider
-	if rf, ok := ret.Get(0).(func(*gorm.DB) db.Provider); ok {
-		r0 = rf(_a0)
+	var r0 repository.GroupRepository
+	if rf, ok := ret.Get(0).(func(*gorm.DB) repository.GroupRepository); ok {
+		r0 = rf(tx)
 	} else {
-		r0 = ret.Get(0).(db.Provider)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(repository.GroupRepository)
+		}
 	}
 
 	return r0
