@@ -20,6 +20,12 @@ func (i *IncomeRepositoryStr) Initialize(factory dependency.DependenciesProvider
 	return NewIncomeRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
+func (i *IncomeRepositoryStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func NewIncomeRepository(database db.DatabaseService) IncomeRepository {
 	return &IncomeRepositoryStr{db.NewModeledDatabase(model.Income{}, database)}
 }

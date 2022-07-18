@@ -13,16 +13,23 @@ import (
 	"gorm.io/gorm"
 )
 
-type MeterServiceObject struct {
+type MeterServiceStr struct {
 	paymentService paymentService.PaymentService
 	repository     repository.MeterRepository
 }
 
 func NewMeterService(paymentService paymentService.PaymentService, repository repository.MeterRepository) MeterService {
-	return &MeterServiceObject{paymentService, repository}
+	return &MeterServiceStr{paymentService, repository}
 }
 
-func (m *MeterServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (m *MeterServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(paymentService.PaymentServiceStr{}),
+		dependency.FindNameAndType(repository.MeterRepositoryStr{}),
+	}
+}
+
+func (m *MeterServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewMeterService(
 		dependency.FindRequiredDependency[paymentService.PaymentServiceStr, paymentService.PaymentService](factory),
 		dependency.FindRequiredDependency[repository.MeterRepositoryStr, repository.MeterRepository](factory),
@@ -38,7 +45,7 @@ type MeterService interface {
 	FindByPaymentId(id uuid.UUID) (model.MeterDto, error)
 }
 
-func (m *MeterServiceObject) Add(request model.CreateMeterRequest) (response model.MeterDto, err error) {
+func (m *MeterServiceStr) Add(request model.CreateMeterRequest) (response model.MeterDto, err error) {
 	if !m.paymentService.ExistsById(request.PaymentId) {
 		return response, fmt.Errorf("payment with id %s not found", request.PaymentId)
 	}
@@ -51,7 +58,7 @@ func (m *MeterServiceObject) Add(request model.CreateMeterRequest) (response mod
 	}
 }
 
-func (m *MeterServiceObject) Update(id uuid.UUID, request model.UpdateMeterRequest) error {
+func (m *MeterServiceStr) Update(id uuid.UUID, request model.UpdateMeterRequest) error {
 	if !m.repository.Exists(id) {
 		return int_errors.NewErrNotFound("meter with id %s not found", id)
 	}
@@ -59,7 +66,7 @@ func (m *MeterServiceObject) Update(id uuid.UUID, request model.UpdateMeterReque
 	return m.repository.Update(id, request.ToEntity())
 }
 
-func (m *MeterServiceObject) DeleteById(id uuid.UUID) error {
+func (m *MeterServiceStr) DeleteById(id uuid.UUID) error {
 	if !m.repository.Exists(id) {
 		return int_errors.NewErrNotFound("meter with id %s not found", id)
 	}
@@ -67,7 +74,7 @@ func (m *MeterServiceObject) DeleteById(id uuid.UUID) error {
 	return m.repository.Delete(id)
 }
 
-func (m *MeterServiceObject) FindById(id uuid.UUID) (dto model.MeterDto, err error) {
+func (m *MeterServiceStr) FindById(id uuid.UUID) (dto model.MeterDto, err error) {
 	if meter, err := m.repository.Find(id); err != nil {
 		return dto, database.HandlerFindError(err, "meter with id %s in not exists", id)
 	} else {
@@ -75,7 +82,7 @@ func (m *MeterServiceObject) FindById(id uuid.UUID) (dto model.MeterDto, err err
 	}
 }
 
-func (m *MeterServiceObject) FindByPaymentId(id uuid.UUID) (dto model.MeterDto, err error) {
+func (m *MeterServiceStr) FindByPaymentId(id uuid.UUID) (dto model.MeterDto, err error) {
 	if meter, err := m.repository.FindByPaymentId(id); err != nil {
 		return dto, database.HandlerFindError(err, "meter with payment id %s in not exists", id)
 	} else {
@@ -83,8 +90,8 @@ func (m *MeterServiceObject) FindByPaymentId(id uuid.UUID) (dto model.MeterDto, 
 	}
 }
 
-func (m *MeterServiceObject) Transactional(tx *gorm.DB) MeterService {
-	return &MeterServiceObject{
+func (m *MeterServiceStr) Transactional(tx *gorm.DB) MeterService {
+	return &MeterServiceStr{
 		paymentService: m.paymentService.Transactional(tx),
 		repository:     m.repository.Transactional(tx),
 	}

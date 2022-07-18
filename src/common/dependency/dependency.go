@@ -5,6 +5,11 @@ import (
 	"reflect"
 )
 
+type Requirements struct {
+	Name string
+	Type reflect.Type
+}
+
 type dependenciesProviderObject struct {
 	dependenciesByName map[string]any
 	dependenciesByType map[reflect.Type]any
@@ -26,6 +31,7 @@ type DependenciesProvider interface {
 }
 
 type ObjectDependencyInitializer interface {
+	GetRequiredDependencies() []Requirements
 	Initialize(factory DependenciesProvider) any
 }
 
@@ -51,15 +57,15 @@ func (e *entity[T]) GetEntity() T {
 }
 
 func (d *dependenciesProviderObject) Add(dependency any) any {
-	name, typeOf := findNameAndType(dependency)
+	req := FindNameAndType(dependency)
 
-	if _, exists := d.dependenciesByName[name]; !exists {
-		log.Info().Msgf("dependency with name %s added", name)
-		d.dependenciesByName[name] = dependency
-		d.dependenciesByType[typeOf] = dependency
+	if _, exists := d.dependenciesByName[req.Name]; !exists {
+		log.Info().Msgf("dependency with name %s added", req.Name)
+		d.dependenciesByName[req.Name] = dependency
+		d.dependenciesByType[req.Type] = dependency
 		return dependency
 	}
-	log.Info().Msgf("dependency with name %s already exists", name)
+	log.Info().Msgf("dependency with name %s already exists", req.Name)
 	return dependency
 }
 
@@ -114,20 +120,21 @@ func findName(dependency any) (name string) {
 	return name
 }
 
-func findNameAndType(dependency any) (name string, dependencyType reflect.Type) {
+func FindNameAndType(dependency any) (req Requirements) {
 	valueOf := reflect.Indirect(reflect.ValueOf(dependency))
 	typeOf := valueOf.Type()
+	req.Type = typeOf
 
 	switch typeOf.Kind() {
 	case reflect.Struct:
-		name = typeOf.Name()
+		req.Name = typeOf.Name()
 	case reflect.Ptr:
-		name = typeOf.Elem().Name()
+		req.Name = typeOf.Elem().Name()
 	default:
 		log.Fatal().Msgf("type is supported %s", typeOf.Kind())
 	}
 
-	return name, typeOf
+	return
 }
 
 func FindRequiredDependency[T any, V any](d DependenciesProvider) V {

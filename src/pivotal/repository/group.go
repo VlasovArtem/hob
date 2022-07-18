@@ -16,12 +16,18 @@ func NewGroupPivotalRepository(database db.DatabaseService) PivotalRepository[mo
 	return &GroupPivotalRepository{db.NewModeledDatabase(model.GroupPivotal{}, database)}
 }
 
+func (g *GroupPivotalRepository) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func (g *GroupPivotalRepository) Initialize(factory dependency.DependenciesProvider) any {
 	return NewGroupPivotalRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }
 
 func (g *GroupPivotalRepository) FindBySourceId(sourceId uuid.UUID, source *model.GroupPivotal) error {
-	return g.FindReceiverBy(&source, "group_id = ?", sourceId)
+	return g.Modeled().Preload("Group").Find(&source, "group_id = ?", sourceId).Error
 }
 
 func (g *GroupPivotalRepository) Transactional(tx *gorm.DB) PivotalRepository[model.GroupPivotal] {

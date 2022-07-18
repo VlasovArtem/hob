@@ -49,6 +49,15 @@ func NewIncomeService(
 	}
 }
 
+func (i *IncomeServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(houseService.HouseServiceStr{}),
+		dependency.FindNameAndType(groupService.GroupServiceStr{}),
+		dependency.FindNameAndType(repository.IncomeRepositoryStr{}),
+		dependency.FindNameAndType(pivotalService.PivotalServiceStr{}),
+	}
+}
+
 func (i *IncomeServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeService(
 		dependency.FindRequiredDependency[houseService.HouseServiceStr, houseService.HouseService](factory),
@@ -95,7 +104,7 @@ func (i *IncomeServiceStr) Add(request model.CreateIncomeRequest) (response mode
 			return err
 		}
 
-		if trx.pivotalService.ExistsByHouseId(*request.HouseId) {
+		if i.pivotalExists(request.HouseId, request.GroupIds, trx) {
 			return trx.pivotalService.AddIncome(float64(request.Sum), request.Date.Add(1*time.Microsecond), request.HouseId, request.GroupIds)
 		}
 
@@ -172,9 +181,10 @@ func (i *IncomeServiceStr) AddBatch(request model.CreateIncomeBatchRequest) (res
 			return err
 		}
 
-		for _, payment := range entities {
-			if trx.pivotalService.ExistsByHouseId(*payment.HouseId) {
-				return trx.pivotalService.AddIncome(float64(payment.Sum), payment.Date.Add(1*time.Microsecond), payment.HouseId, common.MapSlice[groupModel.Group, uuid.UUID](payment.Groups, func(g groupModel.Group) uuid.UUID { return g.Id }))
+		for _, income := range entities {
+			groupIds := common.MapSlice(income.Groups, groupModel.GroupToGroupId)
+			if i.pivotalExists(income.HouseId, groupIds, trx) {
+				return trx.pivotalService.AddIncome(float64(income.Sum), income.Date.Add(1*time.Microsecond), income.HouseId, groupIds)
 			}
 		}
 
@@ -221,11 +231,23 @@ func (i *IncomeServiceStr) DeleteById(id uuid.UUID) error {
 	if !i.ExistsById(id) {
 		return int_errors.NewErrNotFound("income with id %s not found", id)
 	}
-	if err := i.repository.Delete(id); err != nil {
-		return err
-	}
+	return i.repository.DB().Transaction(func(tx *gorm.DB) error {
+		trx := i.Transactional(tx).(*IncomeServiceStr)
 
-	return nil
+		if income, err := trx.FindById(id); err != nil {
+			return err
+		} else {
+			groupIds := common.MapSlice(income.Groups, func(group groupModel.GroupDto) uuid.UUID {
+				return group.Id
+			})
+			if i.pivotalExists(income.HouseId, groupIds, trx) {
+				if err = trx.pivotalService.DeleteIncome(float64(income.Sum), income.HouseId, groupIds); err != nil {
+					return err
+				}
+			}
+			return trx.DeleteById(id)
+		}
+	})
 }
 
 func (i *IncomeServiceStr) Update(id uuid.UUID, request model.UpdateIncomeRequest) error {
@@ -238,5 +260,23 @@ func (i *IncomeServiceStr) Update(id uuid.UUID, request model.UpdateIncomeReques
 	if request.Date.After(time.Now()) {
 		return errors.New("date should not be after current date")
 	}
-	return i.repository.Update(id, request)
+	return i.repository.DB().Transaction(func(tx *gorm.DB) error {
+		trx := i.Transactional(tx).(*IncomeServiceStr)
+
+		if income, err := trx.repository.Find(id); err != nil {
+			return err
+		} else {
+			oldGroupIds := common.MapSlice(income.Groups, groupModel.GroupToGroupId)
+			if i.pivotalExists(income.HouseId, oldGroupIds, trx) {
+				if err = trx.pivotalService.UpdateIncome(float64(income.Sum), float64(request.Sum), request.Date, income.HouseId, oldGroupIds, request.GroupIds); err != nil {
+					return err
+				}
+			}
+			return trx.repository.Update(id, request)
+		}
+	})
+}
+
+func (i *IncomeServiceStr) pivotalExists(houseId *uuid.UUID, groupIds []uuid.UUID, trx *IncomeServiceStr) bool {
+	return (houseId != nil && trx.pivotalService.ExistsByHouseId(*houseId)) || trx.pivotalService.ExistsByGroupIds(groupIds)
 }

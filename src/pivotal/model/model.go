@@ -35,7 +35,7 @@ type HousePivotalDto struct {
 
 type GroupPivotalDto struct {
 	Pivotal
-	GroupId uuid.UUID
+	Group groupModel.Group
 }
 
 func (h HousePivotal) ToDto() HousePivotalDto {
@@ -48,7 +48,7 @@ func (h HousePivotal) ToDto() HousePivotalDto {
 func (g GroupPivotal) ToDto() GroupPivotalDto {
 	return GroupPivotalDto{
 		Pivotal: g.Pivotal,
-		GroupId: g.GroupId,
+		Group:   g.Group,
 	}
 }
 

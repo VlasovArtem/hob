@@ -9,19 +9,25 @@ import (
 	"net/http"
 )
 
-type HouseHandlerObject struct {
+type HouseHandlerStr struct {
 	houseService service.HouseService
 }
 
 func NewHouseHandler(houseService service.HouseService) HouseHandler {
-	return &HouseHandlerObject{houseService}
+	return &HouseHandlerStr{houseService}
 }
 
-func (h *HouseHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
+func (h *HouseHandlerStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(service.HouseServiceStr{}),
+	}
+}
+
+func (h *HouseHandlerStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHouseHandler(dependency.FindRequiredDependency[service.HouseServiceStr, service.HouseService](factory))
 }
 
-func (h *HouseHandlerObject) Init(router *mux.Router) {
+func (h *HouseHandlerStr) Init(router *mux.Router) {
 	subrouter := router.PathPrefix("/api/v1/houses").Subrouter()
 
 	subrouter.Path("").HandlerFunc(h.Add()).Methods("POST")
@@ -41,7 +47,7 @@ type HouseHandler interface {
 	FindByUserId() http.HandlerFunc
 }
 
-func (h *HouseHandlerObject) Add() http.HandlerFunc {
+func (h *HouseHandlerStr) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestBody, err := rest.ReadRequestBody[model.CreateHouseRequest](request)
 		if err != nil {
@@ -54,7 +60,7 @@ func (h *HouseHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (h *HouseHandlerObject) AddBatch() http.HandlerFunc {
+func (h *HouseHandlerStr) AddBatch() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		requestBody, err := rest.ReadRequestBody[model.CreateHouseBatchRequest](request)
 		if err != nil {
@@ -67,7 +73,7 @@ func (h *HouseHandlerObject) AddBatch() http.HandlerFunc {
 	}
 }
 
-func (h *HouseHandlerObject) FindById() http.HandlerFunc {
+func (h *HouseHandlerStr) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -79,7 +85,7 @@ func (h *HouseHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (h *HouseHandlerObject) Update() http.HandlerFunc {
+func (h *HouseHandlerStr) Update() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -95,7 +101,7 @@ func (h *HouseHandlerObject) Update() http.HandlerFunc {
 	}
 }
 
-func (h *HouseHandlerObject) Delete() http.HandlerFunc {
+func (h *HouseHandlerStr) Delete() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -108,7 +114,7 @@ func (h *HouseHandlerObject) Delete() http.HandlerFunc {
 	}
 }
 
-func (h *HouseHandlerObject) FindByUserId() http.HandlerFunc {
+func (h *HouseHandlerStr) FindByUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)

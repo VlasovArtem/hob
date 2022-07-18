@@ -11,6 +11,7 @@ import (
 	meters "github.com/VlasovArtem/hob/src/meter/service"
 	paymentSchedulers "github.com/VlasovArtem/hob/src/payment/scheduler/service"
 	payments "github.com/VlasovArtem/hob/src/payment/service"
+	"github.com/VlasovArtem/hob/src/pivotal/calculator"
 	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	providers "github.com/VlasovArtem/hob/src/provider/service"
 	userModel "github.com/VlasovArtem/hob/src/user/model"
@@ -88,11 +89,11 @@ func (t *TerminalApp) GetHouseService() houses.HouseService {
 }
 
 func (t *TerminalApp) GetUserService() users.UserService {
-	return dependency.FindRequiredDependency[users.UserServiceObject, users.UserService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[users.UserServiceStr, users.UserService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) getCountryService() countries.CountryService {
-	return dependency.FindRequiredDependency[countries.CountryServiceObject, countries.CountryService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[countries.CountryServiceStr, countries.CountryService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetIncomeService() incomes.IncomeService {
@@ -108,7 +109,7 @@ func (t *TerminalApp) GetProviderService() providers.ProviderService {
 }
 
 func (t *TerminalApp) GetMeterService() meters.MeterService {
-	return dependency.FindRequiredDependency[meters.MeterServiceObject, meters.MeterService](t.root.DependenciesFactory)
+	return dependency.FindRequiredDependency[meters.MeterServiceStr, meters.MeterService](t.root.DependenciesFactory)
 }
 
 func (t *TerminalApp) GetPaymentSchedulerService() paymentSchedulers.PaymentSchedulerService {
@@ -121,6 +122,10 @@ func (t *TerminalApp) GetIncomeSchedulerService() incomeSchedulers.IncomeSchedul
 
 func (t *TerminalApp) GetPivotalService() pivotalService.PivotalService {
 	return dependency.FindRequiredDependency[pivotalService.PivotalServiceStr, pivotalService.PivotalService](t.root.DependenciesFactory)
+}
+
+func (t *TerminalApp) GetPivotalCalculatorService() calculator.PivotalCalculatorService {
+	return dependency.FindRequiredDependency[calculator.PivotalCalculatorServiceStr, calculator.PivotalCalculatorService](t.root.DependenciesFactory)
 }
 
 func AsKey(evt *tcell.EventKey) tcell.Key {

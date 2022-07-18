@@ -8,17 +8,21 @@ import (
 	"net/http"
 )
 
-type HealthHandlerObject struct{}
+type HealthHandlerStr struct{}
 
-func NewHealthHandler() *HealthHandlerObject {
-	return &HealthHandlerObject{}
+func NewHealthHandler() *HealthHandlerStr {
+	return &HealthHandlerStr{}
 }
 
-func (h *HealthHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
+func (h *HealthHandlerStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{}
+}
+
+func (h *HealthHandlerStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHealthHandler()
 }
 
-func (h *HealthHandlerObject) Init(router *mux.Router) {
+func (h *HealthHandlerStr) Init(router *mux.Router) {
 	subrouter := router.PathPrefix("/api/v1/health").Subrouter()
 
 	subrouter.Path("").HandlerFunc(h.HealthCheck()).Methods("GET")
@@ -28,7 +32,7 @@ type HealthHandler interface {
 	HealthCheck() http.HandlerFunc
 }
 
-func (h *HealthHandlerObject) HealthCheck() http.HandlerFunc {
+func (h *HealthHandlerStr) HealthCheck() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		marshal, err := json.Marshal(HealthStatus{
 			status: "UP",

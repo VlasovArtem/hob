@@ -6,16 +6,20 @@ import (
 	userModel "github.com/VlasovArtem/hob/src/user/model"
 )
 
-type UserRequestValidatorObject struct {
+type UserRequestValidatorStr struct {
 	baseValidator.BaseValidator
 }
 
-func (u *UserRequestValidatorObject) Initialize(factory dependency.DependenciesProvider) any {
+func (u *UserRequestValidatorStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{}
+}
+
+func (u *UserRequestValidatorStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewUserRequestValidator()
 }
 
 func NewUserRequestValidator() UserRequestValidator {
-	return &UserRequestValidatorObject{baseValidator.NewBaseValidator()}
+	return &UserRequestValidatorStr{baseValidator.NewBaseValidator()}
 }
 
 type UserRequestValidator interface {
@@ -23,13 +27,13 @@ type UserRequestValidator interface {
 	ValidateUpdateRequest(request userModel.UpdateUserRequest) error
 }
 
-func (u *UserRequestValidatorObject) ValidateCreateRequest(request userModel.CreateUserRequest) error {
+func (u *UserRequestValidatorStr) ValidateCreateRequest(request userModel.CreateUserRequest) error {
 	return u.ValidateStringFieldNotEmpty(request.Email, "email should not be empty").
 		ValidateStringFieldNotEmpty(request.Password, "password should not be empty").
 		Result("Create User Request Validation Error")
 }
 
-func (u *UserRequestValidatorObject) ValidateUpdateRequest(request userModel.UpdateUserRequest) error {
+func (u *UserRequestValidatorStr) ValidateUpdateRequest(request userModel.UpdateUserRequest) error {
 	return u.ValidateStringFieldNotEmpty(request.Password, "password should not be empty").
 		Result("Create User Request Validation Error")
 }

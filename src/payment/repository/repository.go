@@ -19,6 +19,12 @@ func NewPaymentRepository(service db.DatabaseService) PaymentRepository {
 	return &PaymentRepositoryStr{db.NewModeledDatabase(model.Payment{}, service)}
 }
 
+func (p *PaymentRepositoryStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func (p *PaymentRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }

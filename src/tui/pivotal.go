@@ -3,6 +3,8 @@ package tui
 import (
 	"errors"
 	"fmt"
+	"github.com/VlasovArtem/hob/src/pivotal/calculator"
+	"github.com/VlasovArtem/hob/src/pivotal/model"
 	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -15,6 +17,7 @@ type Pivotal struct {
 	*Navigation
 	details        *tview.TextView
 	pivotalService pivotalService.PivotalService
+	calculator     calculator.PivotalCalculatorService
 }
 
 func (p *Pivotal) NavigationInfo(app *TerminalApp, variables map[string]any) *NavigationInfo {
@@ -26,6 +29,7 @@ func NewPivotal(app *TerminalApp) *Pivotal {
 		FlexApp:        NewFlexApp(),
 		details:        tview.NewTextView(),
 		pivotalService: app.GetPivotalService(),
+		calculator:     app.GetPivotalCalculatorService(),
 	}
 	p.enrichNavigation(app)
 
@@ -52,44 +56,26 @@ func (p *Pivotal) bindKeys() {
 }
 
 func (p *Pivotal) initDetails() {
-	var details string
-
 	if p.App.House == nil {
 		p.ShowErrorTo(errors.New("house is not set"))
 	} else {
-
-		var incomesSum, paymentsSum, total float64
+		var pivotal model.PivotalResponseDto
 		var err error
 
-		if len(p.App.House.Groups) != 0 {
-			for _, group := range p.App.House.Groups {
-				pivotalDto, nestedError := p.pivotalService.FindByGroupId(group.Id)
-				if nestedError != nil {
-					err = nestedError
-					break
-				}
-				incomesSum += pivotalDto.Income
-				paymentsSum += pivotalDto.Payments
-				total += pivotalDto.Total
-			}
+		if !p.pivotalService.ExistsByHouseId(p.App.House.Id) {
+			pivotal, err = p.calculator.Calculate(p.App.House.Id)
 		} else {
-			if pivotalByHouse, nestedError := p.pivotalService.FindByHouseId(p.App.House.Id); nestedError != nil {
-				err = nestedError
-			} else {
-				incomesSum = pivotalByHouse.Income
-				paymentsSum = pivotalByHouse.Payments
-				total = pivotalByHouse.Total
-			}
+			pivotal, err = p.pivotalService.Find(p.App.House.Id)
 		}
 
 		if err != nil {
 			p.ShowErrorTo(err)
 		} else {
-
-			details += fmt.Sprintf("Income: %.2f\n", incomesSum)
-			details += fmt.Sprintf("Payments: %.2f\n", paymentsSum)
-			details += "\n"
-			details += fmt.Sprintf("Total: %.2f\n", total)
+			details := fmt.Sprintf("House Pivotal: \nIncomes: %.2f\nExpenses: %.2f\nTotal: %.2f\n\n", pivotal.House.Income, pivotal.House.Payments, pivotal.House.Total)
+			for _, group := range pivotal.Groups {
+				details += fmt.Sprintf("Group '%s' Pivotal: \nIncomes: %.2f\nExpenses: %.2f\nTotal: %.2f\n", group.Group.Name, group.Income, group.Payments, group.Total)
+			}
+			details += fmt.Sprintf("\nTotal Pivotal: \nIncomes: %.2f\nExpenses: %.2f\nTotal: %.2f\n", pivotal.Total.Income, pivotal.Total.Payments, pivotal.Total.Total)
 
 			_, err = p.details.Write([]byte(details))
 

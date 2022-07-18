@@ -18,6 +18,12 @@ func NewPaymentSchedulerRepository(database db.DatabaseService) PaymentScheduler
 	return &PaymentSchedulerRepositoryStr{db.NewModeledDatabase(model.PaymentScheduler{}, database)}
 }
 
+func (p *PaymentSchedulerRepositoryStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func (p *PaymentSchedulerRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }

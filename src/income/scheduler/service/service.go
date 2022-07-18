@@ -38,11 +38,20 @@ func NewIncomeSchedulerService(
 	}
 }
 
+func (i *IncomeSchedulerServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(houseService.HouseServiceStr{}),
+		dependency.FindNameAndType(incomeService.IncomeServiceStr{}),
+		dependency.FindNameAndType(scheduler.SchedulerServiceStr{}),
+		dependency.FindNameAndType(repository.IncomeRepositorySchedulerStr{}),
+	}
+}
+
 func (i *IncomeSchedulerServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeSchedulerService(
 		dependency.FindRequiredDependency[houseService.HouseServiceStr, houseService.HouseService](factory),
 		dependency.FindRequiredDependency[incomeService.IncomeServiceStr, incomeService.IncomeService](factory),
-		dependency.FindRequiredDependency[scheduler.SchedulerServiceObject, scheduler.ServiceScheduler](factory),
+		dependency.FindRequiredDependency[scheduler.SchedulerServiceStr, scheduler.ServiceScheduler](factory),
 		dependency.FindRequiredDependency[repository.IncomeRepositorySchedulerStr, repository.IncomeSchedulerRepository](factory),
 	)
 }

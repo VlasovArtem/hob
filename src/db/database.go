@@ -29,6 +29,12 @@ type Database struct {
 	ProviderInterface
 }
 
+func (d *Database) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(DatabaseConfiguration{}),
+	}
+}
+
 func (d *Database) Initialize(factory dependency.DependenciesProvider) any {
 	return NewDatabaseService(factory.FindRequiredByObject(DatabaseConfiguration{}).(DatabaseConfiguration))
 }

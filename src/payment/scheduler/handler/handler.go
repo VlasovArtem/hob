@@ -9,19 +9,25 @@ import (
 	"net/http"
 )
 
-type PaymentSchedulerHandlerObject struct {
+type PaymentSchedulerHandlerStr struct {
 	paymentSchedulerService service.PaymentSchedulerService
 }
 
 func NewPaymentSchedulerHandler(paymentSchedulerService service.PaymentSchedulerService) PaymentSchedulerHandler {
-	return &PaymentSchedulerHandlerObject{paymentSchedulerService}
+	return &PaymentSchedulerHandlerStr{paymentSchedulerService}
 }
 
-func (p *PaymentSchedulerHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
+func (p *PaymentSchedulerHandlerStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(service.PaymentSchedulerServiceStr{}),
+	}
+}
+
+func (p *PaymentSchedulerHandlerStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerHandler(dependency.FindRequiredDependency[service.PaymentSchedulerServiceStr, service.PaymentSchedulerService](factory))
 }
 
-func (p *PaymentSchedulerHandlerObject) Init(router *mux.Router) {
+func (p *PaymentSchedulerHandlerStr) Init(router *mux.Router) {
 	subrouter := router.PathPrefix("/api/v1/payments/schedulers").Subrouter()
 
 	subrouter.Path("").HandlerFunc(p.Add()).Methods("POST")
@@ -43,7 +49,7 @@ type PaymentSchedulerHandler interface {
 	Update() http.HandlerFunc
 }
 
-func (p *PaymentSchedulerHandlerObject) Add() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerStr) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if body, err := rest.ReadRequestBody[model.CreatePaymentSchedulerRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -55,7 +61,7 @@ func (p *PaymentSchedulerHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (p *PaymentSchedulerHandlerObject) Remove() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerStr) Remove() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -67,7 +73,7 @@ func (p *PaymentSchedulerHandlerObject) Remove() http.HandlerFunc {
 	}
 }
 
-func (p *PaymentSchedulerHandlerObject) Update() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerStr) Update() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -83,7 +89,7 @@ func (p *PaymentSchedulerHandlerObject) Update() http.HandlerFunc {
 	}
 }
 
-func (p *PaymentSchedulerHandlerObject) FindById() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerStr) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -95,7 +101,7 @@ func (p *PaymentSchedulerHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (p *PaymentSchedulerHandlerObject) FindByHouseId() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerStr) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -107,7 +113,7 @@ func (p *PaymentSchedulerHandlerObject) FindByHouseId() http.HandlerFunc {
 	}
 }
 
-func (p *PaymentSchedulerHandlerObject) FindByUserId() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerStr) FindByUserId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -119,7 +125,7 @@ func (p *PaymentSchedulerHandlerObject) FindByUserId() http.HandlerFunc {
 	}
 }
 
-func (p *PaymentSchedulerHandlerObject) FindByProviderId() http.HandlerFunc {
+func (p *PaymentSchedulerHandlerStr) FindByProviderId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)

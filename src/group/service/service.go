@@ -29,10 +29,17 @@ func NewGroupService(
 	}
 }
 
+func (g *GroupServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(userService.UserServiceStr{}),
+		dependency.FindNameAndType(repository.GroupRepositoryStr{}),
+	}
+}
+
 func (g *GroupServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewGroupService(
-		dependency.FindRequiredDependency[userService.UserServiceObject, userService.UserService](factory),
-		dependency.FindRequiredDependency[repository.GroupRepositoryObject, repository.GroupRepository](factory),
+		dependency.FindRequiredDependency[userService.UserServiceStr, userService.UserService](factory),
+		dependency.FindRequiredDependency[repository.GroupRepositoryStr, repository.GroupRepository](factory),
 	)
 }
 

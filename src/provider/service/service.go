@@ -20,6 +20,12 @@ func NewProviderService(repository repository.ProviderRepository) ProviderServic
 	return &ProviderServiceStr{repository}
 }
 
+func (p *ProviderServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(repository.ProviderRepositoryStr{}),
+	}
+}
+
 func (p *ProviderServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewProviderService(dependency.FindRequiredDependency[repository.ProviderRepositoryStr, repository.ProviderRepository](factory))
 }
@@ -93,4 +99,3 @@ func (p *ProviderServiceStr) Transactional(tx *gorm.DB) ProviderService {
 func notFoundError(id uuid.UUID) error {
 	return int_errors.NewErrNotFound("provider with id %s not found", id)
 }
-

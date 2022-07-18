@@ -20,6 +20,12 @@ func NewProviderRepository(database db.DatabaseService) ProviderRepository {
 	}
 }
 
+func (p *ProviderRepositoryStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func (p *ProviderRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewProviderRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }

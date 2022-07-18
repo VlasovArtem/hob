@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-type ProviderHandlerObject struct {
+type ProviderHandlerStr struct {
 	providerService service.ProviderService
 }
 
@@ -18,7 +18,7 @@ type FindByNameRequest struct {
 	Name string
 }
 
-func (p *ProviderHandlerObject) Init(router *mux.Router) {
+func (p *ProviderHandlerStr) Init(router *mux.Router) {
 	providerRouter := router.PathPrefix("/api/v1/providers").Subrouter()
 
 	providerRouter.Path("").HandlerFunc(p.Add()).Methods("POST")
@@ -33,10 +33,16 @@ func (p *ProviderHandlerObject) Init(router *mux.Router) {
 }
 
 func NewProviderHandler(providerService service.ProviderService) ProviderHandler {
-	return &ProviderHandlerObject{providerService}
+	return &ProviderHandlerStr{providerService}
 }
 
-func (p *ProviderHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
+func (p *ProviderHandlerStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(service.ProviderServiceStr{}),
+	}
+}
+
+func (p *ProviderHandlerStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewProviderHandler(dependency.FindRequiredDependency[service.ProviderServiceStr, service.ProviderService](factory))
 }
 
@@ -48,7 +54,7 @@ type ProviderHandler interface {
 	FindBy() http.HandlerFunc
 }
 
-func (p *ProviderHandlerObject) Add() http.HandlerFunc {
+func (p *ProviderHandlerStr) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if body, err := rest.ReadRequestBody[model.CreateProviderRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -60,7 +66,7 @@ func (p *ProviderHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (p *ProviderHandlerObject) Delete() http.HandlerFunc {
+func (p *ProviderHandlerStr) Delete() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -74,7 +80,7 @@ func (p *ProviderHandlerObject) Delete() http.HandlerFunc {
 	}
 }
 
-func (p *ProviderHandlerObject) Update() http.HandlerFunc {
+func (p *ProviderHandlerStr) Update() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -90,7 +96,7 @@ func (p *ProviderHandlerObject) Update() http.HandlerFunc {
 	}
 }
 
-func (p *ProviderHandlerObject) FindById() http.HandlerFunc {
+func (p *ProviderHandlerStr) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -102,7 +108,7 @@ func (p *ProviderHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (p *ProviderHandlerObject) FindBy() http.HandlerFunc {
+func (p *ProviderHandlerStr) FindBy() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		userId, err := rest.GetQueryParam[uuid.UUID](request, "userId")
 		if err != nil {

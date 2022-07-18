@@ -9,19 +9,25 @@ import (
 	"net/http"
 )
 
-type MeterHandlerObject struct {
+type MeterHandlerStr struct {
 	meterService service.MeterService
 }
 
 func NewMeterHandler(meterService service.MeterService) MeterHandler {
-	return &MeterHandlerObject{meterService}
+	return &MeterHandlerStr{meterService}
 }
 
-func (m *MeterHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewMeterHandler(dependency.FindRequiredDependency[service.MeterServiceObject, service.MeterService](factory))
+func (m *MeterHandlerStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(service.MeterServiceStr{}),
+	}
 }
 
-func (m *MeterHandlerObject) Init(router *mux.Router) {
+func (m *MeterHandlerStr) Initialize(factory dependency.DependenciesProvider) any {
+	return NewMeterHandler(dependency.FindRequiredDependency[service.MeterServiceStr, service.MeterService](factory))
+}
+
+func (m *MeterHandlerStr) Init(router *mux.Router) {
 	meterRouter := router.PathPrefix("/api/v1/meters").Subrouter()
 
 	meterRouter.Path("").HandlerFunc(m.Add()).Methods("POST")
@@ -39,7 +45,7 @@ type MeterHandler interface {
 	FindByPaymentId() http.HandlerFunc
 }
 
-func (m *MeterHandlerObject) Add() http.HandlerFunc {
+func (m *MeterHandlerStr) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if body, err := rest.ReadRequestBody[model.CreateMeterRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -51,7 +57,7 @@ func (m *MeterHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (m *MeterHandlerObject) FindById() http.HandlerFunc {
+func (m *MeterHandlerStr) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -63,7 +69,7 @@ func (m *MeterHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (m *MeterHandlerObject) Update() http.HandlerFunc {
+func (m *MeterHandlerStr) Update() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -79,7 +85,7 @@ func (m *MeterHandlerObject) Update() http.HandlerFunc {
 	}
 }
 
-func (m *MeterHandlerObject) Delete() http.HandlerFunc {
+func (m *MeterHandlerStr) Delete() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -91,7 +97,7 @@ func (m *MeterHandlerObject) Delete() http.HandlerFunc {
 	}
 }
 
-func (m *MeterHandlerObject) FindByPaymentId() http.HandlerFunc {
+func (m *MeterHandlerStr) FindByPaymentId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)

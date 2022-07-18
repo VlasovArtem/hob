@@ -42,9 +42,19 @@ func NewPaymentService(
 	}
 }
 
+func (p *PaymentServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(users.UserServiceStr{}),
+		dependency.FindNameAndType(houses.HouseServiceStr{}),
+		dependency.FindNameAndType(providers.ProviderServiceStr{}),
+		dependency.FindNameAndType(repository.PaymentRepositoryStr{}),
+		dependency.FindNameAndType(pivotalService.PivotalServiceStr{}),
+	}
+}
+
 func (p *PaymentServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentService(
-		dependency.FindRequiredDependency[users.UserServiceObject, users.UserService](factory),
+		dependency.FindRequiredDependency[users.UserServiceStr, users.UserService](factory),
 		dependency.FindRequiredDependency[houses.HouseServiceStr, houses.HouseService](factory),
 		dependency.FindRequiredDependency[providers.ProviderServiceStr, providers.ProviderService](factory),
 		dependency.FindRequiredDependency[repository.PaymentRepositoryStr, repository.PaymentRepository](factory),
@@ -194,7 +204,20 @@ func (p *PaymentServiceStr) DeleteById(id uuid.UUID) error {
 	if !p.ExistsById(id) {
 		return fmt.Errorf("payment with id %s not found", id)
 	}
-	return p.paymentRepository.Delete(id)
+	return p.paymentRepository.DB().Transaction(func(tx *gorm.DB) error {
+		trx := p.Transactional(tx).(*PaymentServiceStr)
+
+		if payment, err := trx.paymentRepository.Find(id); err != nil {
+			return err
+		} else {
+			if trx.pivotalService.ExistsByHouseId(payment.HouseId) {
+				if err = trx.pivotalService.DeletePayment(float64(payment.Sum), payment.HouseId); err != nil {
+					return err
+				}
+			}
+			return trx.DeleteById(id)
+		}
+	})
 }
 
 func (p *PaymentServiceStr) Update(id uuid.UUID, request model.UpdatePaymentRequest) error {
@@ -207,7 +230,20 @@ func (p *PaymentServiceStr) Update(id uuid.UUID, request model.UpdatePaymentRequ
 	if request.Date.After(time.Now()) {
 		return errors.New("date should not be after current date")
 	}
-	return p.paymentRepository.Update(id, request.UpdateToEntity(id), "HouseId", "House", "UserId", "User")
+	return p.paymentRepository.DB().Transaction(func(tx *gorm.DB) error {
+		trx := p.Transactional(tx).(*PaymentServiceStr)
+
+		if payment, err := trx.paymentRepository.Find(id); err != nil {
+			return err
+		} else {
+			if trx.pivotalService.ExistsByHouseId(payment.HouseId) {
+				if err = trx.pivotalService.UpdatePayment(float64(payment.Sum), float64(request.Sum), request.Date, payment.HouseId); err != nil {
+					return err
+				}
+			}
+			return trx.paymentRepository.Update(id, request.UpdateToEntity(id), "HouseId", "House", "UserId", "User")
+		}
+	})
 }
 
 func (p *PaymentServiceStr) Transactional(db *gorm.DB) PaymentService {

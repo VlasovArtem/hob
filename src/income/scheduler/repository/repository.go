@@ -17,6 +17,12 @@ func NewIncomeSchedulerRepository(database db.DatabaseService) IncomeSchedulerRe
 	return &IncomeRepositorySchedulerStr{db.NewModeledDatabase(model.IncomeScheduler{}, database)}
 }
 
+func (h *IncomeRepositorySchedulerStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func (i *IncomeRepositorySchedulerStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeSchedulerRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }

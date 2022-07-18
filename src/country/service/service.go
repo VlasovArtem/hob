@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type CountryServiceObject struct {
+type CountryServiceStr struct {
 	countriesMap map[string]model.Country
 	countries    []model.Country
 }
@@ -17,7 +17,7 @@ type CountryService interface {
 }
 
 func NewCountryService(countries []model.Country) CountryService {
-	object := &CountryServiceObject{
+	object := &CountryServiceStr{
 		countriesMap: make(map[string]model.Country),
 		countries:    countries,
 	}
@@ -31,13 +31,13 @@ func NewCountryService(countries []model.Country) CountryService {
 	return object
 }
 
-func (c *CountryServiceObject) FindCountryByCode(code string) (country model.Country, err error) {
+func (c *CountryServiceStr) FindCountryByCode(code string) (country model.Country, err error) {
 	if country, ok := c.countriesMap[code]; ok {
 		return country, err
 	}
 	return country, int_errors.NewErrNotFound("country with code %s is not found", code)
 }
 
-func (c *CountryServiceObject) FindAllCountries() []model.Country {
+func (c *CountryServiceStr) FindAllCountries() []model.Country {
 	return c.countries
 }

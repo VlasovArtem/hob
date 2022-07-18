@@ -9,19 +9,25 @@ import (
 	"net/http"
 )
 
-type IncomeHandlerObject struct {
+type IncomeHandlerStr struct {
 	incomeService service.IncomeService
 }
 
 func NewIncomeHandler(incomeService service.IncomeService) IncomeHandler {
-	return &IncomeHandlerObject{incomeService}
+	return &IncomeHandlerStr{incomeService}
 }
 
-func (i *IncomeHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
+func (i *IncomeHandlerStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(service.IncomeServiceStr{}),
+	}
+}
+
+func (i *IncomeHandlerStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewIncomeHandler(dependency.FindRequiredDependency[service.IncomeServiceStr, service.IncomeService](factory))
 }
 
-func (i *IncomeHandlerObject) Init(router *mux.Router) {
+func (i *IncomeHandlerStr) Init(router *mux.Router) {
 	incomeRouter := router.PathPrefix("/api/v1/incomes").Subrouter()
 
 	incomeRouter.Path("").HandlerFunc(i.Add()).Methods("POST")
@@ -41,7 +47,7 @@ type IncomeHandler interface {
 	FindByHouseId() http.HandlerFunc
 }
 
-func (i *IncomeHandlerObject) Add() http.HandlerFunc {
+func (i *IncomeHandlerStr) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if body, err := rest.ReadRequestBody[model.CreateIncomeRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -53,7 +59,7 @@ func (i *IncomeHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (i *IncomeHandlerObject) Delete() http.HandlerFunc {
+func (i *IncomeHandlerStr) Delete() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -66,7 +72,7 @@ func (i *IncomeHandlerObject) Delete() http.HandlerFunc {
 	}
 }
 
-func (i *IncomeHandlerObject) Update() http.HandlerFunc {
+func (i *IncomeHandlerStr) Update() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -82,7 +88,7 @@ func (i *IncomeHandlerObject) Update() http.HandlerFunc {
 	}
 }
 
-func (i *IncomeHandlerObject) AddBatch() http.HandlerFunc {
+func (i *IncomeHandlerStr) AddBatch() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if body, err := rest.ReadRequestBody[model.CreateIncomeBatchRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -94,7 +100,7 @@ func (i *IncomeHandlerObject) AddBatch() http.HandlerFunc {
 	}
 }
 
-func (i *IncomeHandlerObject) FindById() http.HandlerFunc {
+func (i *IncomeHandlerStr) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -106,7 +112,7 @@ func (i *IncomeHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (i *IncomeHandlerObject) FindByHouseId() http.HandlerFunc {
+func (i *IncomeHandlerStr) FindByHouseId() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)

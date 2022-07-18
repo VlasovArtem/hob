@@ -10,16 +10,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type GroupRepositoryObject struct {
+type GroupRepositoryStr struct {
 	db.ModeledDatabase[model.Group]
 }
 
-func (g *GroupRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
+func (g *GroupRepositoryStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
+func (g *GroupRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewGroupRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }
 
 func NewGroupRepository(database db.DatabaseService) GroupRepository {
-	return &GroupRepositoryObject{
+	return &GroupRepositoryStr{
 		ModeledDatabase: db.NewModeledDatabase(model.Group{}, database),
 	}
 }
@@ -32,11 +38,11 @@ type GroupRepository interface {
 	ExistsByIds(ids []uuid.UUID) bool
 }
 
-func (g *GroupRepositoryObject) CreateBatch(entities []model.Group) ([]model.Group, error) {
+func (g *GroupRepositoryStr) CreateBatch(entities []model.Group) ([]model.Group, error) {
 	return entities, g.Create(&entities)
 }
 
-func (g *GroupRepositoryObject) FindByOwnerId(ownerId uuid.UUID) (response []model.GroupDto) {
+func (g *GroupRepositoryStr) FindByOwnerId(ownerId uuid.UUID) (response []model.GroupDto) {
 	if err := g.FindReceiverBy(&response, "owner_id = ?", ownerId); err != nil {
 		response = []model.GroupDto{}
 	}
@@ -44,7 +50,7 @@ func (g *GroupRepositoryObject) FindByOwnerId(ownerId uuid.UUID) (response []mod
 	return
 }
 
-func (g *GroupRepositoryObject) ExistsByIds(ids []uuid.UUID) bool {
+func (g *GroupRepositoryStr) ExistsByIds(ids []uuid.UUID) bool {
 	var count int64
 	if err := g.Modeled().Where("id IN ?", ids).Count(&count).Error; err != nil {
 		log.Error().Err(err)
@@ -53,8 +59,8 @@ func (g *GroupRepositoryObject) ExistsByIds(ids []uuid.UUID) bool {
 	return int64(len(ids)) == count
 }
 
-func (g *GroupRepositoryObject) Transactional(tx *gorm.DB) GroupRepository {
-	return &GroupRepositoryObject{
+func (g *GroupRepositoryStr) Transactional(tx *gorm.DB) GroupRepository {
+	return &GroupRepositoryStr{
 		ModeledDatabase: db.NewTransactionalModeledDatabase(model.Group{}, tx),
 	}
 }

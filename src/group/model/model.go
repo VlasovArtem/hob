@@ -51,6 +51,10 @@ func GroupToGroupDto(group Group) GroupDto {
 	return group.ToDto()
 }
 
+func GroupToGroupId(group Group) uuid.UUID {
+	return group.Id
+}
+
 func GroupIdToGroup(groupId uuid.UUID) Group {
 	return Group{Id: groupId}
 }

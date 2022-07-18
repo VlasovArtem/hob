@@ -13,16 +13,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserServiceObject struct {
+type UserServiceStr struct {
 	repository repository.UserRepository
 }
 
-func (u *UserServiceObject) Initialize(factory dependency.DependenciesProvider) any {
+func (u *UserServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(repository.UserRepositoryObject{}),
+	}
+}
+
+func (u *UserServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewUserService(dependency.FindRequiredDependency[repository.UserRepositoryObject, repository.UserRepository](factory))
 }
 
 func NewUserService(repository repository.UserRepository) UserService {
-	return &UserServiceObject{repository}
+	return &UserServiceStr{repository}
 }
 
 type UserService interface {
@@ -36,7 +42,7 @@ type UserService interface {
 	Transactional(db *gorm.DB) UserService
 }
 
-func (u *UserServiceObject) Add(request model.CreateUserRequest) (response model.UserDto, err error) {
+func (u *UserServiceStr) Add(request model.CreateUserRequest) (response model.UserDto, err error) {
 	if u.repository.ExistsByEmail(request.Email) {
 		return response, errors.New(fmt.Sprintf("user with '%s' already exists", request.Email))
 	}
@@ -55,18 +61,18 @@ func (u *UserServiceObject) Add(request model.CreateUserRequest) (response model
 	}
 }
 
-func (u *UserServiceObject) Update(id uuid.UUID, request model.UpdateUserRequest) error {
+func (u *UserServiceStr) Update(id uuid.UUID, request model.UpdateUserRequest) error {
 	if !u.ExistsById(id) {
 		return int_errors.NewErrNotFound("user with id %s not found", id)
 	}
 	return u.repository.Update(id, request)
 }
 
-func (u *UserServiceObject) Delete(id uuid.UUID) error {
+func (u *UserServiceStr) Delete(id uuid.UUID) error {
 	return u.repository.Delete(id)
 }
 
-func (u *UserServiceObject) FindById(id uuid.UUID) (response model.UserDto, err error) {
+func (u *UserServiceStr) FindById(id uuid.UUID) (response model.UserDto, err error) {
 	if user, err := u.repository.First(id); err != nil {
 		return response, database.HandlerFindError(err, "user with id %s not found", id)
 	} else {
@@ -74,11 +80,11 @@ func (u *UserServiceObject) FindById(id uuid.UUID) (response model.UserDto, err 
 	}
 }
 
-func (u *UserServiceObject) ExistsById(id uuid.UUID) bool {
+func (u *UserServiceStr) ExistsById(id uuid.UUID) bool {
 	return u.repository.Exists(id)
 }
 
-func (u *UserServiceObject) VerifyUser(email string, password string) (response model.UserDto, err error) {
+func (u *UserServiceStr) VerifyUser(email string, password string) (response model.UserDto, err error) {
 	if !u.repository.Verify(email, []byte(password)) {
 		return response, errors.New("credentials are not valid")
 	}
@@ -90,8 +96,8 @@ func (u *UserServiceObject) VerifyUser(email string, password string) (response 
 	}
 }
 
-func (u *UserServiceObject) Transactional(db *gorm.DB) UserService {
-	return &UserServiceObject{
+func (u *UserServiceStr) Transactional(db *gorm.DB) UserService {
+	return &UserServiceStr{
 		&repository.UserRepositoryObject{
 			ModeledDatabase: u.repository.Transactional(db),
 		},

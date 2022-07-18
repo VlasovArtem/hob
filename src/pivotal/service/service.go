@@ -35,6 +35,15 @@ func NewPivotalService(
 	}
 }
 
+func (p *PivotalServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(repository.GroupPivotalRepository{}),
+		dependency.FindNameAndType(repository.HousePivotalRepository{}),
+		dependency.FindNameAndType(houseService.HouseServiceStr{}),
+		dependency.FindNameAndType(groupService.GroupServiceStr{}),
+	}
+}
+
 func (p *PivotalServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPivotalService(
 		dependency.FindRequiredDependency[repository.HousePivotalRepository, repository.PivotalRepository[model.HousePivotal]](factory),
@@ -48,8 +57,13 @@ type PivotalService interface {
 	transactional.Transactional[PivotalService]
 	Find(houseId uuid.UUID) (model.PivotalResponseDto, error)
 	AddPayment(paymentSum float64, updateTime time.Time, houseId uuid.UUID) error
+	DeletePayment(paymentSum float64, houseId uuid.UUID) error
+	UpdatePayment(oldPaymentSum, newPaymentSum float64, updateTime time.Time, houseId uuid.UUID) error
 	AddIncome(incomeSum float64, updateTime time.Time, houseId *uuid.UUID, groupIds []uuid.UUID) error
+	DeleteIncome(incomeSum float64, houseId *uuid.UUID, groupIds []uuid.UUID) error
+	UpdateIncome(oldIncomeSum, newIncomeSum float64, updateTime time.Time, houseId *uuid.UUID, oldGroupIds, newGroupIds []uuid.UUID) error
 	ExistsByHouseId(houseId uuid.UUID) bool
+	ExistsByGroupIds(groupIds []uuid.UUID) bool
 }
 
 func (p *PivotalServiceStr) AddPayment(paymentSum float64, updateTime time.Time, houseId uuid.UUID) error {
@@ -84,6 +98,50 @@ func (p *PivotalServiceStr) AddPayment(paymentSum float64, updateTime time.Time,
 			}
 		}
 		return nil
+	})
+}
+
+func (p *PivotalServiceStr) DeletePayment(paymentSum float64, houseId uuid.UUID) error {
+	return p.housePivotalRepository.DB().Transaction(func(db *gorm.DB) error {
+		trx := p.Transactional(db).(*PivotalServiceStr)
+
+		if houseDto, err := trx.houseService.FindById(houseId); err != nil {
+			return err
+		} else {
+			for _, group := range houseDto.Groups {
+				var groupPivotal model.GroupPivotal
+				if err = trx.groupPivotalRepository.FindBySourceId(group.Id, &groupPivotal); err != nil && !errors.Is(err, interrors.ErrNotFound{}) {
+					return err
+				} else if groupPivotal.Pivotal.Id != uuid.Nil {
+					groupPivotal.Pivotal.Payments -= paymentSum
+					groupPivotal.Pivotal.Total += paymentSum
+					if err := trx.groupPivotalRepository.Update(groupPivotal.Pivotal.Id, groupPivotal.Pivotal); err != nil {
+						return err
+					}
+				}
+			}
+			var housePivotal model.HousePivotal
+			if err = trx.housePivotalRepository.FindBySourceId(houseId, &housePivotal); err != nil {
+				return err
+			}
+			housePivotal.Pivotal.Payments -= paymentSum
+			housePivotal.Pivotal.Total += paymentSum
+			if err = trx.housePivotalRepository.Update(housePivotal.Pivotal.Id, housePivotal.Pivotal); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (p *PivotalServiceStr) UpdatePayment(oldPaymentSum, newPaymentSum float64, updateTime time.Time, houseId uuid.UUID) error {
+	return p.housePivotalRepository.DB().Transaction(func(db *gorm.DB) error {
+		trx := p.Transactional(db).(*PivotalServiceStr)
+
+		if err := trx.DeletePayment(oldPaymentSum, houseId); err != nil {
+			return err
+		}
+		return trx.AddPayment(newPaymentSum, updateTime, houseId)
 	})
 }
 
@@ -132,6 +190,63 @@ func (p *PivotalServiceStr) AddIncome(incomeSum float64, updateTime time.Time, h
 			}
 		}
 		return nil
+	})
+}
+
+func (p *PivotalServiceStr) DeleteIncome(incomeSum float64, houseId *uuid.UUID, groupIds []uuid.UUID) error {
+	return p.housePivotalRepository.DB().Transaction(func(db *gorm.DB) error {
+		trx := p.Transactional(db).(*PivotalServiceStr)
+
+		if houseId == nil && len(groupIds) == 0 {
+			return nil
+		}
+
+		calcHousePivotal := func(houseId uuid.UUID) error {
+			var housePivotal model.HousePivotal
+			if err := trx.housePivotalRepository.FindBySourceId(houseId, &housePivotal); err != nil {
+				return err
+			}
+			housePivotal.Pivotal.Income -= incomeSum
+			housePivotal.Pivotal.Total -= incomeSum
+			if err := p.housePivotalRepository.Update(housePivotal.Pivotal.Id, housePivotal.Pivotal); err != nil {
+				return err
+			}
+			return nil
+		}
+
+		if len(groupIds) == 0 && houseId != nil {
+			return calcHousePivotal(*houseId)
+		} else {
+			for _, dto := range trx.houseService.FindHousesByGroupIds(groupIds) {
+				if err := calcHousePivotal(dto.Id); err != nil {
+					return err
+				}
+			}
+			for _, groupId := range groupIds {
+				var groupPivotal model.GroupPivotal
+				if err := trx.groupPivotalRepository.FindBySourceId(groupId, &groupPivotal); err != nil && !errors.Is(err, interrors.ErrNotFound{}) {
+					return err
+				} else if groupPivotal.Pivotal.Id != uuid.Nil {
+					groupPivotal.Pivotal.Income -= incomeSum
+					groupPivotal.Pivotal.Total -= incomeSum
+					if err := trx.groupPivotalRepository.Update(groupPivotal.Pivotal.Id, groupPivotal.Pivotal); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		return nil
+	})
+}
+
+func (p *PivotalServiceStr) UpdateIncome(oldIncomeSum, newIncomeSum float64, updateTime time.Time, houseId *uuid.UUID, oldGroupIds, newGroupIds []uuid.UUID) error {
+	return p.housePivotalRepository.DB().Transaction(func(db *gorm.DB) error {
+		trx := p.Transactional(db).(*PivotalServiceStr)
+
+		if err := trx.DeleteIncome(oldIncomeSum, houseId, oldGroupIds); err != nil {
+			return err
+		}
+		return trx.AddIncome(newIncomeSum, updateTime, houseId, newGroupIds)
 	})
 }
 
@@ -200,8 +315,12 @@ func (p *PivotalServiceStr) ExistsByHouseId(houseId uuid.UUID) bool {
 	return p.housePivotalRepository.ExistsBy("house_id = ?", houseId)
 }
 
+func (p *PivotalServiceStr) ExistsByGroupIds(groupIds []uuid.UUID) bool {
+	return p.housePivotalRepository.ExistsBy("house_id IN (?)", groupIds)
+}
+
 func calculateTotal(house model.HousePivotal, groups []model.GroupPivotal) (pivotal model.TotalPivotalDto) {
-	if house.Pivotal.Id != uuid.Nil {
+	if len(groups) == 0 {
 		pivotal.Income = house.Pivotal.Income
 		pivotal.Payments = house.Pivotal.Payments
 		pivotal.Total = house.Pivotal.Income - house.Pivotal.Payments

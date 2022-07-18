@@ -17,6 +17,12 @@ func NewMeterRepository(database db.DatabaseService) MeterRepository {
 	return &MeterRepositoryStr{db.NewModeledDatabase(model.Meter{}, database)}
 }
 
+func (m *MeterRepositoryStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func (m *MeterRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewMeterRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }

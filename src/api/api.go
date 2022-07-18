@@ -24,18 +24,18 @@ type ApplicationHandler interface {
 }
 
 func InitApi(router *mux.Router, application *app.RootApplication) {
-	addHandler(router, application, new(countryHandler.CountryHandlerObject))
-	addHandler(router, application, new(userHandler.UserHandlerObject))
-	addHandler(router, application, new(houseHandler.HouseHandlerObject))
-	addHandler(router, application, new(providerHandler.ProviderHandlerObject))
-	addHandler(router, application, new(paymentHandler.PaymentHandlerObject))
-	addHandler(router, application, new(paymentSchedulerHandler.PaymentSchedulerHandlerObject))
-	addHandler(router, application, new(meterHandler.MeterHandlerObject))
-	addHandler(router, application, new(incomeHandler.IncomeHandlerObject))
-	addHandler(router, application, new(incomeSchedulerHandler.IncomeSchedulerHandlerObject))
-	addHandler(router, application, new(healthHandler.HealthHandlerObject))
-	addHandler(router, application, new(groupHandler.GroupHandlerObject))
-	addHandler(router, application, new(pivotalHandler.PivotalHandlerObject))
+	addHandler(router, application, new(countryHandler.CountryHandlerStr))
+	addHandler(router, application, new(userHandler.UserHandlerStr))
+	addHandler(router, application, new(houseHandler.HouseHandlerStr))
+	addHandler(router, application, new(providerHandler.ProviderHandlerStr))
+	addHandler(router, application, new(paymentHandler.PaymentHandlerStr))
+	addHandler(router, application, new(paymentSchedulerHandler.PaymentSchedulerHandlerStr))
+	addHandler(router, application, new(meterHandler.MeterHandlerStr))
+	addHandler(router, application, new(incomeHandler.IncomeHandlerStr))
+	addHandler(router, application, new(incomeSchedulerHandler.IncomeSchedulerHandlerStr))
+	addHandler(router, application, new(healthHandler.HealthHandlerStr))
+	addHandler(router, application, new(groupHandler.GroupHandlerStr))
+	addHandler(router, application, new(pivotalHandler.PivotalHandlerStr))
 }
 
 func addHandler(router *mux.Router, application *app.RootApplication, handler ApplicationHandler) {

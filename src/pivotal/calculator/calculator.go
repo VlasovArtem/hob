@@ -39,6 +39,16 @@ func NewPivotalCalculatorService(
 	}
 }
 
+func (p *PivotalCalculatorServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(repository.HousePivotalRepository{}),
+		dependency.FindNameAndType(repository.GroupPivotalRepository{}),
+		dependency.FindNameAndType(houseService.HouseServiceStr{}),
+		dependency.FindNameAndType(incomeService.IncomeServiceStr{}),
+		dependency.FindNameAndType(paymentService.PaymentServiceStr{}),
+	}
+}
+
 func (p *PivotalCalculatorServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPivotalCalculatorService(
 		dependency.FindRequiredDependency[repository.HousePivotalRepository, repository.PivotalRepository[model.HousePivotal]](factory),

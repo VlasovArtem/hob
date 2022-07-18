@@ -59,13 +59,24 @@ func NewPaymentSchedulerService(
 	}
 }
 
+func (p *PaymentSchedulerServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(users.UserServiceStr{}),
+		dependency.FindNameAndType(houses.HouseServiceStr{}),
+		dependency.FindNameAndType(payments.PaymentServiceStr{}),
+		dependency.FindNameAndType(providers.ProviderServiceStr{}),
+		dependency.FindNameAndType(scheduler.SchedulerServiceStr{}),
+		dependency.FindNameAndType(repository.PaymentSchedulerRepositoryStr{}),
+	}
+}
+
 func (p *PaymentSchedulerServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewPaymentSchedulerService(
-		dependency.FindRequiredDependency[users.UserServiceObject, users.UserService](factory),
+		dependency.FindRequiredDependency[users.UserServiceStr, users.UserService](factory),
 		dependency.FindRequiredDependency[houses.HouseServiceStr, houses.HouseService](factory),
 		dependency.FindRequiredDependency[payments.PaymentServiceStr, payments.PaymentService](factory),
 		dependency.FindRequiredDependency[providers.ProviderServiceStr, providers.ProviderService](factory),
-		dependency.FindRequiredDependency[scheduler.SchedulerServiceObject, scheduler.ServiceScheduler](factory),
+		dependency.FindRequiredDependency[scheduler.SchedulerServiceStr, scheduler.ServiceScheduler](factory),
 		dependency.FindRequiredDependency[repository.PaymentSchedulerRepositoryStr, repository.PaymentSchedulerRepository](factory),
 	)
 }

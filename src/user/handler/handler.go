@@ -10,19 +10,26 @@ import (
 	"net/http"
 )
 
-type UserHandlerObject struct {
+type UserHandlerStr struct {
 	userService   service.UserService
 	userValidator validator.UserRequestValidator
 }
 
 func NewUserHandler(userService service.UserService, userValidator validator.UserRequestValidator) UserHandler {
-	return &UserHandlerObject{userService, userValidator}
+	return &UserHandlerStr{userService, userValidator}
 }
 
-func (u *UserHandlerObject) Initialize(factory dependency.DependenciesProvider) any {
+func (u *UserHandlerStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(service.UserServiceStr{}),
+		dependency.FindNameAndType(validator.UserRequestValidatorStr{}),
+	}
+}
+
+func (u *UserHandlerStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewUserHandler(
-		dependency.FindRequiredDependency[service.UserServiceObject, service.UserService](factory),
-		dependency.FindRequiredDependency[validator.UserRequestValidatorObject, validator.UserRequestValidator](factory),
+		dependency.FindRequiredDependency[service.UserServiceStr, service.UserService](factory),
+		dependency.FindRequiredDependency[validator.UserRequestValidatorStr, validator.UserRequestValidator](factory),
 	)
 }
 
@@ -33,7 +40,7 @@ type UserHandler interface {
 	Update() http.HandlerFunc
 }
 
-func (u *UserHandlerObject) Init(router *mux.Router) {
+func (u *UserHandlerStr) Init(router *mux.Router) {
 	userRouter := router.PathPrefix("/api/v1/users").Subrouter()
 
 	userRouter.Path("").HandlerFunc(u.Add()).Methods("POST")
@@ -42,7 +49,7 @@ func (u *UserHandlerObject) Init(router *mux.Router) {
 	userRouter.Path("/{id}").HandlerFunc(u.Update()).Methods("PUT")
 }
 
-func (u *UserHandlerObject) Add() http.HandlerFunc {
+func (u *UserHandlerStr) Add() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if body, err := rest.ReadRequestBody[model.CreateUserRequest](request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -59,7 +66,7 @@ func (u *UserHandlerObject) Add() http.HandlerFunc {
 	}
 }
 
-func (u *UserHandlerObject) FindById() http.HandlerFunc {
+func (u *UserHandlerStr) FindById() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -71,7 +78,7 @@ func (u *UserHandlerObject) FindById() http.HandlerFunc {
 	}
 }
 
-func (u *UserHandlerObject) Delete() http.HandlerFunc {
+func (u *UserHandlerStr) Delete() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)
@@ -83,7 +90,7 @@ func (u *UserHandlerObject) Delete() http.HandlerFunc {
 	}
 }
 
-func (u *UserHandlerObject) Update() http.HandlerFunc {
+func (u *UserHandlerStr) Update() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if id, err := rest.GetIdRequestParameter(request); err != nil {
 			rest.HandleWithError(writer, err)

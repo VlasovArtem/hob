@@ -12,17 +12,23 @@ import (
 	"gorm.io/gorm"
 )
 
-type HouseRepositoryStruct struct {
+type HouseRepositoryStr struct {
 	db.ModeledDatabase[model.House]
 }
 
 func NewHouseRepository(database db.DatabaseService) HouseRepository {
-	return &HouseRepositoryStruct{
+	return &HouseRepositoryStr{
 		ModeledDatabase: db.NewModeledDatabase(model.House{}, database),
 	}
 }
 
-func (h *HouseRepositoryStruct) Initialize(factory dependency.DependenciesProvider) any {
+func (h *HouseRepositoryStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
+func (h *HouseRepositoryStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHouseRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
 }
 
@@ -37,11 +43,11 @@ type HouseRepository interface {
 	UpdateByRequest(id uuid.UUID, request model.UpdateHouseRequest) error
 }
 
-func (h *HouseRepositoryStruct) CreateBatch(entities []model.House) ([]model.House, error) {
+func (h *HouseRepositoryStr) CreateBatch(entities []model.House) ([]model.House, error) {
 	return entities, h.DB().Omit("Groups.*").Create(&entities).Error
 }
 
-func (h *HouseRepositoryStruct) FindById(id uuid.UUID) (response model.House, err error) {
+func (h *HouseRepositoryStr) FindById(id uuid.UUID) (response model.House, err error) {
 	response.Id = id
 	if err = h.DB().Preload("Groups").First(&response).Error; err != nil {
 		return model.House{}, err
@@ -49,7 +55,7 @@ func (h *HouseRepositoryStruct) FindById(id uuid.UUID) (response model.House, er
 	return response, err
 }
 
-func (h *HouseRepositoryStruct) FindByUserId(id uuid.UUID) (response []model.House) {
+func (h *HouseRepositoryStr) FindByUserId(id uuid.UUID) (response []model.House) {
 	if err := h.DB().Preload("Groups").Where("user_id = ?", id).Find(&response).Error; err != nil {
 		log.Error().Err(err)
 	}
@@ -57,7 +63,7 @@ func (h *HouseRepositoryStruct) FindByUserId(id uuid.UUID) (response []model.Hou
 	return response
 }
 
-func (h *HouseRepositoryStruct) UpdateByRequest(id uuid.UUID, request model.UpdateHouseRequest) error {
+func (h *HouseRepositoryStr) UpdateByRequest(id uuid.UUID, request model.UpdateHouseRequest) error {
 	err := h.Update(id, struct {
 		Name        string
 		CountryCode string
@@ -87,7 +93,7 @@ func (h *HouseRepositoryStruct) UpdateByRequest(id uuid.UUID, request model.Upda
 	return h.DBModeled(&entity).Association("Groups").Replace(groups)
 }
 
-func (h *HouseRepositoryStruct) FindHousesByGroupId(groupId uuid.UUID) (response []model.House) {
+func (h *HouseRepositoryStr) FindHousesByGroupId(groupId uuid.UUID) (response []model.House) {
 	if err := h.DB().
 		Preload("Groups").
 		Joins("FULL JOIN house_groups hg ON hg.house_id = houses.id").
@@ -99,7 +105,7 @@ func (h *HouseRepositoryStruct) FindHousesByGroupId(groupId uuid.UUID) (response
 	return response
 }
 
-func (h *HouseRepositoryStruct) FindHousesByGroupIds(groupIds []uuid.UUID) (response []model.House) {
+func (h *HouseRepositoryStr) FindHousesByGroupIds(groupIds []uuid.UUID) (response []model.House) {
 	if err := h.DB().
 		Preload("Groups").
 		Joins("FULL JOIN house_groups hg ON hg.house_id = houses.id").
@@ -111,8 +117,8 @@ func (h *HouseRepositoryStruct) FindHousesByGroupIds(groupIds []uuid.UUID) (resp
 	return response
 }
 
-func (h *HouseRepositoryStruct) Transactional(tx *gorm.DB) HouseRepository {
-	return &HouseRepositoryStruct{
+func (h *HouseRepositoryStr) Transactional(tx *gorm.DB) HouseRepository {
+	return &HouseRepositoryStr{
 		ModeledDatabase: db.NewTransactionalModeledDatabase(h.GetEntity(), tx),
 	}
 }

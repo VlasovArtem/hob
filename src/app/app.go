@@ -23,8 +23,7 @@ import (
 	paymentSchedulerRepository "github.com/VlasovArtem/hob/src/payment/scheduler/repository"
 	paymentSchedulerService "github.com/VlasovArtem/hob/src/payment/scheduler/service"
 	paymentService "github.com/VlasovArtem/hob/src/payment/service"
-	"github.com/VlasovArtem/hob/src/pivotal/cache"
-	pivotalModel "github.com/VlasovArtem/hob/src/pivotal/model"
+	"github.com/VlasovArtem/hob/src/pivotal/calculator"
 	pivotalRepository "github.com/VlasovArtem/hob/src/pivotal/repository"
 	pivotalService "github.com/VlasovArtem/hob/src/pivotal/service"
 	providerRepository "github.com/VlasovArtem/hob/src/provider/repository"
@@ -34,6 +33,7 @@ import (
 	userService "github.com/VlasovArtem/hob/src/user/service"
 	userRequestValidator "github.com/VlasovArtem/hob/src/user/validator"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/exp/slices"
 	"io/ioutil"
 	"reflect"
 )
@@ -47,7 +47,7 @@ const (
 	countriesDirVariable    = "COUNTRIES_DIR"
 )
 
-var migratorType = reflect.TypeOf((*dependency.ObjectDatabaseMigrator)(nil)).Elem()
+var migratorType = reflect.TypeOf((*dependency.ObjectDatabaseMigrator[any])(nil)).Elem()
 
 type RootApplication struct {
 	DependenciesFactory dependency.DependenciesProvider
@@ -88,16 +88,15 @@ func (a *RootApplication) createDatabaseConfiguration() {
 }
 
 func (a *RootApplication) addAutoInitializingDependencies() {
-	initializers := []dependency.ObjectDependencyInitializer{
-		new(cache.PivotalCacheObject),
-		new(userRequestValidator.UserRequestValidatorObject),
+	beans := []dependency.ObjectDependencyInitializer{
+		new(userRequestValidator.UserRequestValidatorStr),
 		new(userRepository.UserRepositoryObject),
-		new(userService.UserServiceObject),
-		new(repository.GroupRepositoryObject),
+		new(userService.UserServiceStr),
+		new(repository.GroupRepositoryStr),
 		new(groupService.GroupServiceStr),
-		new(houseRepository.houseRepositoryStruct),
+		new(houseRepository.HouseRepositoryStr),
 		new(houseService.HouseServiceStr),
-		new(scheduler.SchedulerServiceObject),
+		new(scheduler.SchedulerServiceStr),
 		new(providerRepository.ProviderRepositoryStr),
 		new(providerService.ProviderServiceStr),
 		new(paymentRepository.PaymentRepositoryStr),
@@ -105,26 +104,52 @@ func (a *RootApplication) addAutoInitializingDependencies() {
 		new(paymentSchedulerRepository.PaymentSchedulerRepositoryStr),
 		new(paymentSchedulerService.PaymentSchedulerServiceStr),
 		new(meterRepository.MeterRepositoryStr),
-		new(meterService.MeterServiceObject),
+		new(meterService.MeterServiceStr),
 		new(incomeRepository.IncomeRepositoryStr),
 		new(incomeService.IncomeServiceStr),
 		new(incomeSchedulerRepository.IncomeRepositorySchedulerStr),
 		new(incomeSchedulerService.IncomeSchedulerServiceStr),
-		new(pivotalRepository.HousePivotalRepository[pivotalModel.HousePivotal]),
-		new(pivotalRepository.GroupPivotalRepository[pivotalModel.GroupPivotal]),
+		new(pivotalRepository.HousePivotalRepository),
+		new(pivotalRepository.GroupPivotalRepository),
 		new(pivotalService.PivotalServiceStr),
+		new(calculator.PivotalCalculatorServiceStr),
 	}
 
-	for _, initializer := range initializers {
-		autoDependency := a.DependenciesFactory.AddAutoDependency(initializer)
+	slices.SortFunc(beans, func(i, j dependency.ObjectDependencyInitializer) bool {
+		return len(i.GetRequiredDependencies()) < len(j.GetRequiredDependencies())
+	})
 
-		if reflect.TypeOf(autoDependency).Implements(migratorType) {
-			a.migrate(autoDependency.(dependency.ObjectDatabaseMigrator))
+	beansRound := beans
+	var newBeansRound []dependency.ObjectDependencyInitializer
+
+	for len(beansRound) != 0 {
+		for _, initializer := range beansRound {
+			if a.isDependencyIsReadyForInit(initializer) {
+				autoDependency := a.DependenciesFactory.AddAutoDependency(initializer)
+
+				if reflect.TypeOf(autoDependency).Implements(migratorType) {
+					a.migrate(autoDependency.(dependency.ObjectDatabaseMigrator[any]))
+				}
+			} else {
+				newBeansRound = append(newBeansRound, initializer)
+			}
 		}
+		beansRound = newBeansRound
+		newBeansRound = []dependency.ObjectDependencyInitializer{}
 	}
 }
 
-func (a *RootApplication) migrate(object dependency.ObjectDatabaseMigrator) {
+func (a *RootApplication) isDependencyIsReadyForInit(initializer dependency.ObjectDependencyInitializer) bool {
+	for _, requirement := range initializer.GetRequiredDependencies() {
+		if a.DependenciesFactory.FindByName(requirement.Name, false) == nil &&
+			a.DependenciesFactory.FindByType(requirement.Type, false) == nil {
+			return false
+		}
+	}
+	return true
+}
+
+func (a *RootApplication) migrate(object dependency.ObjectDatabaseMigrator[any]) {
 	if a.databaseService == nil {
 		log.Fatal().Msg("DatabaseService is not initialized")
 	}

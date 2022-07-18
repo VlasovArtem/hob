@@ -43,11 +43,20 @@ func NewHouseService(
 	}
 }
 
+func (h *HouseServiceStr) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(countries.CountryServiceStr{}),
+		dependency.FindNameAndType(userService.UserServiceStr{}),
+		dependency.FindNameAndType(repository.HouseRepositoryStr{}),
+		dependency.FindNameAndType(groupService.GroupServiceStr{}),
+	}
+}
+
 func (h *HouseServiceStr) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHouseService(
-		dependency.FindRequiredDependency[countries.CountryServiceObject, countries.CountryService](factory),
-		dependency.FindRequiredDependency[userService.UserServiceObject, userService.UserService](factory),
-		dependency.FindRequiredDependency[repository.HouseRepositoryStruct, repository.HouseRepository](factory),
+		dependency.FindRequiredDependency[countries.CountryServiceStr, countries.CountryService](factory),
+		dependency.FindRequiredDependency[userService.UserServiceStr, userService.UserService](factory),
+		dependency.FindRequiredDependency[repository.HouseRepositoryStr, repository.HouseRepository](factory),
 		dependency.FindRequiredDependency[groupService.GroupServiceStr, groupService.GroupService](factory),
 	)
 }
@@ -154,14 +163,10 @@ func (h *HouseServiceStr) AddBatch(request model.CreateHouseBatchRequest) ([]mod
 }
 
 func (h *HouseServiceStr) FindById(id uuid.UUID) (response model.HouseDto, err error) {
-	var entity model.House
-
-	err = h.houseRepository.Modeled().Preload("Groups").First(&entity).Error
-
-	if err != nil {
+	if house, err := h.houseRepository.FindById(id); err != nil {
 		return response, database.HandlerFindError(err, "house with id %s not found", id)
 	} else {
-		return entity.ToDto(), nil
+		return house.ToDto(), nil
 	}
 }
 

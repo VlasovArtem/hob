@@ -16,6 +16,12 @@ func NewHousePivotalRepository(database db.DatabaseService) PivotalRepository[mo
 	return &HousePivotalRepository{db.NewModeledDatabase(model.HousePivotal{}, database)}
 }
 
+func (h *HousePivotalRepository) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func (h *HousePivotalRepository) Initialize(factory dependency.DependenciesProvider) any {
 	return NewHousePivotalRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }

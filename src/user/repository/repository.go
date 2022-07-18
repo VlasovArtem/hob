@@ -19,8 +19,14 @@ func NewUserRepository(service db.DatabaseService) UserRepository {
 	}
 }
 
+func (u *UserRepositoryObject) GetRequiredDependencies() []dependency.Requirements {
+	return []dependency.Requirements{
+		dependency.FindNameAndType(db.Database{}),
+	}
+}
+
 func (u *UserRepositoryObject) Initialize(factory dependency.DependenciesProvider) any {
-	return NewUserRepository(factory.FindRequiredByObject(db.Database{}).(db.DatabaseService))
+	return NewUserRepository(dependency.FindRequiredDependency[db.Database, db.DatabaseService](factory))
 }
 
 type UserRepository interface {

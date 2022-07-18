@@ -21,7 +21,7 @@ func Test_Add(t *testing.T) {
 		channel <- true
 	})
 
-	object := (service).(*SchedulerServiceObject)
+	object := (service).(*SchedulerServiceStr)
 
 	assert.Nil(t, err)
 	assert.True(t, entryId > 0)
@@ -45,7 +45,7 @@ func Test_Add_WithExistingScheduler(t *testing.T) {
 	itemId := uuid.New()
 	entryId, err := service.Add(itemId, "* * * * *", func() { log.Println("Function") })
 
-	object := (service).(*SchedulerServiceObject)
+	object := (service).(*SchedulerServiceStr)
 
 	assert.Nil(t, err)
 	assert.True(t, entryId > 0)
@@ -71,7 +71,7 @@ func Test_Add_WithInvalidScheduler(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, cron.EntryID(0), entryId)
 
-	object := (service).(*SchedulerServiceObject)
+	object := (service).(*SchedulerServiceStr)
 
 	id, ok := object.entries[itemId]
 
@@ -109,7 +109,7 @@ func Test_Update(t *testing.T) {
 
 	entryId, err := service.Add(itemId, "* * * * *", func() {})
 
-	object := (service).(*SchedulerServiceObject)
+	object := (service).(*SchedulerServiceStr)
 
 	assert.Nil(t, err)
 	assert.True(t, entryId > 0)
